@@ -13,5 +13,3 @@ thirdparty/*/**
 dist/
 dist_reapi/
 bundles/
-
-src/scripts/mapmanager/
