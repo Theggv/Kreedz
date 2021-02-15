@@ -1,6 +1,5 @@
 #include <amxmodx>
 #include <fakemeta>
-#include <hamsandwich>
 #include <reapi>
 
 #include <kreedz/kz_api>

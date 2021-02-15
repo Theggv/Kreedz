@@ -7,7 +7,7 @@
 #define VERSION 	__DATE__
 #define AUTHOR 		"ggv"
 
-new g_Muted[33];
+new g_Muted[MAX_PLAYERS + 1];
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);

@@ -148,7 +148,7 @@ public fw_PostThink(id)
 	
 	static i;
 
-	for(i = 1; i <= MAX_PLAYERS; ++i) {
+	for (i = 1; i <= MAX_PLAYERS; ++i) {
 		if (id != i) {
 			if (is_user_alive(i))
 				set_pev(i, pev_solid, SOLID_SLIDEBOX);
