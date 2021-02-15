@@ -45,7 +45,7 @@ module.exports = (name, options) => {
 	}
 
 	if (!options.tasks || options.tasks.src !== false) {
-		const taskName = resolveTaskName(name, 'include');
+		let taskName = resolveTaskName(name, 'include');
 
 		gulp.task(taskName, () => {
 			return gulpMethod('./src/include/*.inc', gulpOptions).pipe(
@@ -54,6 +54,8 @@ module.exports = (name, options) => {
 		});
 
 		resolvedTasks.push(taskName);
+
+		taskName = resolveTaskName(name, 'include/kreedz');
 
 		gulp.task(taskName, () => {
 			return gulpMethod('./src/include/kreedz/*.inc', gulpOptions).pipe(

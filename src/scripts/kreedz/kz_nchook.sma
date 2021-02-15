@@ -9,7 +9,7 @@
 #include <kreedz/kz_api>
 
 #define PLUGIN 	 	"[Kreedz] Noclip & Hook"
-#define VERSION 	"0.1"
+#define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
 
 #define TASK_HOOK 	5100

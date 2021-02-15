@@ -10,7 +10,7 @@
 #include <kreedz/kz_api>
 
 #define PLUGIN 	 	"[Kreedz] Menu"
-#define VERSION 	"0.1"
+#define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
 
 public plugin_init() {
