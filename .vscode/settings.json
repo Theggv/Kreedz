@@ -1,0 +1,8 @@
+{
+	"amxxpawn.compiler.executablePath": "${workspaceRoot}/compiler/amxxpc.exe",
+	"amxxpawn.compiler.outputPath": "${workspaceRoot}/compiler/compiled",
+	"amxxpawn.compiler.includePaths": [
+		"${workspaceRoot}/src/include",
+		"${workspaceRoot}/compiler/include"
+	]
+}

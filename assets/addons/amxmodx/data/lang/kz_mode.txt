@@ -1,0 +1,63 @@
+[en]
+KZ_HUD_CANT_SAVE = Can't save pos in the air
+KZ_HUD_CANT_TELEPORT = You haven't checks
+
+KZ_CHAT_FINISHED = ^4[KZ] ^1%s finished the map. Time: %02d:%02d.%02d (%d/%d). Weapon: %s
+
+KZ_CHAT_NO_PRO_RECORDS = ^4[KZ] ^1The map hasn't pro records.
+KZ_CHAT_NO_NUB_RECORDS = ^4[KZ] ^1The map hasn't nub records.
+KZ_CHAT_NO_WEAPON_RECORDS = ^4[KZ] ^1The map hasn't records with %s.
+
+KZ_CHAT_BEAT_RECORD = ^4[KZ] ^1[-^4%s^1].
+KZ_CHAT_LOSE_RECORD = ^4[KZ] ^1[+^3%s^1].
+
+KZ_CHAT_BEST_PRO = ^4[KZ] ^1Your best run is %s (0/0).
+KZ_CHAT_BEST_NUB = ^4[KZ] ^1Your best run is %s (%d/%d).
+KZ_CHAT_NO_RECORD = ^4[KZ] ^1You haven't runs on this map.
+
+INVISMENU_TITLE = Invisibility
+INVISMENU_PLAYERS = Players
+INVISMENU_WATER = Water
+INVISMENU_DRAW = \rDraw
+INVISMENU_HIDE = \dHide
+
+SPECLIST_TITLE = Spectators (%d):
+
+LOADPOS_TITLE = Saved run found \w%s \d(%d/%d) \wWeapon: %s
+LOADPOS_LOAD = Load run
+LOADPOS_NEW = Start new
+
+SAVEPOS_TITLE = Save run \w%s \d(%d/%d)\w?
+SAVEPOS_SAVE = Save
+
+[ru]
+KZ_HUD_CANT_SAVE = Невозможно сохраниться в воздухе
+KZ_HUD_CANT_TELEPORT = У вас нет сохранений
+
+KZ_CHAT_FINISHED = ^4[KZ] ^1%s закончил карту. Время: %02d:%02d.%02d (%d/%d). Оружие: %s
+
+KZ_CHAT_NO_PRO_RECORDS = ^4[KZ] ^1На карте нет рекордов без сохранений.
+KZ_CHAT_NO_NUB_RECORDS = ^4[KZ] ^1На карте нет рекордов с сохранениями.
+KZ_CHAT_NO_WEAPON_RECORDS = ^4[KZ] ^1На карте нет рекордов с %s.
+
+KZ_CHAT_BEAT_RECORD = ^4[KZ] ^1[-^4%s^1].
+KZ_CHAT_LOSE_RECORD = ^4[KZ] ^1[+^3%s^1].
+
+KZ_CHAT_BEST_PRO = ^4[KZ] ^1Ваше лучшее прохождение - %s (0/0).
+KZ_CHAT_BEST_NUB = ^4[KZ] ^1Ваше лучшее прохождение - %s (%d/%d).
+KZ_CHAT_NO_RECORD = ^4[KZ] ^1Вы еще не проходили эту карту.
+
+INVISMENU_TITLE = Невидимость
+INVISMENU_PLAYERS = Игроки
+INVISMENU_WATER = Вода
+INVISMENU_DRAW = \rПоказать
+INVISMENU_HIDE = \dСкрыть
+
+SPECLIST_TITLE = Наблюдатели (%d):
+
+LOADPOS_TITLE = Найдено сохранившееся прохождение \w%s \d(%d/%d) \wОружие: %s
+LOADPOS_LOAD = Загрузить прохождение
+LOADPOS_NEW = Начать заново
+
+SAVEPOS_TITLE = Сохранить прохождение \w%s \d(%d/%d)\w?
+SAVEPOS_SAVE = Сохранить

@@ -1,0 +1,49 @@
+[en]
+CUPS_MAIN_TITLE = \yCups menu
+CUPS_MAIN_LIST = \wList of lobbies
+CUPS_MAIN_CREATE = \wCreate lobby
+CUPS_MAIN_LOBBY = \wMy lobby
+CUPS_MAIN_INVITES = \wInvites
+
+CUPS_LIST_TITLE = List of lobbies:
+CUPS_INVITES_TITLE = My invites:
+
+CUPS_LOBBY_TITLE = %s
+CUPS_LOBBY_INVITE = Invite players
+CUPS_LOBBY_KICK = Kick players
+CUPS_LOBBY_CREATE = Create lobby
+CUPS_LOBBY_DELETE = Delete lobby
+CUPS_LOBBY_STARTMATCH = Start match
+CUPS_LOBBY_ENDMATCH = End match
+CUPS_LOBBY_ROOMTYPE = Room type
+CUPS_LOBBY_LOCKED = closed
+CUPS_LOBBY_OPEN = open
+CUPS_LOBBY_JOIN = Join
+CUPS_LOBBY_LEAVE = Leave
+CUPS_LOBBY_DECLINE = Decline invite
+CUPS_LOBBY_CHECKS = Checkpoints
+CUPS_LOBBY_PLAYERSLIST = List of players
+CUPS_LOBBY_NUMSLOTS = Slots
+
+CUPS_INVITEPLAYERS_TITLE = Invite players:
+CUPS_KICKPLAYERS_TITLE = Kick players:
+
+CUPS_ENABLE = Enable
+CUPS_DISABLE = Disable
+
+CUPS_CHAT_INVITED = ^4[KZ] ^1You have been invited to ^4%s^1.
+CUPS_CHAT_INVITED_SENT = ^4[KZ] ^1Invite was sent to ^4%s^1.
+CUPS_CHAT_KICKED_PLAYER = ^4[KZ] ^1You have been kicked from ^4%s^1.
+CUPS_CHAT_KICKED_LOBBY = ^4[KZ] ^1^4%s^1 was kicked from lobby.
+CUPS_CHAT_JOIN_LOBBY = ^4[KZ] ^4%s^1 joined the lobby.
+CUPS_CHAT_LEAVE_LOBBY = ^4[KZ] ^4%s^1 left the lobby.
+CUPS_CHAT_LOBBY_DELETED = ^4[KZ] ^1Lobby was deleted.
+CUPS_CHAT_MATCH_END = ^4[KZ] ^1Match was ended.
+CUPS_CHAT_WON = ^4[KZ] ^4%s ^1won the cup with time ^4%s^1.
+CUPS_CHAT_FINISHED = ^4[KZ] ^4%s ^1finished the cup with time ^4%s ^1[+^3%s^1].
+CUPS_CHAT_AUTOEND = ^4[KZ] ^1The cup will automatically end after ^4%d ^1seconds.
+
+CUPS_STATUS_INACTIVE = Inactive
+CUPS_STATUS_PENDING =  Pending
+CUPS_STATUS_WAITING = Waiting
+CUPS_STATUS_STARTED = Started
