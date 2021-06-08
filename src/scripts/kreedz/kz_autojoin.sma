@@ -15,8 +15,7 @@
 
 new g_iMsgId[33];
 
-public plugin_init()
-{
+public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
 	register_message(get_user_msgid("ShowMenu"), "MessageShowMenu");
@@ -89,8 +88,7 @@ public Task_JoinTeam(id) {
 }
 
 public Task_Spawn(id) {
-	if (!is_user_connected(id))
-		return;
+	if (!is_user_connected(id)) return;
 
 	dllfunc(DLLFunc_Spawn, id);
 	set_entvar(id, var_takedamage, DAMAGE_NO);

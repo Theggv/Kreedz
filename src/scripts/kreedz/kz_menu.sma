@@ -17,6 +17,8 @@ public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	kz_register_cmd("menu", "cmd_MainMenu");
+	// dlya dalbichey
+	kz_register_cmd("ьутг", "cmd_MainMenu");
 
 	register_dictionary("kz_mode.txt");
 }
@@ -58,8 +60,8 @@ public cmd_MainMenu(id) {
 	formatex(szMsg, charsmax(szMsg), "Settings");
 	menu_additem(iMenu, szMsg, "9", 0);
 
-	formatex(szMsg, charsmax(szMsg), "Mute");
-	menu_additem(iMenu, szMsg, "10", 0);
+	// formatex(szMsg, charsmax(szMsg), "Mute");
+	// menu_additem(iMenu, szMsg, "10", 0);
 
 	menu_display(id, iMenu, 0);
 

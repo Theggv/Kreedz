@@ -1,3 +1,14 @@
+/*
+*	Changelog:
+*	
+*	08.06.2021: 
+*		- Removed silent shooting for usp and m4a1
+*		- Added protection for accidential weapon swap.
+*		  Now to change weapon rank player should jump.
+*		- Added some checks for give_user_item()
+*	
+*/
+
 #include <amxmodx>
 #include <cstrike>
 #include <hamsandwich>
@@ -11,7 +22,8 @@
 
 enum _:UserData
 {
-	ud_MaxRank
+	ud_MinRank,
+	ud_TemporaryRank,
 }
 
 new g_UserData[MAX_PLAYERS + 1][UserData];
@@ -26,8 +38,8 @@ public plugin_init()
 	kz_register_cmd("awp", "cmd_AWP");
 	kz_register_cmd("m4a1", "cmd_M4A1");
 
-	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_m4a1", "ham_Silent_Shoot", 1);
-	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_usp", "ham_Silent_Shoot", 1);
+	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_m4a1", "ham_Other_Shoot", 1);
+	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_usp", "ham_Other_Shoot", 1);
 
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_awp", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_m249", "ham_Other_Shoot", 1);
@@ -36,10 +48,19 @@ public plugin_init()
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_p90", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_scout", "ham_Other_Shoot", 1);
 
+	RegisterHam(Ham_Player_Jump, "player", "ham_Jump_Post", 1);
+
 	RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "HookResetMaxSpeed", 1);
 
 	register_dictionary("kz_mode.txt");
 }
+
+/**
+*	------------------------------------------------------------------
+*	Natives section
+*	------------------------------------------------------------------
+*/
+
 
 public plugin_natives()
 {
@@ -51,12 +72,15 @@ public plugin_natives()
 
 public native_get_min_rank(id)
 {
-	return g_UserData[id][ud_MaxRank];
+	return g_UserData[id][ud_MinRank];
 }
 
 public native_set_min_rank(id, value)
 {
-	g_UserData[id][ud_MaxRank] = value;
+	g_UserData[id][ud_MinRank] = value;
+	g_UserData[id][ud_TemporaryRank] = value;
+
+	// client_print(id, print_chat, "[DEBUG] Min rank: %d", value);
 }
 
 public native_get_weapon_name(iRank, szWeapon[], iLen)
@@ -71,16 +95,23 @@ public native_get_usp(id)
 	give_user_item(id, "weapon_usp", 10, GT_REPLACE);
 }
 
+/**
+*	------------------------------------------------------------------
+*	Commands
+*	------------------------------------------------------------------
+*/
+
+
 public cmd_Weapons(id)
 {
-	give_user_item(id, "weapon_awp", 2);
-	give_user_item(id, "weapon_m249", 2);
+	give_user_item(id, "weapon_awp", 10);
+	give_user_item(id, "weapon_m249", 10);
 	give_user_item(id, "weapon_m4a1", 10);
-	give_user_item(id, "weapon_sg552", 2);
-	give_user_item(id, "weapon_famas", 2);
-	give_user_item(id, "weapon_p90", 2);
-	give_user_item(id, "weapon_usp", 10, GT_REPLACE);
-	give_user_item(id, "weapon_scout", 2);
+	give_user_item(id, "weapon_sg552", 10);
+	give_user_item(id, "weapon_famas", 10);
+	give_user_item(id, "weapon_p90", 10);
+	give_user_item(id, "weapon_usp", 12, GT_REPLACE);
+	give_user_item(id, "weapon_scout", 10);
 
 	return PLUGIN_HANDLED;
 }
@@ -110,28 +141,29 @@ public cmd_M4A1(id)
 	return PLUGIN_HANDLED;
 }
 
-// 
-// forwards
-// 
+/**
+*	------------------------------------------------------------------
+*	Forwards
+*	------------------------------------------------------------------
+*/
 
-public kz_timer_started(id)
+
+public kz_timer_start_post(id)
 {
-	g_UserData[id][ud_MaxRank] = get_max_rank(id);
+	native_set_min_rank(id, get_min_rank(id));
 }
 
 public HookResetMaxSpeed(id)
 {
-	if(kz_get_timer_state(id) != TIMER_ENABLED)
-		return HC_CONTINUE;
+	new iRank = get_min_rank(id);
 
-	new iRank = get_max_rank(id);
-
-	if(iRank > g_UserData[id][ud_MaxRank])
-		g_UserData[id][ud_MaxRank] = iRank;
+	if (iRank > g_UserData[id][ud_MinRank])
+		g_UserData[id][ud_TemporaryRank] = iRank;
 
 	return HC_CONTINUE;
 }
 
+// deprecated
 public ham_Silent_Shoot(iEnt)
 {
 	if(!is_entity(iEnt))
@@ -141,7 +173,7 @@ public ham_Silent_Shoot(iEnt)
 
 	new id = get_member(iEnt, m_pPlayer);
 
-	if(id < 1 || id > MaxClients)
+	if (id < 1 || id > MaxClients || !is_user_alive(id))
 		return HAM_IGNORED;
 
 	new iItem = get_user_weapon(id);
@@ -153,20 +185,38 @@ public ham_Silent_Shoot(iEnt)
 
 public ham_Other_Shoot(iEnt)
 {
-	if(!is_entity(iEnt))
+	if (!is_entity(iEnt))
 		return HAM_IGNORED;
 	
 	new id = get_member(iEnt, m_pPlayer);
 
-	if(id < 1 || id > MaxClients)
+	if (id < 1 || id > MaxClients || !is_user_alive(id))
 		return HAM_IGNORED;
 
 	new iItem = get_user_weapon(id);
 
-	cs_set_user_bpammo(id, iItem, 2);
+	cs_set_user_bpammo(id, iItem, 10);
 	
 	return HAM_IGNORED;
 }
+
+public ham_Jump_Post(id) {
+	if (!is_user_alive(id) ||
+		kz_get_timer_state(id) != TIMER_ENABLED) 
+		return HAM_IGNORED;
+
+	if (g_UserData[id][ud_TemporaryRank] > g_UserData[id][ud_MinRank])
+		native_set_min_rank(id, g_UserData[id][ud_TemporaryRank]);
+
+	return HAM_IGNORED;
+}
+
+/**
+*	------------------------------------------------------------------
+*	Utility
+*	------------------------------------------------------------------
+*/
+
 
 public wpn_rank_to_name(szWeapon[], iLen, iRank)
 {
@@ -183,7 +233,7 @@ public wpn_rank_to_name(szWeapon[], iLen, iRank)
 	}
 }
 
-public get_max_rank(id)
+public get_min_rank(id)
 {
 	new iMaxSpeed = floatround(Float:get_entvar(id, var_maxspeed));
 
@@ -204,9 +254,11 @@ public get_max_rank(id)
 
 stock give_user_item(id, const szWeapon[], numBullets, GiveType:giveType = GT_APPEND)
 {
+	if (!is_user_alive(id)) return;
+
 	new iWeapon = rg_give_item(id, szWeapon, giveType);
 
-	if(!is_nullent(iWeapon))
+	if (!is_nullent(iWeapon) && iWeapon != -1)
 	{
 		rg_set_iteminfo(iWeapon, ItemInfo_iMaxClip, numBullets);
 		rg_set_user_ammo(id, rg_get_weapon_info(szWeapon, WI_ID), numBullets);		

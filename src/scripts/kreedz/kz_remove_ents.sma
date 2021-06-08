@@ -149,7 +149,7 @@ public init_RemoveEnts()
 	}
 }
 
-public kz_timer_started(id)
+public kz_timer_start_post(id)
 {
 	if(g_hasInfinityHP)
 	{

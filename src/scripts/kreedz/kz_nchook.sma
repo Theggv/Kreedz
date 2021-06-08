@@ -42,7 +42,7 @@ public plugin_init() {
 	register_clcmd("+hook", "cmd_Hook_Enable");
 	register_clcmd("-hook", "cmd_Hook_Disable");
 
-	RegisterHookChain(RG_CBasePlayer_PreThink, "fw_PreThink");
+	RegisterHam(Ham_Player_PreThink, "player", "fw_PreThink");
 
 	kz_register_cmd("noclip", "cmd_Noclip");
 	kz_register_cmd("nc", "cmd_Noclip");
@@ -73,7 +73,7 @@ public client_disconnected(id) {
 	g_UserData[id][ud_IsNoclipEnable] = false;
 }
 
-public kz_timer_paused(id) {
+public kz_timer_pause_pre(id) {
 	if(kz_get_timer_state(id) == TIMER_ENABLED) {
 		g_UserData[id][ud_IsNoclipEnable] = false;
 	}

@@ -68,7 +68,7 @@ public client_disconnected(id)
 	g_UserDataNub[id][ud_isLoaded] = false;
 }
 
-public kz_timer_finished(id, Float:fTime)
+public kz_timer_finish_post(id, Float:fTime)
 {
 	new szQuery[512];
 
@@ -868,9 +868,9 @@ public show_place_pro(id, Float:fTime)
 		new szName[MAX_NAME_LENGTH];
 		get_user_name(id, szName, charsmax(szName));
 
-		if(iPlace < 20 && iPlace > 3)
+		if(iPlace > 3)
 			client_print_color(0, print_team_default, 
-				"^4[KZ]^1 %s achieved %dth ^1place in the pro top!", szName, iPlace);
+				"^4[KZ]^1 %s achieved %d ^1place in the pro top!", szName, iPlace);
 		else if(iPlace == 3)
 			client_print_color(0, print_team_blue, 
 				"^4[KZ]^1 %s achieved^3 3rd^1 place in the pro top!", szName);
@@ -937,9 +937,9 @@ public show_place_nub(id, Float:fTime)
 		new szName[MAX_NAME_LENGTH];
 		get_user_name(id, szName, charsmax(szName));
 
-		if(iPlace < 20 && iPlace > 3)
+		if(iPlace > 3)
 			client_print_color(0, print_team_default, 
-				"^4[KZ]^1 %s achieved %dth place in the nub top!", szName, iPlace);
+				"^4[KZ]^1 %s achieved %d^1 place in the nub top!", szName, iPlace);
 		else if(iPlace == 3)
 			client_print_color(0, print_team_blue, 
 				"^4[KZ]^1 %s achieved^3 3rd^1 place in the nub top!", szName);

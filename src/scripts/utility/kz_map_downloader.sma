@@ -1,11 +1,17 @@
 #include <amxmodx>
-#include <amxmisc>
 #include <curl>
 #include <amxxarch>
 
-#define PLUGIN 	"[KZ] Map downloader"
-#define VERSION "1.0"
-#define AUTHOR 	"ggv/Destroman"
+#define PLUGIN 		"[KZ] Map downloader"
+#define VERSION 	"1.0"
+#define AUTHOR 		"ggv/Destroman"
+
+/**
+*	------------------------------------------------------------------
+*	Globals section
+*	------------------------------------------------------------------
+*/
+
 
 #define KZMAPDL_LEVEL ADMIN_KICK 
 #define _DEBUG
@@ -27,8 +33,7 @@ new kzdl_dir[] 		= "addons/amxmodx/data/kz_downloader";
 new root_dir[] 		= "/";
 new config_dir[] 	= "addons/amxmodx/configs/mapdownloader";
 
-enum _:GetMapState
-{
+enum _:GetMapState {
 	State_NoTask,
 	State_Checking,
 	State_Found,
@@ -37,24 +42,22 @@ enum _:GetMapState
 	State_NotFound,
 	State_Finished,
 	State_Failed,
-}
+};
 
 new g_State;
 
-enum _:ServiceStruct
-{
-	ServiceName[128],		// Name of the service
+enum _:SourceStruct {
+	ServiceName[128],		// Name of the source
 	CheckPath[256],			// Path to check map existence
 	DownloadPath[256],		// Path to download map
 	FileExtension[16],		// File extension
-	bool:IsNeedSSL,			// Is ssl needs
-}
+	bool:IsRequireSSL,		// Is ssl required
+};
 
-new Array:g_Services;
-new g_CurServiceIndex;
+new Array:g_Sources;
+new g_CurSourceIndex;
 
-enum _:pCvars
-{
+enum _:pCvars {
 	CvarCanOverride,
 	CvarCanDeleteSource,
 	CvarMapsFile,
@@ -63,14 +66,13 @@ enum _:pCvars
 
 new g_Cvars[pCvars];
 
-public plugin_init()
-{
+public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	register_clcmd("say", "ClCmd_Say");
+	register_clcmd("say", "hook_Say");
 
 	g_Cvars[CvarCanOverride] = register_cvar("kz_mapdl_override", "1");																	 ///// kz_mapdl_override <0/1>  0 - keep files if exists, 1 - override all existing files
-	g_Cvars[CvarCanDeleteSource] = register_cvar("kz_mapdl_delete_source", "1");   														 ///// kz_mapdl_delete_source <0/1>  0 - save rar fiel, 1 - delete rar file
+	g_Cvars[CvarCanDeleteSource] = register_cvar("kz_mapdl_delete_source", "1");   														 ///// kz_mapdl_delete_source <0/1>  0 - save rar file, 1 - delete rar file
 	g_Cvars[CvarMapsFile] = register_cvar("kz_mapdl_maps_file", "addons/amxmodx/configs/mapdownloader/maps.ini");        				 ///// file must exist !!! file for mapcycle or mapmanager *.ini, append line with mapname
 	g_Cvars[CvarPrefix] = register_cvar("kz_madlp_chat_prefix", "[KZ_MAPDL]");
 
@@ -81,12 +83,12 @@ public plugin_cfg()
 {
 	new szConfigPath[256];
 
-	if(!dir_exists(config_dir))
+	if (!dir_exists(config_dir))
 		mkdir(config_dir);
 	
 	formatex(szConfigPath, charsmax(szConfigPath), "%s/kz_mapdl.cfg", config_dir);
         
-	if(file_exists(szConfigPath))
+	if (file_exists(szConfigPath))
 	{
 		server_cmd("exec %s",szConfigPath);
 		server_exec();
@@ -95,11 +97,11 @@ public plugin_cfg()
 	// remove temporary files
 	rmdir_recursive(temp_dir);
 
-	if(!dir_exists(kzdl_dir))
+	if (!dir_exists(kzdl_dir))
 		mkdir(kzdl_dir); 
-	if(!dir_exists(archive_dir))
+	if (!dir_exists(archive_dir))
 		mkdir(archive_dir); 
-	if(!dir_exists(temp_dir))
+	if (!dir_exists(temp_dir))
 		mkdir(temp_dir);
 
 	// load map list
@@ -111,80 +113,80 @@ public plugin_cfg()
 
 public InitServices()
 {
-	g_Services = ArrayCreate(ServiceStruct);
+	g_Sources = ArrayCreate(SourceStruct);
 
-	ArrayPushArray(g_Services, InitXJ());
-	ArrayPushArray(g_Services, InitCosy());
-	ArrayPushArray(g_Services, InitKZRush());
+	ArrayPushArray(g_Sources, InitXJ());
+	ArrayPushArray(g_Sources, InitCosy());
+	ArrayPushArray(g_Sources, InitKZRush());
 }
 
 public InitXJ()
 {
-	new data[ServiceStruct];
+	new data[SourceStruct];
 
 	data[ServiceName] = 		"Xtreme Jumps";
 	data[CheckPath] = 			"http://files.xtreme-jumps.eu/maps/";
 	data[DownloadPath] = 		"http://files.xtreme-jumps.eu/maps/";
 	data[FileExtension] = 		".rar";
-	data[IsNeedSSL] = 			false;
+	data[IsRequireSSL] = 			false;
 
 	return data;
 }
 
 public InitCosy()
 {
-	new data[ServiceStruct];
+	new data[SourceStruct];
 
 	data[ServiceName] = 		"Cosy Climbing";
 	data[CheckPath] = 			"https://cosy-climbing.net/files/maps/";
 	data[DownloadPath] = 		"https://cosy-climbing.net/files/maps/";
 	data[FileExtension] = 		".rar";
-	data[IsNeedSSL] = 			true;
+	data[IsRequireSSL] = 			true;
 
 	return data;
 }
 
 public InitKZRush()
 {
-	new data[ServiceStruct];
+	new data[SourceStruct];
 
 	data[ServiceName] = 		"KZ Rush";
 	data[CheckPath] = 			"https://kz-rush.ru/download/map/cs16/";
 	data[DownloadPath] = 		"https://kz-rush.ru/download/map/cs16/";
 	data[FileExtension] = 		"";
-	data[IsNeedSSL] = 			true;
+	data[IsRequireSSL] = 			true;
 
 	return data;
 }
 
-public ClCmd_Say(id)
+public hook_Say(id)
 {
 	new szMsg[192];
 	read_args(szMsg, charsmax(szMsg));
 	remove_quotes(szMsg);
 	trim(szMsg);
 	
-	if(equal(szMsg, "") || szMsg[0] == 0x40) // '@'
+	if (equal(szMsg, "") || szMsg[0] == 0x40) // '@'
 	{
 		return PLUGIN_HANDLED_MAIN;
 	}
 	
-	if(equali(szMsg, "/dl", 3))
+	if (equali(szMsg, "/dl", 3))
 	{
-		if(!(get_user_flags(id) & KZMAPDL_LEVEL)) {
+		if (!(get_user_flags(id) & KZMAPDL_LEVEL)) {
 			client_print( id, print_chat, "%s* You have no access to this command", g_szPrefix );
 			return PLUGIN_HANDLED;
 		}
 
 		parse(szMsg, szMsg, 3, g_szDlMap, charsmax(g_szDlMap));
 
-		if(g_szDlMap[0])
+		if (g_szDlMap[0])
 		{
-			if(equali(g_szDlMap, g_szCurrentMap) || in_maps_array(g_szDlMap))
+			if (equali(g_szDlMap, g_szCurrentMap) || in_maps_array(g_szDlMap))
 				client_print( id, print_chat, "%s %s exists in maps folder", g_szPrefix, g_szDlMap );
-			else if(g_State != State_NoTask)
+			else if (g_State != State_NoTask)
 				Show_DownloadMenu(id);
-			else if(!is_empty_str(g_szDlMap))
+			else if (!is_empty_str(g_szDlMap))
 				Show_DownloadMenu(id);
 			return PLUGIN_HANDLED;
 		}
@@ -194,7 +196,7 @@ public ClCmd_Say(id)
 
 public Show_DownloadMenu(id)
 {
-	if(g_State == State_NoTask)
+	if (g_State == State_NoTask)
 	{
 		g_State = State_Checking;
 		Start_Find(id, true);
@@ -207,8 +209,8 @@ public Show_DownloadMenu(id)
 		case State_Checking: 	formatex(szMsg, charsmax(szMsg), "\yTrying to find %s...", g_szDlMap);
 		case State_Found:
 		{
-			new serviceData[ServiceStruct];
-			ArrayGetArray(g_Services, g_CurServiceIndex, serviceData);
+			new serviceData[SourceStruct];
+			ArrayGetArray(g_Sources, g_CurSourceIndex, serviceData);
 			formatex(szMsg, charsmax(szMsg), "\y%s was found on %s. Download it?", 
 				g_szDlMap, serviceData[ServiceName]);
 		}
@@ -230,7 +232,7 @@ public Show_DownloadMenu(id)
 		}
 		case State_Finished, State_Failed, State_NotFound:
 		{
-			if(g_State == State_Finished)
+			if (g_State == State_Finished)
 			{
 				formatex(szMsg, charsmax(szMsg), "Change to %s", g_szDlMap);
 				menu_additem(iMenu, szMsg, "4", 0);
@@ -253,7 +255,7 @@ public Show_DownloadMenu(id)
 
 public DLMenu_Handler(id, menu, item)
 {
-	if(item == MENU_EXIT)
+	if (item == MENU_EXIT)
 	{
 		menu_destroy(menu);
 		
@@ -268,7 +270,7 @@ public DLMenu_Handler(id, menu, item)
 	{
 		case 1:
 		{
-			if(g_State == State_Found)
+			if (g_State == State_Found)
 			{
 				g_State = State_Downloading;
 				Show_DownloadMenu(id);
@@ -281,7 +283,7 @@ public DLMenu_Handler(id, menu, item)
 		}
 		case 2:
 		{
-			if(g_State == State_Found)
+			if (g_State == State_Found)
 				g_State = State_NoTask;
 
 			g_szDlMap = "";
@@ -306,20 +308,20 @@ public DLMenu_Handler(id, menu, item)
 
 stock Start_Find(id, isFirst = false)
 {
-	if(isFirst)
-		g_CurServiceIndex = 0;
+	if (isFirst)
+		g_CurSourceIndex = 0;
 	else
-		g_CurServiceIndex++;
+		g_CurSourceIndex++;
 
-	if(g_CurServiceIndex == ArraySize(g_Services))
+	if (g_CurSourceIndex == ArraySize(g_Sources))
 	{
 		g_State = State_NotFound;
 		Show_DownloadMenu(id);
 		return;
 	}
 
-	new serviceData[ServiceStruct];
-	ArrayGetArray(g_Services, g_CurServiceIndex, serviceData);
+	new serviceData[SourceStruct];
+	ArrayGetArray(g_Sources, g_CurSourceIndex, serviceData);
 
 	new szPath[256];
 
@@ -328,13 +330,13 @@ stock Start_Find(id, isFirst = false)
 
 	new CURL:hCurl;
 
-	if((hCurl = curl_easy_init()))
+	if ((hCurl = curl_easy_init()))
 	{
 		curl_easy_setopt(hCurl, CURLOPT_URL, szPath);
 		curl_easy_setopt(hCurl, CURLOPT_NOBODY, 1);
 		curl_easy_setopt(hCurl, CURLOPT_TIMEOUT, 3);
 
-		if(serviceData[IsNeedSSL])
+		if (serviceData[IsRequireSSL])
 		{
 			curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
 			curl_easy_setopt(hCurl, CURLOPT_CAINFO, "cstrike/addons/amxmodx/data/cert/cacert.pem");
@@ -366,10 +368,10 @@ stock Start_Find(id, isFirst = false)
 
 	curl_easy_cleanup(hCurl);
 
-	if(g_State == State_NoTask)
+	if (g_State == State_NoTask)
 		return;
 
-	if(iCode != CURLE_OK || iResponceCode >= 400)
+	if (iCode != CURLE_OK || iResponceCode >= 400)
 		Start_Find(id);
 	else
 	{
@@ -390,8 +392,8 @@ stock Start_Find(id, isFirst = false)
 
 public Start_Download(id)
 {
-	new serviceData[ServiceStruct];
-	ArrayGetArray(g_Services, g_CurServiceIndex, serviceData);
+	new serviceData[SourceStruct];
+	ArrayGetArray(g_Sources, g_CurSourceIndex, serviceData);
 
 	new szPath[256];
 
@@ -400,7 +402,7 @@ public Start_Download(id)
 
 	new CURL:hCurl;
 
-	if((hCurl = curl_easy_init()))
+	if ((hCurl = curl_easy_init()))
 	{
 		// setup file
 		formatex(g_szDlFile, charsmax(g_szDlFile), "%s/%s.txt", archive_dir, g_szDlMap);
@@ -414,7 +416,7 @@ public Start_Download(id)
 		curl_easy_setopt(hCurl, CURLOPT_URL, szPath);
 		curl_easy_setopt(hCurl, CURLOPT_FAILONERROR, 1);
 
-		if(serviceData[IsNeedSSL])
+		if (serviceData[IsRequireSSL])
 		{
 			curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
 			curl_easy_setopt(hCurl, CURLOPT_CAINFO, "cstrike/addons/amxmodx/data/cert/cacert.pem");
@@ -446,7 +448,7 @@ public Start_Download(id)
 	new iResponceCode;
 	curl_easy_getinfo(hCurl, CURLINFO_RESPONSE_CODE, iResponceCode);
 
-	if(iResponceCode >= 300 && iResponceCode <= 302)
+	if (iResponceCode >= 300 && iResponceCode <= 302)
 	{
 		new szRedirect[256];
 		curl_easy_getinfo(hCurl, CURLINFO_REDIRECT_URL, szRedirect, charsmax(szRedirect));
@@ -464,10 +466,10 @@ public Start_Download(id)
 	curl_easy_cleanup(hCurl);
 	fclose(g_hDlFile);
 
-	if(g_State == State_NoTask)
+	if (g_State == State_NoTask)
 		return;
 
-	if(iCode != CURLE_OK)
+	if (iCode != CURLE_OK)
 	{
 		#if defined _DEBUG
 		server_print("[Error] http code: %d", iResponceCode);
@@ -492,7 +494,7 @@ public OnArchiveComplete(id)
 	server_print("Trying to unarchive %s...", szArchivePath);
 	#endif
 
-	if(g_State == State_NoTask)
+	if (g_State == State_NoTask)
 		return;
 
 	AA_Unarchive(szArchivePath, temp_dir, "@OnComplete", id);
@@ -500,7 +502,7 @@ public OnArchiveComplete(id)
 
 @OnComplete(id, iError)
 {
-	if(iError != AA_NO_ERROR)
+	if (iError != AA_NO_ERROR)
 	{
 		#if defined _DEBUG
 		server_print("Failed to unpack. Error code: %d", iError);
@@ -515,20 +517,20 @@ public OnArchiveComplete(id)
 		server_print("Done. Moving files to the directory.");
 		#endif
 
-		if(g_State == State_NoTask)
+		if (g_State == State_NoTask)
 			return;
 
 		g_State = State_Finished;
 		Show_DownloadMenu(id);
 
-		if(get_pcvar_num(g_Cvars[CvarCanDeleteSource]))
+		if (get_pcvar_num(g_Cvars[CvarCanDeleteSource]))
 			delete_file(g_szDlFile);
 
 		new strmapsfile[64];
 
 		get_pcvar_string(g_Cvars[CvarMapsFile], strmapsfile, 63);
 
-		if(file_exists(strmapsfile))
+		if (file_exists(strmapsfile))
 			write_file(strmapsfile, g_szDlMap, -1);
 		
 		MoveFiles_Recursive(temp_dir);
@@ -559,11 +561,11 @@ public MoveFiles_Recursive( work_dir[] )
 	new szFileName[64];
 	new hDir = open_dir(work_dir, szFileName, charsmax(szFileName));
 
-	if(!hDir)
+	if (!hDir)
 	{
 		new file = fopen(work_dir, "rb");
 
-		if(file)
+		if (file)
 			fclose(file);
 
 		return;
@@ -571,7 +573,7 @@ public MoveFiles_Recursive( work_dir[] )
 
 	do
 	{
-		if(szFileName[0] != '.' && szFileName[1] != '.')
+		if (szFileName[0] != '.' && szFileName[1] != '.')
 		{
 			new szDest[512], szDest1[512], copyfile[512], copydir[512]; 
 
@@ -581,15 +583,15 @@ public MoveFiles_Recursive( work_dir[] )
 		//	server_print("%s", szDest)
 			///wad files
 			
-			if(containi(szDest, ".wad") != -1 )
+			if (containi(szDest, ".wad") != -1 )
 			{
 				//filename
 				format(copyfile, 511, "%s/%s",root_dir, szFileName );
-				if(get_pcvar_num(g_Cvars[CvarCanOverride])) {
+				if (get_pcvar_num(g_Cvars[CvarCanOverride])) {
 					fmove(szDest, copyfile);
 				}
 				else {
-					if(!file_exists(copyfile)) {
+					if (!file_exists(copyfile)) {
 						fmove(szDest, copyfile);
 					}
 				}
@@ -598,7 +600,7 @@ public MoveFiles_Recursive( work_dir[] )
 			
 			///maps
 			
-			if((containi(szDest, ".bsp") != -1 || containi(szDest, ".res") != -1 || containi(szDest, ".txt") != -1 || containi(szDest, ".nav") != -1 ||  containi(szDest, "maps/") != -1) && (containi(szDest, "taskfiledownload") == -1 ))
+			if ((containi(szDest, ".bsp") != -1 || containi(szDest, ".res") != -1 || containi(szDest, ".txt") != -1 || containi(szDest, ".nav") != -1 ||  containi(szDest, "maps/") != -1) && (containi(szDest, "taskfiledownload") == -1 ))
 			{
 				new iPos = strfind(szDest, "/");
 				new LastPos = iPos;
@@ -619,30 +621,30 @@ public MoveFiles_Recursive( work_dir[] )
 			
 			///gfx
 			
-			if(((containi(szDest, ".tga") != -1 || containi(szDest, ".bmp") != -1 || containi(szDest, ".lst") != -1) || containi(szDest, "gfx/") != -1))
+			if (((containi(szDest, ".tga") != -1 || containi(szDest, ".bmp") != -1 || containi(szDest, ".lst") != -1) || containi(szDest, "gfx/") != -1))
 			{
 				//foldername
-				if(containi(szFileName, ".") == -1) {
+				if (containi(szFileName, ".") == -1) {
 					new iPos = strfind(szDest, "gfx/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copydir, 511, "%s/%s",root_dir, szDest1 );
-					if(!dir_exists(copydir)){
+					if (!dir_exists(copydir)){
 						mkdir(copydir);
 						
 					}
 					//server_print("szdest1 - %s and copydir - %s", szDest1, copydir);
 				}
 				//filename
-				if(containi(szFileName, ".") != -1) {
+				if (containi(szFileName, ".") != -1) {
 					new iPos = strfind(szDest, "gfx/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copyfile, 511, "%s/%s",root_dir, szDest1 );
 					
-					if(get_pcvar_num(g_Cvars[CvarCanOverride])) {
+					if (get_pcvar_num(g_Cvars[CvarCanOverride])) {
 						fmove(szDest, copyfile);
 					}
 					else {
-						if(!file_exists(copyfile)){
+						if (!file_exists(copyfile)){
 							fmove(szDest, copyfile);
 						}
 					}
@@ -652,20 +654,20 @@ public MoveFiles_Recursive( work_dir[] )
 			
 			///sound
 			
-			if((containi(szDest, ".wav") != -1 || containi(szDest, "sound/") != -1 )) 
+			if ((containi(szDest, ".wav") != -1 || containi(szDest, "sound/") != -1 )) 
 			{
 				//foldername
-				if(containi(szFileName, ".") == -1) {
+				if (containi(szFileName, ".") == -1) {
 					new iPos = strfind(szDest, "sound/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copydir, 511, "%s/%s",root_dir, szDest1 );
-					if(!dir_exists(copydir)){
+					if (!dir_exists(copydir)){
 						mkdir(copydir);
 					}
 					//server_print("szdest - %s and copydir - %s", szDest, copydir);
 				}
 				//filename
-				if(containi(szFileName, ".wav") != -1) {
+				if (containi(szFileName, ".wav") != -1) {
 					new iPos = strfind(szDest, "sound/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copyfile, 511, "%s/%s",root_dir, szDest1 );
@@ -675,29 +677,29 @@ public MoveFiles_Recursive( work_dir[] )
 			}
 			
 			///models
-			if((containi(szDest, ".mdl") != -1 || containi(szDest, "models/") != -1))
+			if ((containi(szDest, ".mdl") != -1 || containi(szDest, "models/") != -1))
 			{
 				//foldername
-				if(containi(szFileName, ".") == -1) {
+				if (containi(szFileName, ".") == -1) {
 					new iPos = strfind(szDest, "models/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copydir, 511, "%s/%s",root_dir, szDest1 );
-					if(!dir_exists(copydir)){
+					if (!dir_exists(copydir)){
 						mkdir(copydir);
 					}
 					//server_print("szdest - %s and copydir - %s", szDest, copydir);
 				}
 				//filename
-				if(containi(szFileName, ".mdl") != -1) {
+				if (containi(szFileName, ".mdl") != -1) {
 					new iPos = strfind(szDest, "models/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copyfile, 511, "%s/%s",root_dir, szDest1 );
 					
-					if(get_pcvar_num(g_Cvars[CvarCanOverride])) {
+					if (get_pcvar_num(g_Cvars[CvarCanOverride])) {
 						fmove(szDest, copyfile);
 					}
 					else {
-						if(!file_exists(copyfile)){
+						if (!file_exists(copyfile)){
 							fmove(szDest, copyfile);
 						}
 					}
@@ -706,29 +708,29 @@ public MoveFiles_Recursive( work_dir[] )
 			}
 
 			///sprites
-			if((containi(szDest, ".spr") != -1 || containi(szDest, "sprites/") != -1))
+			if ((containi(szDest, ".spr") != -1 || containi(szDest, "sprites/") != -1))
 			{
 				//foldername
-				if(containi(szFileName, ".") == -1) {
+				if (containi(szFileName, ".") == -1) {
 					new iPos = strfind(szDest, "sprites/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copydir, 511, "%s/%s",root_dir, szDest1 );
-					if(!dir_exists(copydir)){
+					if (!dir_exists(copydir)){
 						mkdir(copydir);
 					}
 					//server_print("szdest - %s and copydir - %s", szDest, copydir);
 				}
 				//filename
-				if(containi(szFileName, ".spr") != -1) {
+				if (containi(szFileName, ".spr") != -1) {
 					new iPos = strfind(szDest, "sprites/");
 					substr(szDest1,511, szDest, iPos, 0);
 					format(copyfile, 511, "%s/%s",root_dir, szDest1 );
 					
-					if(get_pcvar_num(g_Cvars[CvarCanOverride])) {
+					if (get_pcvar_num(g_Cvars[CvarCanOverride])) {
 						fmove(szDest, copyfile);
 					}
 					else {
-						if(!file_exists(copyfile)){
+						if (!file_exists(copyfile)){
 							fmove(szDest, copyfile);
 						}
 					}
@@ -749,7 +751,7 @@ stock fmove(const read_path[], const dest_path[])
 	static buffer[256];
 	static readsize;
 	new fp_read = fopen(read_path, "rb");
-	if(file_exists(dest_path)){
+	if (file_exists(dest_path)){
 		delete_file(dest_path);
 	}
 	new fp_write = fopen(dest_path, "wb");
@@ -813,7 +815,7 @@ public ExplodeString( p_szOutput[][], p_nMax, p_nSize, p_szInput[], p_szDelimite
 stock is_empty_str(const str[], fl_spacecheck = false)
 {
 	new i = 0;
-	if(fl_spacecheck)
+	if (fl_spacecheck)
 		while(str[i] == 32)
 			i++;
 	return !str[i];
@@ -827,15 +829,15 @@ public Load_MapList()
 	new DirName[] = "maps";
 	iDir = open_dir(DirName, szFileName, charsmax(szFileName));
 	
-	if(iDir)
+	if (iDir)
 	{
 		while(next_file(iDir, szFileName, charsmax(szFileName)))
 		{
 			iLen = strlen(szFileName) - 4;
 			
-			if(iLen < 0) continue;
+			if (iLen < 0) continue;
 			
-			if(equali(szFileName[iLen], ".bsp") && !equali(szFileName, g_szCurrentMap))
+			if (equali(szFileName[iLen], ".bsp") && !equali(szFileName, g_szCurrentMap))
 			{
 				szFileName[iLen] = '^0';
 				
@@ -846,7 +848,7 @@ public Load_MapList()
 		}
 		close_dir(iDir);
 	}
-	if(!g_iLoadMaps)
+	if (!g_iLoadMaps)
 	{
 		set_fail_state("LOAD_MAPS: Nothing loaded");
 		return;
@@ -860,7 +862,7 @@ bool:in_maps_array(map[])
 	for(new i = 0; i < iMax; i++)
 	{
 		ArrayGetString(g_Maps, i, szMap, charsmax(szMap));
-		if(equali(szMap, map))
+		if (equali(szMap, map))
 		{
 			return true;
 		}
@@ -872,10 +874,10 @@ public rmdir_recursive(temp_dir[])
 {
 	new szFileName[64], szDest[512];
 	new hDir = open_dir(temp_dir, szFileName, charsmax(szFileName));
-	if(!hDir)
+	if (!hDir)
 	{
 		new file = fopen(temp_dir, "rb");
-		if(file)
+		if (file)
 		{
 			fclose(file);
 		}
@@ -883,11 +885,11 @@ public rmdir_recursive(temp_dir[])
 	}
 	do
 	{
-		if(szFileName[0] != '.' && szFileName[1] != '.')
+		if (szFileName[0] != '.' && szFileName[1] != '.')
 		{
 			format(szDest, 511, "%s/%s", temp_dir, szFileName);
 			
-			if(!dir_exists(szDest)) 
+			if (!dir_exists(szDest)) 
 			{
 				delete_file(szDest);				
 			}

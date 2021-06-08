@@ -95,9 +95,6 @@ enum _:eForwards {
 
 	fwd_StartTeleportPre,
 	fwd_StartTeleportPost,
-
-	fwd_HookDetectionPre,
-	fwd_HookDetectionPost,
 };
 
 new g_Forwards[eForwards];
@@ -673,17 +670,10 @@ public cmd_Pause(id) {
 }
 
 public cmd_DetectHook(id) {
-	new iRet;
-	ExecuteForward(g_Forwards[fwd_HookDetectionPre], iRet, id);
-
-	if (iRet == KZ_SUPERCEDE) return;
-
 	if (is_user_alive(id) && g_UserData[id][ud_TimerState] == TIMER_ENABLED)
 		kz_set_pause(id);
 
 	g_UserData[id][ud_isHookEnable] = true;
-
-	ExecuteForward(g_Forwards[fwd_HookDetectionPost], _, id);
 }
 
 public cmd_DetectHook_Disable(id) {
@@ -924,11 +914,8 @@ public timer_handler() {
 				UTIL_FormatTime(get_gametime() - g_UserData[id][ud_StartTime],
 				 	szTime, charsmax(szTime), g_UserData[id][ud_TimerData][timer_MS]);
 
-				if (iMin * 60 + iSec < 2)
-					formatex(szMsg, charsmax(szMsg), "Timer started. Go Go Go!!!");
-				else
-					formatex(szMsg, charsmax(szMsg), "Time: %s | CPs: %d | TPs: %d",
-						szTime, g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum]);
+				formatex(szMsg, charsmax(szMsg), "Time: %s | CPs: %d | TPs: %d",
+					szTime, g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum]);
 			}
 			case TIMER_PAUSED: {
 				UTIL_FormatTime(g_UserData[id][ud_PauseTime] - g_UserData[id][ud_StartTime],

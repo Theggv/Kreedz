@@ -1,7 +1,7 @@
 {
-  "name": "halloween-mod",
-  "version": "6.3.0",
-  "description": "Halloween Mod",
+  "name": "kreedz",
+  "version": "1.0.0",
+  "description": "Kreedz Mod",
   "scripts": {
     "gulp": "gulp",
     "build": "gulp",

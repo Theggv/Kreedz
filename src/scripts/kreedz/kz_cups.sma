@@ -24,6 +24,7 @@
 */
 
 #include <amxmodx>
+#include <fun>
 #include <reapi>
 #include <xs>
 
@@ -1163,6 +1164,8 @@ PreStartLobby(iLobby)
 			set_entvar(id, var_origin, vOrigin);
 			set_entvar(id, var_flags, get_entvar(id, var_flags) | FL_FROZEN);
 			amxclient_cmd(id, "stop");
+
+			set_user_noclip(id, 0);
 
 			g_Cups[iLobby][cup_Time][id] = 0.0;
 		}

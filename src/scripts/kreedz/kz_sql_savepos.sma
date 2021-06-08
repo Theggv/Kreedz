@@ -1,7 +1,16 @@
+/*
+*	Changelog:
+*	
+*	08.06.2021: 
+*		- Fixed giving weapons on LoadPos
+*	
+*/
+
 #include <amxmodx>
 #include <cstrike>
 #include <fakemeta>
 #include <sqlx>
+#include <hamsandwich>
 #include <reapi>
 
 #include <kreedz/kz_api>
@@ -35,15 +44,41 @@ public plugin_init()
 	kz_register_cmd("saverun", "cmd_SavePos");
 	kz_register_cmd("loadpos", "cmd_LoadPos");
 	kz_register_cmd("loadrun", "cmd_LoadPos");
+
+	RegisterHam(Ham_Spawn, "player", "ham_Spawn_Post", 1);
+
+	for (new i; i <= MAX_PLAYERS; ++i)
+		g_UserData[i][ud_Weapon] = -1;
+}
+
+public ham_Spawn_Post(id) {
+	if (g_UserData[id][ud_Weapon] != -1 &&
+		g_UserData[id][ud_Weapon] != 6) {
+
+		// Give user weapons if weapon was saved
+		amxclient_cmd(id, "weapons");
+
+		switch (g_UserData[id][ud_Weapon]) {
+			case 0: amxclient_cmd(id, "weapon_awp");
+			case 1: amxclient_cmd(id, "weapon_m249");
+			case 2: amxclient_cmd(id, "weapon_m4a1");
+			case 3: amxclient_cmd(id, "weapon_sg552");
+			case 4: amxclient_cmd(id, "weapon_famas");
+			case 5: amxclient_cmd(id, "weapon_p90");
+			case 7: amxclient_cmd(id, "weapon_scout"); 
+		}
+	}
 }
 
 public client_disconnected(id)
 {
 	if(kz_get_timer_state(id) != TIMER_DISABLED)
 		SavePos(id);
+
+	g_UserData[id][ud_Weapon] = -1;
 }
 
-public kz_timer_started(id)
+public kz_timer_start_post(id)
 {
 	if(g_UserData[id][ud_hasSavedRun])
 	{
@@ -60,9 +95,9 @@ public kz_timer_started(id)
 	}
 }
 
-public kz_timer_finished(id)
+public kz_timer_finish_post(id)
 {
-	kz_timer_started(id);
+	kz_timer_start_post(id);
 }
 
 public kz_sql_initialized()
@@ -150,8 +185,19 @@ LoadRun(id)
 
 	kz_set_min_rank(id, g_UserData[id][ud_Weapon]);
 
-	if(g_UserData[id][ud_Weapon] != 6)
+	if(g_UserData[id][ud_Weapon] != 6) {
 		amxclient_cmd(id, "weapons");
+
+		switch (g_UserData[id][ud_Weapon]) {
+			case 0: amxclient_cmd(id, "weapon_awp");
+			case 1: amxclient_cmd(id, "weapon_m249");
+			case 2: amxclient_cmd(id, "weapon_m4a1");
+			case 3: amxclient_cmd(id, "weapon_sg552");
+			case 4: amxclient_cmd(id, "weapon_famas");
+			case 5: amxclient_cmd(id, "weapon_p90");
+			case 7: amxclient_cmd(id, "weapon_scout"); 
+		}
+	}
 }
 
 public cmd_SavePos(id)

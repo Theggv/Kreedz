@@ -493,6 +493,9 @@ public Touch_Block(iBlock, id)
 
 	if( flTime - g_flFirstTouch[id] > 0.25 ) // 0.3 == exploit on cg_cbblebhop oO
 	{
+		// fix
+		// 0.670 - max jump time ?
+		// if( flTime - g_flFirstTouch[id] > 0.25 + 0.67 )
 		if( flTime - g_flFirstTouch[id] > 0.7 )
 		{
 			g_flFirstTouch[id] = flTime;

@@ -61,7 +61,7 @@ public plugin_cfg()
 	SQL_Tuple = SQL_MakeDbTuple(g_ConnInfo[eHostName], g_ConnInfo[eUser], g_ConnInfo[ePassWord], g_ConnInfo[eDataBase]);
 	SQL_Connection = SQL_Connect(SQL_Tuple, iError, szError, charsmax(szError));
 
-	if(SQL_Connection == Empty_Handle)
+	if (SQL_Connection == Empty_Handle)
 	{
 		UTIL_LogToFile(MYSQL_LOG, "ERROR", "plugin_cfg", "[%d] %s", iError, szError);
 		set_fail_state(szError);
@@ -109,7 +109,7 @@ public Handle:native_get_tuple()
 
 public init_tables()
 {
-	g_NumInitQueries = 8;
+	g_NumInitQueries = 6;
 
 	new szQuery[2048];
 
@@ -181,14 +181,6 @@ public init_tables()
 	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
 
 	formatex(szQuery, charsmax(szQuery), "\
-		CREATE UNIQUE INDEX IF NOT EXISTS uid_mapid ON kz_protop(uid, mapid); \
-		CREATE UNIQUE INDEX IF NOT EXISTS uid_mapid ON kz_nubtop(uid, mapid); \
-		CREATE UNIQUE INDEX IF NOT EXISTS uid_mapid_wpn ON kz_weapontop(uid, mapid, weapon); \
-		");
-
-	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
-
-	formatex(szQuery, charsmax(szQuery), "\
 	CREATE TABLE IF NOT EXISTS `kz_savedruns` (\
 		`uid` int(11) NOT NULL,\
 		`mapid` int(11) NOT NULL,\
@@ -236,17 +228,12 @@ public init_tables()
 		`y` int(11) NOT NULL DEFAULT %d, \
 		`is_dhud` int(11) NOT NULL DEFAULT 0, \
 		`type` int(11) NOT NULL DEFAULT 0, \
+		`is_ms` int(11) NOT NULL DEFAULT 0, \
 		FOREIGN KEY (uid) REFERENCES kz_uid(id) \
 			ON DELETE CASCADE \
 			ON UPDATE CASCADE \
 		) DEFAULT CHARSET utf8; \
 		", 0.02, 0.2);
-
-	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
-
-	formatex(szQuery, charsmax(szQuery), "\
-	ALTER TABLE `kz_settings_timer` ADD COLUMN IF NOT EXISTS `is_ms` int(11) NOT NULL DEFAULT 0\
-	");
 
 	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
 }
@@ -266,10 +253,10 @@ public init_tables()
 
 	static i = 0;
 
-	if(!i++)
+	if (!i++)
 		init_map();
 
-	if(i == g_NumInitQueries)
+	if (i == g_NumInitQueries)
 	{
 		new iRet;
 		ExecuteForward(g_Forwards[fwd_Initialized], iRet);
@@ -306,7 +293,7 @@ public init_map()
 		}
 	}
 
-	if(SQL_NumResults(hQuery) <= 0)
+	if (SQL_NumResults(hQuery) <= 0)
 	{
 		new szMapName[64], szQuery[512];
 		get_mapname(szMapName, charsmax(szMapName));
@@ -329,7 +316,7 @@ public init_map()
 
 public client_putinserver(id)
 {
-	if(is_user_bot(id))
+	if (is_user_bot(id))
 		return;
 	
 	new szQuery[512], szAuth[37], szData[5];
@@ -378,7 +365,7 @@ public client_putinserver(id)
 	get_user_authid(id, szAuth, charsmax(szAuth));
 	
 	// no results -> player connected for first time
-	if(SQL_NumResults(hQuery) <= 0)
+	if (SQL_NumResults(hQuery) <= 0)
 	{
 		// format query
 		formatex(szQuery, charsmax(szQuery), "\
@@ -465,19 +452,19 @@ public cmd_UpdateEncoding()
 
 LoadConfig(szFileName[])
 {
-	if(!file_exists(szFileName))
+	if (!file_exists(szFileName))
 		return;
 	
 	new szData[256];
 	new hFile = fopen(szFileName, "rt");
 
-	while(hFile && !feof(hFile))
+	while (hFile && !feof(hFile))
 	{
 		fgets(hFile, szData, charsmax(szData));
 		trim(szData);
 		
 		// Skip Comment and Empty Lines
-		if(containi(szData, ";") > -1 || equal(szData, "") || equal(szData, "//", 2))
+		if (containi(szData, ";") > -1 || equal(szData, "") || equal(szData, "//", 2))
 			continue;
 		
 		static szKey[64], szValue[64];
@@ -488,40 +475,17 @@ LoadConfig(szFileName[])
 		trim(szValue);
 		remove_quotes(szValue);
 
-		if(equal(szKey, "kz_sql_hostname"))
+		if (equal(szKey, "kz_sql_hostname"))
 			copy(g_ConnInfo[eHostName], charsmax(g_ConnInfo[eHostName]), szValue);
-		else if(equal(szKey, "kz_sql_username"))
+		else if (equal(szKey, "kz_sql_username"))
 			copy(g_ConnInfo[eUser], charsmax(g_ConnInfo[eUser]), szValue);
-		else if(equal(szKey, "kz_sql_password"))
+		else if (equal(szKey, "kz_sql_password"))
 			copy(g_ConnInfo[ePassWord], charsmax(g_ConnInfo[ePassWord]), szValue);
-		else if(equal(szKey, "kz_sql_database"))
+		else if (equal(szKey, "kz_sql_database"))
 			copy(g_ConnInfo[eDataBase], charsmax(g_ConnInfo[eDataBase]), szValue);
 	}
 	
-	if(hFile)
-	{
+	if (hFile) {
 		fclose(hFile);
 	}
 }
-
-/*
-
-// template
-public FuncAsync(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			log_to_file(MYSQL_LOG, "^n[ERROR FuncAsync %d] %s (%.2f sec)^n", iError, szError, fQueryTime);
-			SQL_FreeHandle(hQuery);
-			
-			return PLUGIN_HANDLED;
-		}
-	}
-	
-	SQL_FreeHandle(hQuery);
-	
-	return PLUGIN_HANDLED;
-}
-*/
