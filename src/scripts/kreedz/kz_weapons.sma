@@ -52,6 +52,8 @@ public plugin_init()
 
 	RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "HookResetMaxSpeed", 1);
 
+	RegisterHam(Ham_Spawn, "player", "ham_Spawn_Post", 1);
+
 	register_dictionary("kz_mode.txt");
 }
 
@@ -80,7 +82,9 @@ public native_set_min_rank(id, value)
 	g_UserData[id][ud_MinRank] = value;
 	g_UserData[id][ud_TemporaryRank] = value;
 
-	// client_print(id, print_chat, "[DEBUG] Min rank: %d", value);
+	if (is_user_alive(id)) ham_Spawn_Post(id);
+
+	client_print(id, print_chat, "[DEBUG] Min rank: %d", value);
 }
 
 public native_get_weapon_name(iRank, szWeapon[], iLen)
@@ -150,17 +154,48 @@ public cmd_M4A1(id)
 
 public kz_timer_start_post(id)
 {
-	native_set_min_rank(id, get_min_rank(id));
+	g_UserData[id][ud_MinRank] = get_min_rank(id);
+	g_UserData[id][ud_TemporaryRank] = g_UserData[id][ud_MinRank];
+}
+
+public kz_timer_pause_post(id) {
+	if (kz_get_timer_state(id) != TIMER_ENABLED) 
+		return;
+	
+	// Update weapon after pause
+	HookResetMaxSpeed(id);
 }
 
 public HookResetMaxSpeed(id)
 {
+	if (kz_get_timer_state(id) != TIMER_ENABLED) 
+		return HC_CONTINUE;
+
 	new iRank = get_min_rank(id);
 
 	if (iRank > g_UserData[id][ud_MinRank])
 		g_UserData[id][ud_TemporaryRank] = iRank;
 
 	return HC_CONTINUE;
+}
+
+public ham_Spawn_Post(id) {
+	if (g_UserData[id][ud_MinRank] != -1 &&
+		g_UserData[id][ud_MinRank] != 6) {
+
+		// Give user weapons if weapon was saved
+		amxclient_cmd(id, "weapons");
+
+		switch (g_UserData[id][ud_MinRank]) {
+			case 0: amxclient_cmd(id, "weapon_awp");
+			case 1: amxclient_cmd(id, "weapon_m249");
+			case 2: amxclient_cmd(id, "weapon_m4a1");
+			case 3: amxclient_cmd(id, "weapon_sg552");
+			case 4: amxclient_cmd(id, "weapon_famas");
+			case 5: amxclient_cmd(id, "weapon_p90");
+			case 7: amxclient_cmd(id, "weapon_scout"); 
+		}
+	}
 }
 
 // deprecated
@@ -205,8 +240,9 @@ public ham_Jump_Post(id) {
 		kz_get_timer_state(id) != TIMER_ENABLED) 
 		return HAM_IGNORED;
 
-	if (g_UserData[id][ud_TemporaryRank] > g_UserData[id][ud_MinRank])
-		native_set_min_rank(id, g_UserData[id][ud_TemporaryRank]);
+	if (g_UserData[id][ud_TemporaryRank] > g_UserData[id][ud_MinRank]) {
+		g_UserData[id][ud_MinRank] = g_UserData[id][ud_TemporaryRank];
+	}
 
 	return HAM_IGNORED;
 }
