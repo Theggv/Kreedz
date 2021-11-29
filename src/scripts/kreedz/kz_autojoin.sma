@@ -13,7 +13,7 @@
 #define m_iMenuCode 	205
 #define m_iNumSpawns 	365
 
-new g_iMsgId[33];
+new g_iMsgId[MAX_PLAYER + 1];
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
