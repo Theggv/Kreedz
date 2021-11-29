@@ -55,6 +55,10 @@ public plugin_init()
 	RegisterHam(Ham_Spawn, "player", "ham_Spawn_Post", 1);
 
 	register_dictionary("kz_mode.txt");
+
+	for (new i; i <= MAX_PLAYERS; ++i) {
+		native_set_min_rank(i, -1);
+	}
 }
 
 /**
@@ -84,7 +88,7 @@ public native_set_min_rank(id, value)
 
 	if (is_user_alive(id)) ham_Spawn_Post(id);
 
-	client_print(id, print_chat, "[DEBUG] Min rank: %d", value);
+	// server_print("[DEBUG] Min rank: %d", value);
 }
 
 public native_get_weapon_name(iRank, szWeapon[], iLen)
@@ -150,6 +154,10 @@ public cmd_M4A1(id)
 *	Forwards
 *	------------------------------------------------------------------
 */
+
+public client_connect(id)  {
+	native_set_min_rank(id, -1);
+}
 
 
 public kz_timer_start_post(id)

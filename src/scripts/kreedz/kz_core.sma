@@ -61,7 +61,7 @@ enum _:UserDataStruct {
 	TimerState:ud_TimerState,
 
 	// Nightvision
-	bool:ud_isNVGEnable,
+	ud_NVGMode,
 
 	// Keys
 	bool:ud_showKeys,
@@ -734,7 +734,7 @@ public client_putinserver(id) {
 		g_UserData[id][ud_LastPos] = Float:{0.0, 0.0, 0.0};
 		g_UserData[id][ud_IsStartSaved] = false;
 
-		g_UserData[id][ud_isNVGEnable] = false;
+		g_UserData[id][ud_NVGMode] = 0;
 	}
 }
 
@@ -914,7 +914,7 @@ public timer_handler() {
 				UTIL_FormatTime(get_gametime() - g_UserData[id][ud_StartTime],
 				 	szTime, charsmax(szTime), g_UserData[id][ud_TimerData][timer_MS]);
 
-				formatex(szMsg, charsmax(szMsg), "Time: %s | CPs: %d | TPs: %d",
+				formatex(szMsg, charsmax(szMsg), "%s | [ %d cp | %d gc ]",
 					szTime, g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum]);
 			}
 			case TIMER_PAUSED: {
@@ -922,7 +922,7 @@ public timer_handler() {
 				 	szTime, charsmax(szTime), g_UserData[id][ud_TimerData][timer_MS]);
 
 				formatex(szMsg, charsmax(szMsg), 
-					"Time: %s | CPs: %d | TPs: %d^nPAUSED - say '/unpause' to resume.",
+					"%s | [ %d cp | %d gc ]^nPAUSED - say '/unpause' or '/p' to resume.",
 					szTime, 
 					g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum]);
 			}
@@ -1036,38 +1036,42 @@ public cmd_Fade(id)
 
 	if (g_UserData[id][ud_TimerState] == TIMER_PAUSED) {
 		message_begin(MSG_ONE, get_user_msgid("ScreenFade"), _, id);
-		write_short(1); 	//total duration
-		write_short(0); 	//time it stays one color
-		write_short(5); 	//fade type
-		write_byte(0); 		//r
-		write_byte(0); 		//g
-		write_byte(0); 		//b
-		write_byte(100); 	//a
+		write_short(1); 	// total duration
+		write_short(0); 	// time it stays one color
+		write_short(5); 	// fade type
+		write_byte(0); 		// r
+		write_byte(0); 		// g
+		write_byte(0); 		// b
+		write_byte(100); 	// a
 		message_end();
 	}
 	else {
 		message_begin(MSG_ONE, get_user_msgid( "ScreenFade" ), _, id);
-		write_short(1); 	//total duration
-		write_short(0); 	//time it stays one color
-		write_short(0); 	//fade type
-		write_byte(0); 		//r
-		write_byte(0); 		//g
-		write_byte(0); 		//b
-		write_byte(0); 		//a
+		write_short(1); 	// total duration
+		write_short(0); 	// time it stays one color
+		write_short(0); 	// fade type
+		write_byte(0); 		// r
+		write_byte(0); 		// g
+		write_byte(0); 		// b
+		write_byte(0); 		// a
 		message_end();
 	}
 }
 
 public cmd_Nightvision(id) {
-	g_UserData[id][ud_isNVGEnable] = !g_UserData[id][ud_isNVGEnable];
+	g_UserData[id][ud_NVGMode] = (g_UserData[id][ud_NVGMode] + 1) % 3;
 
-	if (g_UserData[id][ud_isNVGEnable]) {
+	if (g_UserData[id][ud_NVGMode] == 1) {
 		message_begin(MSG_ONE_UNRELIABLE, SVC_LIGHTSTYLE, _, id);
 		write_byte(0);
 		write_string("#");
 		message_end();
-	}
-	else {
+	} else if (g_UserData[id][ud_NVGMode] == 2) {
+		message_begin(MSG_ONE_UNRELIABLE, SVC_LIGHTSTYLE, _, id);
+		write_byte(0);
+		write_string("z");
+		message_end();
+	} else {
 		message_begin(MSG_ONE_UNRELIABLE, SVC_LIGHTSTYLE, _, id);
 		write_byte(0);
 		write_string(g_sDefaultLight);

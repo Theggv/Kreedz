@@ -8795,8 +8795,8 @@ public FwdPlayerSpawn(id)
 {
 	if( is_user_alive(id) && !is_user_bot(id) && !is_user_hltv(id))
 	{
-		if( !task_exists(id+434490, 0) )
-			set_task(1.0, "tskFps", id+434490, "", 0, "b", 0);
+		// if( !task_exists(id+434490, 0) )
+		// 	set_task(1.0, "tskFps", id+434490, "", 0, "b", 0);
 			
 		g_alive[id] = true;
 		strafe_num[id]=0;

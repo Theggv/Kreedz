@@ -7,7 +7,7 @@
 #endif
 
 #define PLUGIN "Map Manager: Core"
-#define VERSION "3.0.5"
+#define VERSION "3.1.0"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -50,7 +50,8 @@ enum Cvars {
     RANDOM_NUMS,
     PREPARE_TIME,
     VOTE_TIME,
-    VOTE_ITEM_OFFSET
+    VOTE_ITEM_OFFSET,
+    ONLY_EXTERNAL_VOTE_ITEMS
 };
 
 new g_pCvars[Cvars];
@@ -72,7 +73,7 @@ new g_iShowPercent;
 new g_bShowSelects;
 new g_iTimer;
 new g_bCanExtend;
-new g_iMaxItems;
+new g_iExternalMaxItems;
 new g_iCurMap;
 
 new g_iRandomNums[MAX_VOTELIST_SIZE + 1];
@@ -87,7 +88,7 @@ new g_sPrefix[48];
 
 public plugin_init()
 {
-    register_plugin(PLUGIN, VERSION, AUTHOR);
+    register_plugin(PLUGIN, VERSION + VERSION_HASH, AUTHOR);
 
     register_cvar("mapm_version", VERSION, FCVAR_SERVER | FCVAR_SPONLY);
 
@@ -100,8 +101,9 @@ public plugin_init()
     g_pCvars[PREPARE_TIME] = register_cvar("mapm_prepare_time", "5"); // seconds
     g_pCvars[VOTE_TIME] = register_cvar("mapm_vote_time", "10"); // seconds
     g_pCvars[VOTE_ITEM_OFFSET] = register_cvar("mapm_vote_item_offset", "0");
+    g_pCvars[ONLY_EXTERNAL_VOTE_ITEMS] = register_cvar("mapm_only_external_vote_items", "0");
 
-    g_hForwards[MAPLIST_LOADED] = CreateMultiForward("mapm_maplist_loaded", ET_IGNORE, FP_CELL);
+    g_hForwards[MAPLIST_LOADED] = CreateMultiForward("mapm_maplist_loaded", ET_IGNORE, FP_CELL, FP_STRING);
     g_hForwards[MAPLIST_UNLOADED] = CreateMultiForward("mapm_maplist_unloaded", ET_IGNORE);
     g_hForwards[PREPARE_VOTELIST] = CreateMultiForward("mapm_prepare_votelist", ET_IGNORE, FP_CELL);
     g_hForwards[VOTE_STARTED] = CreateMultiForward("mapm_vote_started", ET_IGNORE, FP_CELL);
@@ -120,6 +122,9 @@ public plugin_init()
 public plugin_natives()
 {
     register_library("map_manager_core");
+
+    g_aMapsList = ArrayCreate(MapStruct, 1);
+    get_mapname(g_sCurMap, charsmax(g_sCurMap));
 
     register_native("mapm_load_maplist", "native_load_maplist");
     register_native("mapm_load_maplist_to_array", "native_load_maplist_to_array");
@@ -184,7 +189,8 @@ public native_add_map_to_list(plugin, params)
     enum {
         arg_name = 1,
         arg_minplayers,
-        arg_maxplayers
+        arg_maxplayers,
+        arg_priority
     };
 
     new map_info[MapStruct];
@@ -196,6 +202,10 @@ public native_add_map_to_list(plugin, params)
     
     map_info[MinPlayers] = get_param(arg_minplayers);
     map_info[MaxPlayers] = get_param(arg_maxplayers);
+
+    new priority = clamp(get_param(arg_priority), 0, 100);
+    map_info[MapPriority] = priority ? priority : 100;
+
     ArrayPushArray(g_aMapsList, map_info);
     
     return 1;
@@ -234,15 +244,15 @@ public native_block_show_vote(plugin, params)
 }
 public native_get_votelist_size(plugin, params)
 {
-    if(g_iMaxItems) {
-        return g_iMaxItems;
+    if(g_iExternalMaxItems) {
+        return g_iExternalMaxItems;
     }
     return min(min(get_num(VOTELIST_SIZE), MAX_VOTELIST_SIZE), ArraySize(g_aMapsList));
 }
 public native_set_votelist_max_items(plugin, params)
 {
     enum { arg_value = 1 };
-    g_iMaxItems = get_param(arg_value);
+    g_iExternalMaxItems = get_param(arg_value);
 }
 public native_push_map_to_votelist(plugin, params)
 {
@@ -252,7 +262,7 @@ public native_push_map_to_votelist(plugin, params)
         arg_ignore_check 
     };
 
-    if(g_iMaxItems && g_iVoteItems >= g_iMaxItems) {
+    if(g_iExternalMaxItems && g_iVoteItems >= g_iExternalMaxItems) {
         return PUSH_CANCELED;
     }
 
@@ -337,13 +347,9 @@ public native_is_vote_finished(plugin, params)
 //-----------------------------------------------------//
 public plugin_cfg()
 {
-    g_aMapsList = ArrayCreate(MapStruct, 1);
-
     new configsdir[256]; get_localinfo("amxx_configsdir", configsdir, charsmax(configsdir));
     server_cmd("exec %s/map_manager.cfg", configsdir);
     server_exec();
-
-    get_mapname(g_sCurMap, charsmax(g_sCurMap));
 
     get_pcvar_string(g_pCvars[PREFIX], g_sPrefix, charsmax(g_sPrefix));
     replace_color_tag(g_sPrefix, charsmax(g_sPrefix));
@@ -355,11 +361,11 @@ public plugin_cfg()
 }
 load_maplist(Array:array, const file[], bool:silent = false)
 {
-    if(equal(file, FILE_MAPS))
-    {
+    if (equal(file, FILE_MAPS)) {
         load_from_maps_folder(array);
         return 1;
     }
+    
     new file_path[256]; get_localinfo("amxx_configsdir", file_path, charsmax(file_path));
     format(file_path, charsmax(file_path), "%s/%s", file_path, file);
 
@@ -380,33 +386,34 @@ load_maplist(Array:array, const file[], bool:silent = false)
         return 0;
     }
 
-    new map_info[MapStruct], text[48], map[MAPNAME_LENGTH], first_map[MAPNAME_LENGTH], min[3], max[3], bool:nextmap, bool:found_nextmap;
+    new map_info[MapStruct], text[48], map[MAPNAME_LENGTH], next_map[MAPNAME_LENGTH], min[3], max[3], priority[4], bool:found_nextmap;
 
     while(!feof(f)) {
         fgets(f, text, charsmax(text));
-        parse(text, map, charsmax(map), min, charsmax(min), max, charsmax(max));
+        parse(text, map, charsmax(map), min, charsmax(min), max, charsmax(max), priority, charsmax(priority));
 
         if(!map[0] || map[0] == ';' || !valid_map(map) || get_map_index(array, map) != INVALID_MAP_INDEX) continue;
-        
-        if(!first_map[0]) {
-            copy(first_map, charsmax(first_map), map);
+
+        if(!next_map[0]) {
+            copy(next_map, charsmax(next_map), map);
         }
-        if(equali(map, g_sCurMap)) {
-            nextmap = true;
-            continue;
-        }
-        if(nextmap) {
-            nextmap = false;
-            found_nextmap = true;
-            set_cvar_string("amx_nextmap", map);
-        }
-        
+
         map_info[Map] = map;
         map_info[MinPlayers] = str_to_num(min);
         map_info[MaxPlayers] = str_to_num(max) == 0 ? 32 : str_to_num(max);
+        map_info[MapPriority] = str_to_num(priority) == 0 ? 100 : str_to_num(priority);
 
         ArrayPushArray(array, map_info);
-        min = ""; max = "";
+        min = ""; max = ""; priority = "";
+
+        if(equali(map, g_sCurMap)) {
+            found_nextmap = true;
+            continue;
+        }
+        if(found_nextmap) {
+            found_nextmap = false;
+            copy(next_map, charsmax(next_map), map);
+        }
     }
     fclose(f);
 
@@ -418,23 +425,20 @@ load_maplist(Array:array, const file[], bool:silent = false)
         return 0;
     }
 
+    // Sort maps by name
     SortADTArray(array, Sort_Ascending, Sort_String);
 
     if(!silent) {
-        if(!found_nextmap) {
-            set_cvar_string("amx_nextmap", first_map);
-        }
         new ret;
-        ExecuteForward(g_hForwards[MAPLIST_LOADED], ret, array);
+        ExecuteForward(g_hForwards[MAPLIST_LOADED], ret, array, next_map);
     }
 
     return 1;
 }
 
-load_from_maps_folder(Array:array)
-{
+load_from_maps_folder(Array:array) {
     new map_info[MapStruct], szMapName[MAPNAME_LENGTH], first_map[MAPNAME_LENGTH], szTemp[32];
-    new bool:nextmap, bool:found_nextmap;
+    new bool:nextmap, bool:found_nextmap, szNextMap[MAPNAME_LENGTH];
     new hDir = open_dir("maps", szMapName, charsmax(szMapName));
 
     if(hDir)
@@ -457,11 +461,10 @@ load_from_maps_folder(Array:array)
                 continue;
             }
 
-            if(nextmap)
-            {
+            if(nextmap) {
                 nextmap = false;
                 found_nextmap = true;
-                set_cvar_string("amx_nextmap", szMapName);
+                copy(szNextMap, charsmax(szNextMap), szMapName);
             }
 
             if(!first_map[0])
@@ -479,14 +482,12 @@ load_from_maps_folder(Array:array)
 
     SortADTArray(array, Sort_Ascending, Sort_String);
 
-    if(!found_nextmap) {
-        set_cvar_string("amx_nextmap", first_map);
-    }
     new ret;
-    ExecuteForward(g_hForwards[MAPLIST_LOADED], ret, array);
+    ExecuteForward(g_hForwards[MAPLIST_LOADED], ret, array, found_nextmap ? szNextMap : first_map);
 
     return 1;
 }
+
 //-----------------------------------------------------//
 // Vote stuff
 //-----------------------------------------------------//
@@ -507,26 +508,31 @@ prepare_vote(type)
     arrayset(g_iVotes, 0, sizeof(g_iVotes));
 
     new array_size = ArraySize(g_aMapsList);
-    new vote_max_items = min(min(get_num(VOTELIST_SIZE), MAX_VOTELIST_SIZE), array_size);
+    new is_current_map_in_array = get_map_index(g_aMapsList, g_sCurMap) != INVALID_MAP_INDEX;
+    new vote_max_items = min(min(get_num(VOTELIST_SIZE), MAX_VOTELIST_SIZE), array_size - is_current_map_in_array);
 
     new ret;
     ExecuteForward(g_hForwards[PREPARE_VOTELIST], ret, type);
 
-    if(g_iMaxItems) {
-        vote_max_items = g_iMaxItems;
-        g_iMaxItems = 0;
+    if(g_iExternalMaxItems) {
+        vote_max_items = g_iExternalMaxItems;
+        g_iExternalMaxItems = 0;
     }
 
-    if(g_iVoteItems < vote_max_items) {
+    if(!get_num(ONLY_EXTERNAL_VOTE_ITEMS) && g_iVoteItems < vote_max_items) {
         new map_info[MapStruct];
         for(new random_map; g_iVoteItems < vote_max_items; g_iVoteItems++) {
             do {
                 random_map = random_num(0, array_size - 1);
                 ArrayGetArray(g_aMapsList, random_map, map_info);
-            } while(is_map_in_vote(map_info[Map]) || !is_map_allowed(map_info[Map], PUSH_BY_CORE, random_map));
+            } while(is_map_in_vote(map_info[Map]) || !is_map_allowed(map_info[Map], PUSH_BY_CORE, random_map) || equali(map_info[Map], g_sCurMap));
 
             copy(g_sVoteList[g_iVoteItems], charsmax(g_sVoteList[]), map_info[Map]);
         }
+    }
+
+    if(!g_iVoteItems) {
+        log_amx("Started vote with ZERO items. Check your maps list!");
     }
 
     ExecuteForward(g_hForwards[CAN_BE_EXTENDED], ret, type);
@@ -646,13 +652,13 @@ public show_votemenu(id)
     new len, keys, percent, item;
     
     len = formatex(menu, charsmax(menu), "\y%L:^n^n", id, g_iVoted[id] != NOT_VOTED ? "MAPM_MENU_VOTE_RESULTS" : "MAPM_MENU_CHOOSE_MAP");
-    
+
     len += formatex(menu[len], charsmax(menu) - len, "\r1.\w Checkpoint^n");
     keys |= (1 << 0);
 
     len += formatex(menu[len], charsmax(menu) - len, "\r2.\w Gocheck^n^n");
     keys |= (1 << 1);
-
+    
     for(item = 0; item < g_iVoteItems + g_bCanExtend; item++) {
         len += formatex(menu[len], charsmax(menu) - len, "%s", (item == g_iVoteItems) ? "^n" : "");
 
@@ -693,14 +699,11 @@ public show_votemenu(id)
 }
 public votemenu_handler(id, key)
 {
-    if(key == 0)
-    {
+    if(key == 0) {
         amxclient_cmd(id, "cp");
         show_votemenu(id);
         return PLUGIN_HANDLED;
-    }
-    else if(key == 1)
-    {
+    } else if(key == 1) {
         amxclient_cmd(id, "tp");
         show_votemenu(id);
         return PLUGIN_HANDLED;

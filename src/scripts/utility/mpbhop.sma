@@ -29,6 +29,8 @@
 #include <chatcolor>
 #endif
 
+#include <kreedz/kz_api>
+
 new const VERSION[] = "1.1.2";
 
 #pragma semicolon 1
@@ -418,9 +420,12 @@ public CBasePlayer_PreThink(id)
 					flVecOrigin[2] += 18.0;
 					if( !trace_hull(flVecOrigin, HULL_HUMAN, id, IGNORE_MONSTERS) )
 					{
-						flVecOrigin[2] -= 18.0;
-						xs_vec_copy(flVecOrigin, g_flJumpOrigin[id]);
-						SetIdBits(g_bOnGround, id);
+						if (kz_get_timer_state(id) != TIMER_PAUSED ||
+							g_flJumpOrigin[id][0] == 0) {
+							flVecOrigin[2] -= 18.0;
+							xs_vec_copy(flVecOrigin, g_flJumpOrigin[id]);
+							SetIdBits(g_bOnGround, id);
+						}
 					}
 					else
 					{
@@ -430,8 +435,11 @@ public CBasePlayer_PreThink(id)
 				}
 				else
 				{
-					pev(id, pev_origin, g_flJumpOrigin[id]);
-					SetIdBits(g_bOnGround, id);
+					if (kz_get_timer_state(id) != TIMER_PAUSED ||
+						g_flJumpOrigin[id][0] == 0) {
+						pev(id, pev_origin, g_flJumpOrigin[id]);
+						SetIdBits(g_bOnGround, id);
+					}
 				}
 			}
 			else

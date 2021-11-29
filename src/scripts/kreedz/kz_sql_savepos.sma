@@ -79,6 +79,10 @@ public kz_timer_finish_post(id)
 	kz_timer_start_post(id);
 }
 
+public kz_timer_stop_post(id) {
+	kz_timer_start_post(id);
+}
+
 public kz_sql_initialized()
 {
 	SQL_Tuple = kz_sql_get_tuple();
@@ -373,9 +377,9 @@ public LoadPos_Handler(id, menu, item)
 		}
 	}
 
-	new id = str_to_num(szData);
+	// new id = str_to_num(szData);
 
-	client_print_color(id, print_team_default, "^4[KZ] ^1Your previous saved run was deleted.");
+	// client_print_color(id, print_team_default, "^4[KZ] ^1Your previous saved run was deleted.");
 
 	return PLUGIN_HANDLED;
 }

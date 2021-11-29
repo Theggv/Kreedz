@@ -52,10 +52,11 @@ native mapm_block_load_maplist();
  * @param name                  Map name
  * @param minplayers            Min players for sort
  * @param maxplayers            Max players for sort
+ * @param priority              Map priority
  *
  * @return                      0 if invalid map or already in array
  */
-native mapm_add_map_to_list(name[], minplayers = 0, maxplayers = 32);
+native mapm_add_map_to_list(name[], minplayers = 0, maxplayers = 32, priority = 0);
 
 /**
  * Get map index in mapslist array.
@@ -193,15 +194,14 @@ native bool:is_vote_started();
 native bool:is_vote_finished();
 
 /**
- * Called after load maps from file.
+ * Called after load map list.
  * 
  * @param maplist               Array with loaded maps
- * @param file                  Load file
- * @param cleared               True if cleared old list before load
+ * @param nextmap               Nextmap after current map in loaded list
  *
  * @noreturn
  */
-forward mapm_maplist_loaded(Array:maplist);
+forward mapm_maplist_loaded(Array:maplist, const nextmap[]);
 
 /**
  * Called after clear maplist.

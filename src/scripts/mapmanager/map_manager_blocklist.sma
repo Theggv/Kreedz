@@ -22,7 +22,7 @@ new g_iMaxItems;
 
 public plugin_init()
 {
-    register_plugin(PLUGIN, VERSION, AUTHOR);
+    register_plugin(PLUGIN, VERSION + VERSION_HASH, AUTHOR);
 
     g_pCvars[BAN_LAST_MAPS] = register_cvar("mapm_blocklist_ban_last_maps", "10");
 }

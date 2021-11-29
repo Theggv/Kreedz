@@ -13,7 +13,7 @@ Models, sprites for test by 8dp
 #endif
 
 #define PLUGIN "Map Manager: GUI"
-#define VERSION "0.0.4"
+#define VERSION "0.0.5"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -104,6 +104,8 @@ new g_iCurMap;
 new g_sCurMap[MAPNAME_LENGTH];
 new g_sPrefix[32];
 
+new Float:g_fCursorSens = CURSOR_SENSITIVITY;
+
 enum Forwards {
     AddToFullPack_Pre,
     AddToFullPack_Post,
@@ -115,11 +117,12 @@ new g_hForwards[Forwards];
 
 public plugin_init()
 {
-    register_plugin(PLUGIN, VERSION, AUTHOR);
+    register_plugin(PLUGIN, VERSION + VERSION_HASH, AUTHOR);
+
+    g_pCvars[CURSOR_SENS] = register_cvar("mapm_cursor_sens", "2.5");
 
     // TODO: cvars
-    g_pCvars[CURSOR_SENS] = register_cvar("mapm_cursor_sens", "2.5");
-    g_pCvars[HIDE_MAP_PREFIX] = register_cvar("mapm_hide_map_prefix", "1"); // TODO
+    // g_pCvars[HIDE_MAP_PREFIX] = register_cvar("mapm_hide_map_prefix", "1");
 }
 public plugin_cfg()
 {
@@ -127,6 +130,8 @@ public plugin_cfg()
 
     g_pCvars[SHOW_SELECTS] = get_cvar_pointer("mapm_show_selects");
     g_pCvars[SHOW_PERCENT] = get_cvar_pointer("mapm_show_percent");
+
+    g_fCursorSens = get_float(CURSOR_SENS);
 }
 public plugin_precache()
 {
@@ -455,8 +460,8 @@ public fm_cmd_start_post(id, cmd, seed)
         flDelta += 360.0;
     }
 
-    g_vecCursorPos[id][1] += flDelta * CURSOR_SENSITIVITY;
-    g_vecCursorPos[id][2] += -(view_angles[0] - old_viewangles[id][0]) * CURSOR_SENSITIVITY;
+    g_vecCursorPos[id][1] += flDelta * g_fCursorSens;
+    g_vecCursorPos[id][2] += -(view_angles[0] - old_viewangles[id][0]) * g_fCursorSens;
 
     g_vecCursorPos[id][1] = floatclamp(g_vecCursorPos[id][1], -MAX_CURSOR_X, MAX_CURSOR_X);
     g_vecCursorPos[id][2] = floatclamp(g_vecCursorPos[id][2], -MAX_CURSOR_Y, MAX_CURSOR_Y);

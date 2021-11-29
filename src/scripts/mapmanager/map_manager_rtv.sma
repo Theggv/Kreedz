@@ -7,7 +7,7 @@
 #endif
 
 #define PLUGIN "Map Manager: Rtv"
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -42,7 +42,7 @@ new g_sPrefix[48];
 
 public plugin_init()
 {
-    register_plugin(PLUGIN, VERSION, AUTHOR);
+    register_plugin(PLUGIN, VERSION + VERSION_HASH, AUTHOR);
 
     g_pCvars[MODE] = register_cvar("mapm_rtv_mode", "0"); // 0 - percents, 1 - players
     g_pCvars[CHANGE_AFTER_VOTE] = register_cvar("mapm_rtv_change_after_vote", "0"); // 0 - disable, 1 - enable
@@ -122,7 +122,7 @@ public mapm_vote_started(type)
 }
 public mapm_vote_finished(const map[], type, total_votes)
 {
-    if(type == VOTE_BY_RTV && !get_num(CHANGE_TYPE) && get_num(CHANGE_AFTER_VOTE)) {
+    if(type == VOTE_BY_RTV && get_num(CHANGE_TYPE) && get_num(CHANGE_AFTER_VOTE)) {
         intermission();
     }
 }

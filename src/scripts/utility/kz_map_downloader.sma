@@ -184,10 +184,24 @@ public hook_Say(id)
 		{
 			if (equali(g_szDlMap, g_szCurrentMap) || in_maps_array(g_szDlMap))
 				client_print( id, print_chat, "%s %s exists in maps folder", g_szPrefix, g_szDlMap );
-			else if (g_State != State_NoTask)
+			else if (
+				g_State != State_NoTask && 
+				g_State != State_Finished && 
+				g_State != State_NotFound &&
+				g_State != State_Failed
+				) {
 				Show_DownloadMenu(id);
-			else if (!is_empty_str(g_szDlMap))
-				Show_DownloadMenu(id);
+			}
+			else if (!is_empty_str(g_szDlMap)) {
+				if (g_State == State_NoTask ||
+					g_State == State_Finished || 
+					g_State == State_NotFound ||
+					g_State == State_Failed) {
+						
+					g_State = State_NoTask;
+					Show_DownloadMenu(id);
+				}
+			}
 			return PLUGIN_HANDLED;
 		}
 	}
@@ -520,9 +534,6 @@ public OnArchiveComplete(id)
 		if (g_State == State_NoTask)
 			return;
 
-		g_State = State_Finished;
-		Show_DownloadMenu(id);
-
 		if (get_pcvar_num(g_Cvars[CvarCanDeleteSource]))
 			delete_file(g_szDlFile);
 
@@ -547,7 +558,8 @@ public tsk_finish(id)
 	g_State = State_Finished;
 	Show_DownloadMenu(id);
 
-	client_print(id, print_console, "%s %s was successfully installed.", g_szPrefix, g_szDlMap);
+	client_print_color(0, print_team_default, "^4[KZ_DL] ^1%s was added to the maplist", g_szDlMap);
+	// client_print(id, print_console, "%s %s was successfully installed.", g_szPrefix, g_szDlMap);
 
 	#if defined _DEBUG
 	server_print("Finished.");

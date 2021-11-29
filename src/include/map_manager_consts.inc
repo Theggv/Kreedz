@@ -3,12 +3,15 @@
 #endif
 #define _map_manager_consts_included
 
+#define VERSION_HASH "-6984f56"
+
 const MAPNAME_LENGTH = 32;
 
 enum _:MapStruct {
     Map[MAPNAME_LENGTH],
     MinPlayers,
-    MaxPlayers
+    MaxPlayers,
+    MapPriority
 };
 
 enum _:NomStruct {

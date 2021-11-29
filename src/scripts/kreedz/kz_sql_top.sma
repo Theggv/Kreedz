@@ -27,7 +27,6 @@ enum _:UserDataNub
 	bool:ud_isLoaded,
 	ud_ChecksNum,
 	ud_TeleNum,
-	ud_StuckNum,
 }
 
 enum _:eForward
@@ -317,7 +316,6 @@ public kz_sql_data_recv(id)
 
 		g_UserDataNub[id][ud_ChecksNum] = SQL_ReadResult(hQuery, 4);
 		g_UserDataNub[id][ud_TeleNum] = SQL_ReadResult(hQuery, 5);
-		g_UserDataNub[id][ud_StuckNum] = SQL_ReadResult(hQuery, 6);
 	}
 
 	g_UserDataNub[id][ud_isLoaded] = true;
@@ -449,7 +447,7 @@ public cmd_ProTop(id)
 <head>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-	<link rel=^"stylesheet^" href=^"http://212.116.121.121/abyss/protopstyle.css^">\
+	<link rel=^"stylesheet^" href=^"http://5.101.78.189/abyss/protopstyle.css^">\
 </head>\
 <body>\
 	<table>\
@@ -561,7 +559,7 @@ public cmd_NubTop(id)
 <head>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-	<link rel=^"stylesheet^" href=^"http://212.116.121.121/abyss/nubtopstyle.css^">\
+	<link rel=^"stylesheet^" href=^"http://5.101.78.189/abyss/nubtopstyle.css^">\
 </head>\
 <body>\
 	<table>\
@@ -737,7 +735,7 @@ public WeaponTopMenu_Handler(id, menu, item)
 <head>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-	<link rel=^"stylesheet^" href=^"http://212.116.121.121/abyss/nubtopstyle.css^">\
+	<link rel=^"stylesheet^" href=^"http://5.101.78.189/abyss/nubtopstyle.css^">\
 </head>\
 <body>\
 	<table>\

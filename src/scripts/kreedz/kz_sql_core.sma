@@ -223,17 +223,17 @@ public init_tables()
 	formatex(szQuery, charsmax(szQuery), "\
 	CREATE TABLE IF NOT EXISTS `kz_settings_timer` ( \
 		`uid` int(11) NOT NULL UNIQUE, \
-		`rgb` int(11) NOT NULL DEFAULT 51200, \
+		`rgb` int(11) NOT NULL DEFAULT 6618980, \
 		`x` int(11) NOT NULL DEFAULT %d, \
 		`y` int(11) NOT NULL DEFAULT %d, \
-		`is_dhud` int(11) NOT NULL DEFAULT 0, \
+		`is_dhud` int(11) NOT NULL DEFAULT 1, \
 		`type` int(11) NOT NULL DEFAULT 0, \
-		`is_ms` int(11) NOT NULL DEFAULT 0, \
+		`is_ms` int(11) NOT NULL DEFAULT 1, \
 		FOREIGN KEY (uid) REFERENCES kz_uid(id) \
 			ON DELETE CASCADE \
 			ON UPDATE CASCADE \
 		) DEFAULT CHARSET utf8; \
-		", 0.02, 0.2);
+		", -1.0, 0.01);
 
 	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
 }
@@ -271,6 +271,7 @@ public init_map()
 {
 	new szMapName[64], szQuery[512];
 	get_mapname(szMapName, charsmax(szMapName));
+	strtolower(szMapName);
 
 	formatex(szQuery, charsmax(szQuery), "\
 		SELECT * FROM `kz_maps` \
@@ -297,6 +298,7 @@ public init_map()
 	{
 		new szMapName[64], szQuery[512];
 		get_mapname(szMapName, charsmax(szMapName));
+		strtolower(szMapName);
 
 		formatex(szQuery, charsmax(szQuery), "\
 			INSERT INTO `kz_maps` (`mapname`) VALUES (^"%s^");",

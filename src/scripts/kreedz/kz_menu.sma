@@ -51,7 +51,7 @@ public cmd_MainMenu(id) {
 	formatex(szMsg, charsmax(szMsg), "Spec");
 	menu_additem(iMenu, szMsg, "6", 0);
 
-	formatex(szMsg, charsmax(szMsg), "Invis^n");
+	formatex(szMsg, charsmax(szMsg), "Invis");
 	menu_additem(iMenu, szMsg, "7", 0);
 
 	formatex(szMsg, charsmax(szMsg), "Ljsmenu");
@@ -60,8 +60,8 @@ public cmd_MainMenu(id) {
 	formatex(szMsg, charsmax(szMsg), "Settings");
 	menu_additem(iMenu, szMsg, "9", 0);
 
-	// formatex(szMsg, charsmax(szMsg), "Mute");
-	// menu_additem(iMenu, szMsg, "10", 0);
+	formatex(szMsg, charsmax(szMsg), "Mute");
+	menu_additem(iMenu, szMsg, "10", 0);
 
 	menu_display(id, iMenu, 0);
 
@@ -95,7 +95,7 @@ public MainMenu_Handler(id, menu, item)
 			return PLUGIN_HANDLED;
 		}
 		case 8: {
-			client_cmd(id, "say /ljsmenu");
+			amxclient_cmd(id, "say", "/ljsmenu");
 			return PLUGIN_HANDLED;
 		}
 		case 9: {

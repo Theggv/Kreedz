@@ -227,6 +227,7 @@ public Settings_Handler(id, menu, item)
 	client_print_color(id, print_team_default, "^4[KZ] ^1Settings have been saved.");
 
 	g_UserData[id][ud_isSaved] = true;
+	cmd_Settings(id);
 
 	return PLUGIN_HANDLED;
 }

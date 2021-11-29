@@ -72,6 +72,7 @@ public plugin_init()
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	get_mapname(g_szMapName, charsmax(g_szMapName));
+	strtolower(g_szMapName);
 
 	get_localinfo("amxx_datadir", g_szBotDir, charsmax(g_szBotDir));
 	format(g_szBotDir, charsmax(g_szBotDir), "%s/%s", g_szBotDir, g_szBotFolder);

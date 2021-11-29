@@ -12,6 +12,29 @@
     #pragma library map_manager_scheduler
 #endif
 
+enum IgnoreFlags (<<=1) {
+    IGNORE_DISABLED = 0,
+    IGNORE_TIMER_CHECK = 1 << 0,
+    IGNORE_ROUND_CHECK,
+    IGNORE_FRAGS_CHECK
+};
+
+/**
+ * Get ignore flags for starting vote.
+ *
+ * @return                      Ignore flags
+ */
+native IgnoreFlags:map_scheduler_get_ignore_check();
+
+/**
+ * Set ignore flags for starting vote.
+ * 
+ * @param flags                 Flags from IgnoreFlags enum
+ *
+ * @noreturn
+ */
+native map_scheduler_set_ignore_check(IgnoreFlags:flags);
+
 /**
  * Start vote by scheduler, work with own cvars.
  * 
@@ -20,6 +43,15 @@
  * @noreturn
  */
 native map_scheduler_start_vote(type);
+
+/**
+ * Extend current map time.
+ * 
+ * @param count                 Extend time param, bonus time = count * cvarnum(extend_time)
+ *
+ * @noreturn
+ */
+native map_scheduler_extend_map(count = 1);
 
 /**
  * Returns true if vote will in next round.
