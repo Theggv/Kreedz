@@ -763,7 +763,8 @@ finish_vote()
         }
     }
     else {
-        max_vote = random_num(0, g_iVoteItems - 1);
+        // max_vote = random_num(0, g_iVoteItems - 1);
+        max_vote = g_iVoteItems;
     }
 
     // post forward
