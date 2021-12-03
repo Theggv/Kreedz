@@ -373,6 +373,9 @@ public plugin_init()
 	register_clcmd( "say uqversion",	"cmdVersion",         ADMIN_ALL);
 	register_clcmd("say /uqbeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /beam",     "cmdljbeam",         ADMIN_ALL);
+	register_clcmd("say beam",     "cmdljbeam",         ADMIN_ALL);
+	register_clcmd("say /nazibeam",     "cmdljbeam",         ADMIN_ALL);
+	register_clcmd("say nazibeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /ljbeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /speed",     "show_speed",         ADMIN_ALL);
 	register_clcmd("say speed",     "show_speed",         ADMIN_ALL);
@@ -820,7 +823,7 @@ stock kz_make_cvarexec(const config[])
 	
 	fprintf(f, "// Admin command^n");
 	fprintf(f, "^n");
-	fprintf(f, "// amx_reset_uqtops ñ reset all tops^n");
+	fprintf(f, "// amx_reset_uqtops ù reset all tops^n");
 	fprintf(f, "^n");
 	
 	fprintf(f, "// Cvars^n");
@@ -8285,6 +8288,8 @@ public cmdljbeam(id)
 			Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_BEAMSTATS_E", prefix);
 		}
 	}
+
+	return PLUGIN_HANDLED;
 }
 public show_pre(id)
 {
