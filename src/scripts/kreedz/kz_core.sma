@@ -22,6 +22,10 @@
 #define HUD_UPDATE_TIME		0.2
 #define KEYS_UPDATE_TIME	0.1
 
+enum (+=64) {
+	TASK_FLASHLIGHT = 2048,
+}
+
 enum _:HudChannels {
 	channel_All = -1,
 	channel_Timer = 2,
@@ -60,7 +64,7 @@ enum _:UserDataStruct {
 	// Timer state
 	TimerState:ud_TimerState,
 
-	// Nightvision
+	// Nightvision & flashlight
 	ud_NVGMode,
 
 	// Keys
@@ -694,6 +698,13 @@ public cmd_ShowKeysSpec(id) {
 }
 
 public impulse_FlashLight(id) {
+	if (!task_exists(TASK_FLASHLIGHT + id)) {
+		set_task(0.8, "TaskFlashLight", TASK_FLASHLIGHT + id, .flags = "b");
+		TaskFlashLight(TASK_FLASHLIGHT + id);
+	} else {
+		remove_task(TASK_FLASHLIGHT + id);
+	}
+
 	return PLUGIN_HANDLED;
 }
 
@@ -743,6 +754,8 @@ public client_disconnected(id) {
 		g_UserData[id][ud_TimerState] = TIMER_PAUSED;
 		g_UserData[id][ud_PauseTime] = get_gametime();
 	}
+
+	remove_task(TASK_FLASHLIGHT + id);
 }
 
 public ham_Use(iEnt, id) {
@@ -789,7 +802,8 @@ public ham_PreThink(id) {
 	if (!is_user_alive(id)) return HAM_IGNORED;
 
 	// use detection
-	if ((get_entvar(id, var_button) & IN_USE) && !(get_entvar(id, var_oldbuttons) & IN_USE)) {
+	if ((get_entvar(id, var_button) & IN_USE) && 
+		!(get_entvar(id, var_oldbuttons) & IN_USE)) {
 		new entlist[3], count;
 		count = find_sphere_class(id, "func_button", 64.0, entlist, 3);
 
@@ -1079,4 +1093,31 @@ public cmd_Nightvision(id) {
 	}
 
 	return PLUGIN_HANDLED;
+}
+
+public TaskFlashLight(taskId) {
+	new id = taskId - TASK_FLASHLIGHT;
+
+	if (!is_user_alive(id)) {
+		remove_task(taskId);
+		return;
+	}
+
+	new Float:vOrigin[3];
+	get_entvar(id, var_origin, vOrigin);
+
+	message_begin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, .player = id);
+	{
+		write_byte(TE_DLIGHT);
+		write_coord_f(vOrigin[0]);
+		write_coord_f(vOrigin[1]);
+		write_coord_f(vOrigin[2]);
+		write_byte(125);
+		write_byte(255);
+		write_byte(255);
+		write_byte(255);
+		write_byte(10);
+		write_byte(0);
+	}
+	message_end();
 }
