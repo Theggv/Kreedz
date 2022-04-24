@@ -54,12 +54,6 @@ enum _:UserDataStruct {
 	// Timer state
 	TimerState:ud_TimerState,
 
-	// Hud List data
-	bool:ud_showKeys,
-	bool:ud_showKeysSpec,
-	bool:ud_showSpecList,
-	bool:ud_showSpecListAdmin,
-
 	// Settings data
 	ud_TimerData[TimerStruct],
 	ud_Settings[SettingsStruct],
@@ -180,10 +174,6 @@ InitCommands() {
 	kz_register_cmd("restart", 		"cmd_Start");
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
-	kz_register_cmd("speclist", 	"cmd_Speclist");
-	kz_register_cmd("spechide", 	"cmd_SpecHide");
-	kz_register_cmd("showkeys", 	"cmd_ShowKeys");
-	kz_register_cmd("showkeysspec", "cmd_ShowKeysSpec");
 
 	register_clcmd("say /vars", "cmd_vars");
 }
@@ -734,32 +724,7 @@ public cmd_DetectHook_Disable(id) {
 }*/
 
 
-public cmd_Speclist(id)
-{
-	g_UserData[id][ud_showSpecList] = !g_UserData[id][ud_showSpecList];
 
-	return PLUGIN_HANDLED;
-}
-public cmd_SpecHide(id)
-{
-	if(get_user_flags(id) & ADMIN_KICK) {
-		g_UserData[id][ud_showSpecListAdmin] = !g_UserData[id][ud_showSpecListAdmin];
-	}
-
-	return PLUGIN_HANDLED;
-}
-
-public cmd_ShowKeys(id) {
-	g_UserData[id][ud_showKeys] = !g_UserData[id][ud_showKeys];
-
-	return PLUGIN_HANDLED;
-}
-
-public cmd_ShowKeysSpec(id) {
-	g_UserData[id][ud_showKeysSpec] = !g_UserData[id][ud_showKeysSpec];
-
-	return PLUGIN_HANDLED;
-}
 
 /**
  *	------------------------------------------------------------------
@@ -788,11 +753,6 @@ public client_putinserver(id) {
 		g_UserData[id][ud_PauseCheckIndex] = 0;
 		g_UserData[id][ud_LastVel] = Float:{0.0, 0.0, 0.0};
 		g_UserData[id][ud_IsStartSaved] = false;
-
-		g_UserData[id][ud_showKeys] = false;
-		g_UserData[id][ud_showKeysSpec] = true;
-		g_UserData[id][ud_showSpecList] = true;
-		g_UserData[id][ud_showSpecListAdmin] = false;
 	}
 }
 

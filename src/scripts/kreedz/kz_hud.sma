@@ -32,9 +32,12 @@ new g_iMsgStatusText;
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	
+	RegisterHookChain(RG_CBasePlayer_PostThink, "Hook_PostThink");
 
-	kz_register_cmd("showkeys", "cmd_ShowKeys");
+	kz_register_cmd("speclist", 	"cmd_Speclist");
+	kz_register_cmd("spechide", 	"cmd_SpecHide");
+	kz_register_cmd("showkeys", 	"cmd_ShowKeys");
+	kz_register_cmd("showkeysspec", "cmd_ShowKeysSpec");
 
 	set_task(0.1, "Task_HudList", TASK_HUD, .flags = "b");
 
@@ -43,35 +46,58 @@ public plugin_init() {
 	g_iMsgStatusText = get_user_msgid("StatusText");
 }
 
+public client_putinserver(id) {
+	g_UserData[id][ud_showKeys] =  false;
+	g_UserData[id][ud_showKeysSpec] =  true;
+	g_UserData[id][ud_showSpecList] =  true;
+	g_UserData[id][ud_showSpecListAdmin] =  true;
+}
+
+public cmd_Speclist(id)
+{
+	g_UserData[id][ud_showSpecList] = !g_UserData[id][ud_showSpecList];
+
+	return PLUGIN_HANDLED;
+}
+public cmd_SpecHide(id)
+{
+	if(get_user_flags(id) & ADMIN_KICK) {
+		g_UserData[id][ud_showSpecListAdmin] = !g_UserData[id][ud_showSpecListAdmin];
+	}
+
+	return PLUGIN_HANDLED;
+}
+
 public cmd_ShowKeys(id) {
 	g_UserData[id][ud_showKeys] = !g_UserData[id][ud_showKeys];
 
 	return PLUGIN_HANDLED;
 }
 
-public fw_StartFrame()
-{
-	for (new iAlive = 1; iAlive <= MAX_PLAYERS; ++iAlive) {
-		if (!is_user_alive(iAlive))
-			continue;
-		
-		new Button = get_entvar(iAlive, var_button);
+public cmd_ShowKeysSpec(id) {
+	g_UserData[id][ud_showKeysSpec] = !g_UserData[id][ud_showKeysSpec];
 
-		if (Button & IN_FORWARD)
-			g_iPlayerKeys[iAlive] |= IN_FORWARD;
-		if (Button & IN_BACK)
-			g_iPlayerKeys[iAlive] |= IN_BACK;
-		if (Button & IN_MOVELEFT)
-			g_iPlayerKeys[iAlive] |= IN_MOVELEFT;
-		if (Button & IN_MOVERIGHT)
-			g_iPlayerKeys[iAlive] |= IN_MOVERIGHT;
-		if (Button & IN_DUCK)
-			g_iPlayerKeys[iAlive] |= IN_DUCK;
-		if (Button & IN_JUMP )
-			g_iPlayerKeys[iAlive] |= IN_JUMP;
-	}
+	return PLUGIN_HANDLED;
+}
 
-	return FMRES_IGNORED;
+public Hook_PostThink(id) {
+	if (!is_user_alive(id))
+		return;
+
+	new Button = get_entvar(id, var_button);
+
+	if (Button & IN_FORWARD)
+		g_iPlayerKeys[id] |= IN_FORWARD;
+	if (Button & IN_BACK)
+		g_iPlayerKeys[id] |= IN_BACK;
+	if (Button & IN_MOVELEFT)
+		g_iPlayerKeys[id] |= IN_MOVELEFT;
+	if (Button & IN_MOVERIGHT)
+		g_iPlayerKeys[id] |= IN_MOVERIGHT;
+	if (Button & IN_DUCK)
+		g_iPlayerKeys[id] |= IN_DUCK;
+	if (Button & IN_JUMP )
+		g_iPlayerKeys[id] |= IN_JUMP;
 }
 
 public Task_HudList() {
@@ -131,7 +157,7 @@ public Task_HudList() {
 					szTime, numChecks, numTeleports);
 			}
 		}
-		
+
 		formatex(szAddKey, charsmax(szAddKey), "%s", 
 			g_iPlayerKeys[iAlive] & IN_FORWARD ? "W^t" : ".^t");
 		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
