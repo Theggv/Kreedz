@@ -257,7 +257,8 @@ SavePos(id)
 		(`uid`, `mapid`, `time`, `cp`, `tp`, \
 		`pos_x`, `pos_y`, `pos_z`, \
 		`lastcp_x`, `lastcp_y`, `lastcp_z`, \
-		`lastvel_x`, `lastvel_y`, `lastvel_z`, `weapon`) \
+	 	`weapon`, \
+		`lastvel_x`, `lastvel_y`, `lastvel_z`) \
 		\
 		VALUES (%d, %d, %d, %d, %d, \
 		%d, %d, %d, \
@@ -268,7 +269,8 @@ SavePos(id)
 		kz_get_actual_time(id), kz_get_cp_num(id), kz_get_tp_num(id),
 		iLastPos[0], iLastPos[1], iLastPos[2],
 		iLastCp[0], iLastCp[1], iLastCp[2],
-		iLastVel[0], iLastVel[1], iLastVel[2], kz_get_min_rank(id)
+		kz_get_min_rank(id),
+		iLastVel[0], iLastVel[1], iLastVel[2]
 		);
 
 
