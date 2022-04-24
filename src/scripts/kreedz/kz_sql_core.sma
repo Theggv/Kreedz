@@ -195,6 +195,9 @@ public init_tables()
 		`lastcp_x` int(11) NOT NULL DEFAULT 0,\
 		`lastcp_y` int(11) NOT NULL DEFAULT 0,\
 		`lastcp_z` int(11) NOT NULL DEFAULT 0,\
+		`lastvel_x` int(11) NOT NULL DEFAULT 0,\
+		`lastvel_y` int(11) NOT NULL DEFAULT 0,\
+		`lastvel_z` int(11) NOT NULL DEFAULT 0,\
 		`weapon` int(11) NOT NULL DEFAULT 6,\
 		FOREIGN KEY (uid) REFERENCES kz_uid(id)\
 			ON DELETE CASCADE \

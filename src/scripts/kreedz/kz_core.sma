@@ -19,18 +19,7 @@
  */
 
 #define MAX_CACHE			20
-#define HUD_UPDATE_TIME		0.2
-#define KEYS_UPDATE_TIME	0.1
-
-enum (+=64) {
-	TASK_FLASHLIGHT = 2048,
-}
-
-enum _:HudChannels {
-	channel_All = -1,
-	channel_Timer = 2,
-	channel_Keys = 1
-};
+#define TIMER_UPDATE		1.0
 
 enum _:CheckpointStruct {
 	Float:cp_Pos[3],
@@ -56,6 +45,7 @@ enum _:UserDataStruct {
 	// Pause data
 	Float:ud_PauseTime,
 	Float:ud_LastPos[3],
+	Float:ud_LastVel[3],
 
 	// Start position data
 	bool:ud_IsStartSaved,
@@ -64,12 +54,11 @@ enum _:UserDataStruct {
 	// Timer state
 	TimerState:ud_TimerState,
 
-	// Nightvision & flashlight
-	ud_NVGMode,
-
-	// Keys
+	// Hud List data
 	bool:ud_showKeys,
 	bool:ud_showKeysSpec,
+	bool:ud_showSpecList,
+	bool:ud_showSpecListAdmin,
 
 	// Settings data
 	ud_TimerData[TimerStruct],
@@ -109,10 +98,12 @@ new Float:g_PauseChecks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 new Trie:g_tStarts;
 new Trie:g_tStops;
 
+//Timer Roundtime
+new g_fwd_MsgRoundTime;
+const TIMER_SHOW = (1<<1)
 
-// night vision
-new g_sDefaultLight[8];
-new g_fwd_LightStyle;
+
+
 
 /**
  *	------------------------------------------------------------------
@@ -129,19 +120,18 @@ public plugin_init() {
 
 	// Fix for kz_a2_bhop_corruo_ez/h and maps with movable start/end buttons
 	RegisterHam(Ham_Touch, "func_button", "ham_Touch", 0);
-
-	unregister_forward(FM_LightStyle, g_fwd_LightStyle);
-
-	// Flashlight block
-	register_impulse(100, "impulse_FlashLight");
+	
+	//RoundTime timer 
+	g_fwd_MsgRoundTime = get_user_msgid("RoundTime");
 
 	// Init section
 	InitTries();
 	InitForwards();
 	InitCommands();
 
-	set_task(HUD_UPDATE_TIME, "timer_handler", .flags = "b");
-	set_task(KEYS_UPDATE_TIME, "keys_handler", .flags = "b");
+	set_task(TIMER_UPDATE, "timer_handler", .flags = "b");
+
+	register_forward(FM_StartFrame, "fw_StartFrame");
 	
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_r"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_g"), 0);
@@ -174,11 +164,10 @@ InitForwards() {
 }
 
 InitCommands() {
-	register_clcmd("kz_version", 	"cmd_ShowVersion");
+	//register_clcmd("kz_version", 	"cmd_ShowVersion");
 
 	register_clcmd("+hook", 		"cmd_DetectHook");
 	register_clcmd("-hook", 		"cmd_DetectHook_Disable");
-	register_clcmd("nightvision", 	"cmd_Nightvision");
 
 	kz_register_cmd("cp", 			"cmd_Checkpoint");
 	kz_register_cmd("tp", 			"cmd_Gocheck");
@@ -191,11 +180,12 @@ InitCommands() {
 	kz_register_cmd("restart", 		"cmd_Start");
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
-	kz_register_cmd("keys", 		"cmd_ShowKeys");
+	kz_register_cmd("speclist", 	"cmd_Speclist");
+	kz_register_cmd("spechide", 	"cmd_SpecHide");
 	kz_register_cmd("showkeys", 	"cmd_ShowKeys");
 	kz_register_cmd("showkeysspec", "cmd_ShowKeysSpec");
 
-	// register_clcmd("say /vars", "cmd_vars");
+	register_clcmd("say /vars", "cmd_vars");
 }
 
 InitTries() {
@@ -217,10 +207,6 @@ InitTries() {
 	
 	for (new i; i < sizeof szStops; i++)
 		TrieSetCell(g_tStops, szStops[i], 1);
-}
-
-public plugin_precache() {
-	g_fwd_LightStyle = register_forward(FM_LightStyle, "fw_LightStyle");
 }
 
 public cmd_vars(id) {
@@ -256,12 +242,16 @@ public plugin_natives()
 	register_native("kz_get_last_pos", 		"native_get_last_pos");
 	register_native("kz_set_last_pos", 		"native_set_last_pos");
 
+	register_native("kz_get_last_vel", 		"native_get_last_vel");
+	register_native("kz_set_last_vel", 		"native_set_last_vel");
+
 	register_native("kz_get_last_cp", 		"native_get_last_cp");
 	register_native("kz_set_last_cp", 		"native_set_last_cp");
 
 	register_native("kz_get_actual_time", 	"native_get_actual_time");
 	register_native("kz_set_start_time", 	"native_set_start_time");
 
+	register_native("kz_get_timer_data", 	"native_get_timer_data");
 	register_native("kz_set_timer_data", 	"native_set_timer_data");
 
 	register_native("kz_get_settings", 		"native_get_settings");
@@ -356,6 +346,31 @@ public native_set_last_cp() {
 	g_UserData[id][ud_AvailableStucks] = 1;
 }
 
+public native_get_last_vel() {
+	new id = get_param(1);
+
+	new value[PosStruct];
+
+	value[pos_x] = g_UserData[id][ud_LastVel][0];
+	value[pos_y] = g_UserData[id][ud_LastVel][1];
+	value[pos_z] = g_UserData[id][ud_LastVel][2];
+
+	set_array(2, value, sizeof(value));
+}
+
+public native_set_last_vel() {
+	new id = get_param(1);
+
+	new value[PosStruct];
+
+	get_array(2, value, sizeof(value));
+
+	g_UserData[id][ud_LastVel][0] = value[pos_x];
+	g_UserData[id][ud_LastVel][1] = value[pos_y];
+	g_UserData[id][ud_LastVel][2] = value[pos_z];
+}
+
+
 public Float:native_get_actual_time() {
 	new id = get_param(1);
 
@@ -388,6 +403,8 @@ public native_set_pause() {
 
 	cmd_Fade(id);
 
+	get_entvar(id, var_velocity, g_UserData[id][ud_LastVel]);
+
 	ExecuteForward(g_Forwards[fwd_TimerPausePost], _, id);
 }
 
@@ -413,6 +430,15 @@ public TimerState:native_get_timer_state() {
 	return g_UserData[id][ud_TimerState];
 }
 
+public native_get_timer_data() {
+	new id = get_param(1);
+
+	new value[TimerStruct];
+	copy(value, sizeof(value), g_UserData[id][ud_TimerData]);
+
+	set_array(2, value, sizeof(value));
+}
+
 public native_set_timer_data() {
 	new id = get_param(1);
 
@@ -426,8 +452,7 @@ public native_get_settings() {
 	new id = get_param(1);
 
 	new value[SettingsStruct];
-
-	value = g_UserData[id][ud_Settings];
+	copy(value, sizeof(value), g_UserData[id][ud_Settings]);
 
 	set_array(2, value, sizeof(value));
 }
@@ -638,6 +663,8 @@ public cmd_Stop(id)
 
 	ExecuteForward(g_Forwards[fwd_TimerStopPost], iRet, id);
 
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
+	
 	return PLUGIN_HANDLED;
 }
 
@@ -648,6 +675,15 @@ public cmd_Pause(id) {
 	ExecuteForward(g_Forwards[fwd_TimerPausePre], iRet, id);
 
 	if (iRet == KZ_SUPERCEDE) return PLUGIN_HANDLED;
+
+	// air check
+	/*if (!(get_entvar(id, var_flags) & FL_ONGROUND) &&
+		!(get_entvar(id, var_movetype) == MOVETYPE_FLY)) {
+		set_dhudmessage(150, 0, 0, -1.0, 0.8, 0, 3.0, 1.0, 0.0, 0.0);
+		show_dhudmessage(id, "%L", id, "KZ_HUD_CANT_SAVE");
+
+		return PLUGIN_HANDLED;
+	}*/
 
 	switch (g_UserData[id][ud_TimerState]) {
 		case TIMER_DISABLED: return PLUGIN_HANDLED;
@@ -665,6 +701,11 @@ public cmd_Pause(id) {
 
 			set_user_noclip(id, 0);
 			amxclient_cmd(id, "-hook");
+
+			g_UserData[id][ud_LastVel] = 0.0;
+			g_UserData[id][ud_LastVel][1] = 0.0;
+			g_UserData[id][ud_LastVel][2] = g_UserData[id][ud_LastVel][2];
+			set_entvar(id, var_velocity, g_UserData[id][ud_LastVel]);
 
 			ExecuteForward(g_Forwards[fwd_TimerPausePost], _, id);
 		}
@@ -685,6 +726,29 @@ public cmd_DetectHook_Disable(id) {
 	g_UserData[id][ud_HookProtection] = get_gametime();
 }
 
+
+/*public cmd_ShowVersion(id) {
+	client_print(id, print_console, "[KZ] Current version: %s", VERSION);
+
+	return PLUGIN_HANDLED;
+}*/
+
+
+public cmd_Speclist(id)
+{
+	g_UserData[id][ud_showSpecList] = !g_UserData[id][ud_showSpecList];
+
+	return PLUGIN_HANDLED;
+}
+public cmd_SpecHide(id)
+{
+	if(get_user_flags(id) & ADMIN_KICK) {
+		g_UserData[id][ud_showSpecListAdmin] = !g_UserData[id][ud_showSpecListAdmin];
+	}
+
+	return PLUGIN_HANDLED;
+}
+
 public cmd_ShowKeys(id) {
 	g_UserData[id][ud_showKeys] = !g_UserData[id][ud_showKeys];
 
@@ -693,23 +757,6 @@ public cmd_ShowKeys(id) {
 
 public cmd_ShowKeysSpec(id) {
 	g_UserData[id][ud_showKeysSpec] = !g_UserData[id][ud_showKeysSpec];
-
-	return PLUGIN_HANDLED;
-}
-
-public impulse_FlashLight(id) {
-	if (!task_exists(TASK_FLASHLIGHT + id)) {
-		set_task(0.8, "TaskFlashLight", TASK_FLASHLIGHT + id, .flags = "b");
-		TaskFlashLight(TASK_FLASHLIGHT + id);
-	} else {
-		remove_task(TASK_FLASHLIGHT + id);
-	}
-
-	return PLUGIN_HANDLED;
-}
-
-public cmd_ShowVersion(id) {
-	client_print(id, print_console, "[KZ] Current version: %s", VERSION);
 
 	return PLUGIN_HANDLED;
 }
@@ -733,19 +780,19 @@ public client_putinserver(id) {
 		g_UserData[id][ud_HookProtection] = 0.0;
 		g_UserData[id][ud_isHookEnable] = false;
 
-		g_UserData[id][ud_showKeys] = false;
-		g_UserData[id][ud_showKeysSpec] = true;
-
 		g_UserData[id][ud_AvailableStucks] = 0;
 		g_UserData[id][ud_CheckIndex] = 0;
 		g_UserData[id][ud_ChecksNum] = 0;
 		g_UserData[id][ud_TeleNum] = 0;
 		g_UserData[id][ud_PauseAvailableStucks] = 0;
 		g_UserData[id][ud_PauseCheckIndex] = 0;
-		g_UserData[id][ud_LastPos] = Float:{0.0, 0.0, 0.0};
+		g_UserData[id][ud_LastVel] = Float:{0.0, 0.0, 0.0};
 		g_UserData[id][ud_IsStartSaved] = false;
 
-		g_UserData[id][ud_NVGMode] = 0;
+		g_UserData[id][ud_showKeys] = false;
+		g_UserData[id][ud_showKeysSpec] = true;
+		g_UserData[id][ud_showSpecList] = true;
+		g_UserData[id][ud_showSpecListAdmin] = false;
 	}
 }
 
@@ -754,8 +801,6 @@ public client_disconnected(id) {
 		g_UserData[id][ud_TimerState] = TIMER_PAUSED;
 		g_UserData[id][ud_PauseTime] = get_gametime();
 	}
-
-	remove_task(TASK_FLASHLIGHT + id);
 }
 
 public ham_Use(iEnt, id) {
@@ -801,6 +846,10 @@ public ham_Touch(iEnt, id) {
 public ham_PreThink(id) {
 	if (!is_user_alive(id)) return HAM_IGNORED;
 
+	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW) {
+		set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
+	}
+
 	// use detection
 	if ((get_entvar(id, var_button) & IN_USE) && 
 		!(get_entvar(id, var_oldbuttons) & IN_USE)) {
@@ -831,11 +880,6 @@ public ham_PostThink(id) {
 	return HAM_IGNORED;
 }
 
-public fw_LightStyle(iStyle, const szValue[]) {
-	if (!iStyle)
-		copy(g_sDefaultLight, charsmax(g_sDefaultLight), szValue);
-}
-
 run_start(id) {
 	new iRet;
 	ExecuteForward(g_Forwards[fwd_TimerStartPre], iRet, id);
@@ -861,6 +905,9 @@ run_start(id) {
 	g_UserData[id][ud_StartPos][cp_Angle] = vAngle;
 
 	cmd_Fade(id);
+
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD)  & ~HIDEHUD_TIMER);
+	cmd_TimerRoundtime(id, 0);
 
 	ExecuteForward(g_Forwards[fwd_TimerStartPost], _, id);
 }
@@ -890,6 +937,7 @@ run_finish(id)
 		szName, iMin, iSec, iMS, 
 		g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum], szWeaponName);
 
+	// optional
 	new curScore = get_user_frags(id) * 60 + get_user_deaths(id);
 	if (curScore > iMin * 60 + iSec || !curScore)
 	{
@@ -906,39 +954,23 @@ run_finish(id)
 
 	cmd_Fade(id);
 
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
+
 	ExecuteForward(g_Forwards[fwd_TimerFinishPost], _, id, fTime);
 }
 
 public timer_handler() {
-	static szMsg[256], szTime[32];
-	static iMin, iSec, iMS;
-
 	for (new id = 1; id <= MAX_PLAYERS; ++id) {
 		if (!is_user_alive(id))
 			continue;
 
 		if (!g_UserData[id][ud_StartTime])
 			continue;
-
+			
 		switch (g_UserData[id][ud_TimerState]) {
 			case TIMER_DISABLED: continue;
-			case TIMER_ENABLED: {
-				UTIL_TimeToSec(get_gametime() - g_UserData[id][ud_StartTime], iMin, iSec, iMS);
-
-				UTIL_FormatTime(get_gametime() - g_UserData[id][ud_StartTime],
-				 	szTime, charsmax(szTime), g_UserData[id][ud_TimerData][timer_MS]);
-
-				formatex(szMsg, charsmax(szMsg), "%s | [ %d cp | %d gc ]",
-					szTime, g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum]);
-			}
-			case TIMER_PAUSED: {
-				UTIL_FormatTime(g_UserData[id][ud_PauseTime] - g_UserData[id][ud_StartTime],
-				 	szTime, charsmax(szTime), g_UserData[id][ud_TimerData][timer_MS]);
-
-				formatex(szMsg, charsmax(szMsg), 
-					"%s | [ %d cp | %d gc ]^nPAUSED - say '/unpause' or '/p' to resume.",
-					szTime, 
-					g_UserData[id][ud_ChecksNum], g_UserData[id][ud_TeleNum]);
+			case TIMER_ENABLED, TIMER_PAUSED: {
+				cmd_TimerRoundtime(id, floatround(kz_get_actual_time(id), floatround_floor));
 			}
 		}
 
@@ -946,105 +978,12 @@ public timer_handler() {
 			UTIL_BroadcastToSpec(id, "***Paused***", false, true, 
 				150, 0, 0, 			// rgb
 				-1.0, 0.8, 			// x y
-				HUD_UPDATE_TIME); 	// time
-		}
-
-		for (new i = 1; i <= MAX_PLAYERS; ++i) {
-			static timerData[TimerStruct], rgb[3];
-
-			if (is_user_alive(i) && i != id)
-				continue;
-
-			if (get_entvar(i, var_iuser2) != id && i != id)
-				continue;
-
-			rgb = UTIL_RGBUnpack(g_UserData[i][ud_TimerData][timer_RGB]);
-
-			timerData[timer_X] = g_UserData[i][ud_TimerData][timer_X];
-			timerData[timer_Y] = g_UserData[i][ud_TimerData][timer_Y];
-			timerData[timer_isDhud] = g_UserData[i][ud_TimerData][timer_isDhud];
-
-			if (timerData[timer_isDhud]) {
-				set_dhudmessage(rgb[0], rgb[1], rgb[2], 
-					timerData[timer_X], timerData[timer_Y], 0, 
-					0.00, HUD_UPDATE_TIME, 0.01, 0.01);
-				show_dhudmessage(i, szMsg);
-			}
-			else {
-				set_hudmessage(rgb[0], rgb[1], rgb[2], 
-					timerData[timer_X], timerData[timer_Y], 0, 
-					0.00, HUD_UPDATE_TIME, 0.01, 0.01, channel_Timer);
-				show_hudmessage(i, szMsg);
-			}
-		}
-
-		// UTIL_BroadcastToSpec(id, szMsg, false, false, 
-		// 	0, 200, 0, 		// rgb
-		// 	0.02, 0.2, 			// x y
-		// 	HUD_UPDATE_TIME, 	// time
-		// 	channel_Timer); 	// channel
-	}
-}
-
-public keys_handler() {
-	static szMsg[128], szAdd[16];
-
-	for (new id = 1; id <= MAX_PLAYERS; ++id) {
-		if (!is_user_alive(id))
-			continue;
-
-		new iButton = get_entvar(id, var_button);
-
-		szMsg = "^t ";
-
-		formatex(szAdd, charsmax(szAdd), "%s", 
-			(iButton & IN_FORWARD) && !(iButton & IN_BACK) ? "W^t" : "-^t");
-		add(szMsg, charsmax(szMsg), szAdd);
-
-		formatex(szAdd, charsmax(szAdd), "%s", 
-			(iButton & IN_JUMP) ? "^tjump^n" : "^t-^n");
-		add(szMsg, charsmax(szMsg), szAdd);
-
-		formatex(szAdd, charsmax(szAdd), "%s", 
-			(iButton & IN_MOVELEFT) && !(iButton & IN_MOVERIGHT) ? "A^t" : "-^t");
-		add(szMsg, charsmax(szMsg), szAdd);
-
-		formatex(szAdd, charsmax(szAdd), "%s", 
-			(iButton & IN_BACK) && !(iButton & IN_FORWARD) ? "S^t" : "-^t");
-		add(szMsg, charsmax(szMsg), szAdd);
-
-		formatex(szAdd, charsmax(szAdd), "%s", 
-			(iButton & IN_MOVERIGHT) && !(iButton & IN_MOVELEFT) ? "D^t" : "-^t");
-		add(szMsg, charsmax(szMsg), szAdd);
-
-		formatex(szAdd, charsmax(szAdd), "%s", 
-			(iButton & IN_DUCK) ? "duck^n" : "-^n");
-		add(szMsg, charsmax(szMsg), szAdd);
-
-		if (g_UserData[id][ud_showKeys]) {
-			set_hudmessage(175, 175, 175, -1.0, 0.6, 0, 0.00, 
-				KEYS_UPDATE_TIME, 0.01, 0.01, channel_Keys);
-			show_hudmessage(id, szMsg);
-		}
-
-		for (new iDead = 1; iDead <= MAX_PLAYERS; ++iDead) {
-			if (is_user_alive(iDead) || id == iDead)
-				continue;
-
-			if (get_entvar(iDead, var_iuser2) != id)
-				continue;
-
-			if (g_UserData[iDead][ud_showKeysSpec]) {
-				set_hudmessage(175, 175, 175, -1.0, 0.6, 0, 0.00, 
-					KEYS_UPDATE_TIME, 0.01, 0.01, channel_Keys);
-				show_hudmessage(iDead, szMsg);
-			}
+				TIMER_UPDATE); 		// time
 		}
 	}
 }
 
-public cmd_Fade(id)
-{
+public cmd_Fade(id) {
 	if (!is_user_alive(id))
 		return;
 
@@ -1072,52 +1011,11 @@ public cmd_Fade(id)
 	}
 }
 
-public cmd_Nightvision(id) {
-	g_UserData[id][ud_NVGMode] = (g_UserData[id][ud_NVGMode] + 1) % 3;
-
-	if (g_UserData[id][ud_NVGMode] == 1) {
-		message_begin(MSG_ONE_UNRELIABLE, SVC_LIGHTSTYLE, _, id);
-		write_byte(0);
-		write_string("#");
-		message_end();
-	} else if (g_UserData[id][ud_NVGMode] == 2) {
-		message_begin(MSG_ONE_UNRELIABLE, SVC_LIGHTSTYLE, _, id);
-		write_byte(0);
-		write_string("z");
-		message_end();
-	} else {
-		message_begin(MSG_ONE_UNRELIABLE, SVC_LIGHTSTYLE, _, id);
-		write_byte(0);
-		write_string(g_sDefaultLight);
+stock cmd_TimerRoundtime(id, time)
+{
+	if(is_user_alive(id)) {
+		message_begin(MSG_ONE_UNRELIABLE, g_fwd_MsgRoundTime, _, id);
+		write_short(time + 1);
 		message_end();
 	}
-
-	return PLUGIN_HANDLED;
-}
-
-public TaskFlashLight(taskId) {
-	new id = taskId - TASK_FLASHLIGHT;
-
-	if (!is_user_alive(id)) {
-		remove_task(taskId);
-		return;
-	}
-
-	new Float:vOrigin[3];
-	get_entvar(id, var_origin, vOrigin);
-
-	message_begin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, .player = id);
-	{
-		write_byte(TE_DLIGHT);
-		write_coord_f(vOrigin[0]);
-		write_coord_f(vOrigin[1]);
-		write_coord_f(vOrigin[2]);
-		write_byte(125);
-		write_byte(255);
-		write_byte(255);
-		write_byte(255);
-		write_byte(10);
-		write_byte(0);
-	}
-	message_end();
 }

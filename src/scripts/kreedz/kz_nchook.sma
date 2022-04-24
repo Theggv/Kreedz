@@ -12,9 +12,11 @@
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
 
-#define TASK_HOOK 	5100
+enum _:(+=64) {
+	TASK_HOOK = 5000,
+}
 
-#define MAX_SPEED	500.0
+#define MAX_SPEED	600.0
 
 enum _:UserData
 {
@@ -152,7 +154,7 @@ public fw_PreThink(id) {
 public cmd_Hook_Disable(id) {
 	g_UserData[id][ud_IsHookEnable] = false;
 
-	if(task_exists(TASK_HOOK + id))
+	if (task_exists(TASK_HOOK + id))
 		remove_task(TASK_HOOK + id);
 
 	remove_beam(id);

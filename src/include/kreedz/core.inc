@@ -123,6 +123,9 @@ native kz_set_tp_num(id, value);
 native kz_get_last_pos(id, value[PosStruct]);
 native kz_set_last_pos(id, value[PosStruct]);
 
+native kz_get_last_vel(id, value[PosStruct]);
+native kz_set_last_vel(id, value[PosStruct]);
+
 native kz_get_last_cp(id, value[PosStruct]);
 native kz_set_last_cp(id, value[PosStruct]);
 
@@ -132,6 +135,7 @@ native kz_set_start_time(id, Float:value);
 native kz_get_settings(id, value[SettingsStruct]);
 native kz_set_settings(id, value[SettingsStruct]);
 
+native kz_get_timer_data(id, value[TimerStruct]);
 native kz_set_timer_data(id, value[TimerStruct]);
 
 native kz_is_radio_enable(id);
