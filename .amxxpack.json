@@ -1,0 +1,50 @@
+{
+  "input": {
+    "scripts": "./src/scripts",
+    "include": "./src/include",
+    "assets": "./assets"
+  },
+  "output": {
+    "scripts": "./dist/addons/amxmodx/scripting",
+    "plugins": "./dist/addons/amxmodx/plugins",
+    "include": "./dist/addons/amxmodx/scripting/include",
+    "assets": "./dist"
+  },
+  "compiler": {
+    "dir": "./.compiler",
+    "version": "1.9.0-git5294",
+    "dev": true,
+    "addons": ["cstrike"],
+    "executable": "amxxpc"
+  },
+  "thirdparty": {
+    "dir": "./.thirdparty",
+    "dependencies": [
+      {
+        "name": "reapi",
+        "url": "https://github.com/s1lentq/reapi/releases/download/5.21.0.252/reapi-bin-5.21.0.252.zip"
+      },
+      {
+        "name": "curl",
+        "url": "https://github.com/Next21Team/AmxxCurl/releases/download/1.1.1/amx_includes.zip"
+      }
+    ]
+  },
+  "include": [
+    "./.compiler/include",
+    "./.thirdparty/reapi/addons/amxmodx/scripting/include",
+    "./.thirdparty/curl/amx_includes"
+  ],
+  "rules": {
+    "flatCompilation": true
+  },
+  "cli": {
+    "templates": {
+      "context": {
+        "PLUGIN_VERSION": "1.0.0",
+        "PLUGIN_AUTHOR": "AMXXPack"
+      }
+    }
+  }
+}
+
