@@ -8,7 +8,7 @@
 #include <reapi>
 
 // api
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Custom aa"
 #define VERSION 	__DATE__

@@ -1,7 +1,7 @@
 #include <amxmodx>
 #include <curl>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	"[Kreedz] Records"
 #define VERSION "1.0"

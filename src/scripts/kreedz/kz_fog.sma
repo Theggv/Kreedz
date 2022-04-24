@@ -2,7 +2,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 			"[KZ] Frames on the ground"
 #define VERSION 		__DATE__

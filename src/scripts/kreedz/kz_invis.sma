@@ -7,7 +7,7 @@
 #include <reapi>
 #include <xs>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 enum _:InvisStruct
 {

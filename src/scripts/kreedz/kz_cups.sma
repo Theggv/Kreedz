@@ -28,7 +28,7 @@
 #include <reapi>
 #include <xs>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Cups"
 #define VERSION 	__DATE__

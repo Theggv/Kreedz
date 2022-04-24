@@ -2,7 +2,7 @@
 #include <fakemeta>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 			"[KZ] Hud"
 #define VERSION 		__DATE__

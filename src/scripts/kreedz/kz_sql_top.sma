@@ -2,7 +2,8 @@
 #include <cstrike>
 #include <sqlx>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
+#include <kreedz_sql>
 
 #pragma dynamic 16384
 

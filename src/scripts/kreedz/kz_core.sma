@@ -6,7 +6,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Core"
 #define VERSION 	__DATE__

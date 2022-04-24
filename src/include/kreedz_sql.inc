@@ -1,3 +1,9 @@
+#if defined _kreedz_sql_included
+	#endinput
+#endif
+
+#define _kreedz_sql_included
+
 #define MYSQL_LOG "addons/amxmodx/logs/kz_db_log/main.log"
 
 forward kz_sql_initialized();

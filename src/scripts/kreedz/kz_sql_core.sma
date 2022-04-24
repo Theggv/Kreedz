@@ -3,7 +3,8 @@
 #include <cstrike>
 #include <sqlx>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
+#include <kreedz_sql>
 
 #define PLUGIN 	 	"[Kreedz] Sql Core"
 #define VERSION 	__DATE__

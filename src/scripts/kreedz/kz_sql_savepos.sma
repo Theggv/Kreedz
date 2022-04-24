@@ -13,7 +13,8 @@
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
+#include <kreedz_sql>
 
 #define PLUGIN 	 	"[Kreedz] Sql SavePos"
 #define VERSION 	__DATE__
