@@ -1,5 +1,5 @@
 {
-  "name": "kreedz",
+  "name": "kreedz-amxx",
   "version": "1.0.0",
   "description": "Kreedz Mod",
   "scripts": {
@@ -12,8 +12,7 @@
     "update-config": "node ./scripts/update-config.js",
     "postinstall": "npm run init-config"
   },
-  "author": "Hedgehog Fog",
-  "license": "MIT",
+  "author": "ggv",
   "devDependencies": {
     "glob": "^7.1.6",
     "gulp": "^4.0.2",
