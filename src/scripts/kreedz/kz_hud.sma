@@ -47,10 +47,15 @@ public plugin_init() {
 }
 
 public client_putinserver(id) {
-	g_UserData[id][ud_showKeys] =  false;
-	g_UserData[id][ud_showKeysSpec] =  true;
-	g_UserData[id][ud_showSpecList] =  true;
-	g_UserData[id][ud_hideAdminInSpecList] =  true;
+	g_UserData[id][ud_showKeys] = false;
+	g_UserData[id][ud_showKeysSpec] = true;
+	g_UserData[id][ud_showSpecList] = true;
+
+	if (get_user_flags(id) & ADMIN_KICK) {
+		g_UserData[id][ud_hideAdminInSpecList] = true;
+	} else {
+		g_UserData[id][ud_hideAdminInSpecList] = false;
+	}
 }
 
 public cmd_Speclist(id)
