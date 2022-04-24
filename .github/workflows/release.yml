@@ -61,8 +61,8 @@
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             upload_url: ${{ steps.create_release.outputs.upload_url }}
-            asset_path: ./dist/bundles/kreedz-${{ steps.buildvars.outputs.tagversion }}-addons.zip
-            asset_name: kreedz-${{ steps.buildvars.outputs.tagversion }}-addons.zip
+            asset_path: ./dist/bundles/${{ steps.buildvars.outputs.tagname }}-addons.zip
+            asset_name: ${{ steps.buildvars.outputs.tagname }}-addons.zip
             asset_content_type: application/zip
 
         - name: Upload Release Resources
@@ -72,8 +72,8 @@
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             upload_url: ${{ steps.create_release.outputs.upload_url }}
-            asset_path: ./dist/bundles/kreedz-${{ steps.buildvars.outputs.tagversion }}-resources.zip
-            asset_name: kreedz-${{ steps.buildvars.outputs.tagversion }}-resources.zip
+            asset_path: ./dist/bundles/${{ steps.buildvars.outputs.tagname }}-resources.zip
+            asset_name: ${{ steps.buildvars.outputs.tagname }}-resources.zip
             asset_content_type: application/zip
 
         - name: Cleanup
