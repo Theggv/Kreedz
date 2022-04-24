@@ -21,7 +21,7 @@ enum _:UserDataStruct {
 	bool:ud_showKeys,
 	bool:ud_showKeysSpec,
 	bool:ud_showSpecList,
-	bool:ud_showSpecListAdmin,
+	bool:ud_hideAdminInSpecList,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -50,7 +50,7 @@ public client_putinserver(id) {
 	g_UserData[id][ud_showKeys] =  false;
 	g_UserData[id][ud_showKeysSpec] =  true;
 	g_UserData[id][ud_showSpecList] =  true;
-	g_UserData[id][ud_showSpecListAdmin] =  true;
+	g_UserData[id][ud_hideAdminInSpecList] =  true;
 }
 
 public cmd_Speclist(id)
@@ -61,8 +61,8 @@ public cmd_Speclist(id)
 }
 public cmd_SpecHide(id)
 {
-	if(get_user_flags(id) & ADMIN_KICK) {
-		g_UserData[id][ud_showSpecListAdmin] = !g_UserData[id][ud_showSpecListAdmin];
+	if (get_user_flags(id) & ADMIN_KICK) {
+		g_UserData[id][ud_hideAdminInSpecList] = !g_UserData[id][ud_hideAdminInSpecList];
 	}
 
 	return PLUGIN_HANDLED;
@@ -101,166 +101,145 @@ public Hook_PostThink(id) {
 }
 
 public Task_HudList() {
-	static szMsgHud[2048], szSpectators[2048], szName[MAX_NAME_LENGTH];
-	static specNum, bool:hasSpectators;
-	
-	static szMsgKeylist[128], szAddKey[16];
+	static specNum;
 
-	static szMsgTimeAlive[128],szMsgTimeDead[128], szTime[32];
-	static iMin, iSec, iMS;
+	static szMsgHud[2048];
+
+	static szRunData[128], szTime[32];
+	static szMsgKeysList[128];
+	static szSpectators[2048];
 
 	for (new iAlive = 1; iAlive <= MAX_PLAYERS; ++iAlive) {
 		if (!is_user_alive(iAlive) && !is_user_bot(iAlive))
 			continue;
 
-		hasSpectators = false;
 		specNum = 0;
 		
 		formatex(szSpectators, charsmax(szSpectators), "");
-		szMsgKeylist = "^t ";
-		szMsgTimeAlive = "^t ";
-		szMsgTimeDead = "^t ";
+		formatex(szMsgKeysList, charsmax(szSpectators), "^t ");
+		formatex(szRunData, charsmax(szSpectators), "^t ");
 
-		new Float:actualTime = kz_get_actual_time(iAlive);
+		// get checks and teleports
+		FormatCheckpointsHud(iAlive, szRunData, charsmax(szRunData));
 
-		new timerData[TimerStruct];
-		kz_get_timer_data(iAlive, timerData);
+		// get timer
+		FormatTimerHud(iAlive, szTime, charsmax(szTime));
 
-		new numChecks = kz_get_cp_num(iAlive);
-		new numTeleports = kz_get_tp_num(iAlive);
+		// get pressed keys
+		FormatKeysHud(iAlive, szMsgKeysList, charsmax(szMsgKeysList));
 
-		switch (kz_get_timer_state(iAlive)) {
-			case TIMER_DISABLED: {
-				formatex(szMsgTimeAlive, charsmax(szMsgTimeAlive), "^t^n^n");
-				formatex(szMsgTimeDead, charsmax(szMsgTimeDead), "^t^n^n");
+		// get spec list
+		FormatSpecList(iAlive, szSpectators, charsmax(szSpectators), specNum);
+
+		for (new id = 1; id <= MAX_PLAYERS; ++id) {
+			if (id == iAlive) {
+				formatex(szMsgHud, charsmax(szMsgHud), "%s", szRunData);
+
+				if (g_UserData[id][ud_showKeys])
+					add(szMsgHud, charsmax(szMsgHud), szMsgKeysList);
 			}
-			case TIMER_ENABLED: {
-				UTIL_TimeToSec(actualTime, iMin, iSec, iMS);
+			else {
+				formatex(szMsgHud, charsmax(szMsgHud), "%s %s", szTime, szRunData);
 
-				UTIL_FormatTime(actualTime, szTime, charsmax(szTime), timerData[timer_MS]);
-
-				formatex(szMsgTimeAlive, charsmax(szMsgTimeAlive), "[%d cp %d gc]^n^n",
-					numChecks, numTeleports);
-
-				formatex(szMsgTimeDead, charsmax(szMsgTimeDead), "%s [%d cp %d gc]^n^n",
-					szTime, numChecks, numTeleports);
-			}
-			case TIMER_PAUSED: {
-				UTIL_FormatTime(actualTime, szTime, charsmax(szTime), timerData[timer_MS]);
-
-				formatex(szMsgTimeAlive, charsmax(szMsgTimeAlive), 
-					"[%d cp %d gc] | PAUSED^n^n", 
-					numChecks, numTeleports);
-
-				formatex(szMsgTimeDead, charsmax(szMsgTimeDead), 
-					"%s [%d cp %d gc] | PAUSED^n^n",
-					szTime, numChecks, numTeleports);
-			}
-		}
-
-		formatex(szAddKey, charsmax(szAddKey), "%s", 
-			g_iPlayerKeys[iAlive] & IN_FORWARD ? "W^t" : ".^t");
-		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
-
-		formatex(szAddKey, charsmax(szAddKey), "%s", 
-			g_iPlayerKeys[iAlive] & IN_JUMP  ? "^tJUMP^n" : "^t^n");
-		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
-
-		formatex(szAddKey, charsmax(szAddKey), "%s", 
-			g_iPlayerKeys[iAlive] & IN_MOVELEFT ? "A^t" : ".^t");
-		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
-
-		formatex(szAddKey, charsmax(szAddKey), "%s", 
-			g_iPlayerKeys[iAlive] & IN_BACK ? "S^t" : ".^t");
-		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
-
-		formatex(szAddKey, charsmax(szAddKey), "%s", 
-			g_iPlayerKeys[iAlive] & IN_MOVERIGHT ? "D^t" : ".^t");
-		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
-
-		formatex(szAddKey, charsmax(szAddKey), "%s", 
-			g_iPlayerKeys[iAlive] & IN_DUCK ? "DUCK^n^n" : "^n^n");
-		add(szMsgKeylist, charsmax(szMsgKeylist), szAddKey);
-
-		formatex(szMsgHud, charsmax(szMsgHud), "%s", szMsgTimeAlive);
-
-		if (g_UserData[iAlive][ud_showKeys]) {
-			add(szMsgHud, charsmax(szMsgHud), szMsgKeylist);
-		}
-
-		if (g_UserData[iAlive][ud_showSpecList] && specNum > 0) {
-			add(szMsgHud, charsmax(szMsgHud), "^nSpectators:^n"); 
-			add(szMsgHud, charsmax(szMsgHud), szSpectators);
-		}
-			
-		set_hudmessage(100, 100, 100, 0.80, 0.15, 0, 0.0, HUD_UPDATE + 0.05, HUD_UPDATE + 0.05, HUD_UPDATE + 0.05, -1);
-		
-		if (kz_get_timer_state(iAlive) == TIMER_PAUSED) {
-			set_hudmessage(255, 0, 0, 0.80, 0.15, 0, 0.0, HUD_UPDATE, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, -1);
-		}
-
-		ShowSyncHudMsg(iAlive, HudSyncObj, szMsgHud);
-
-		cmd_ShowStatusText(iAlive);
-
-		for (new iDead = 1; iDead <= MAX_PLAYERS; ++iDead) {
-			if (!is_user_connected(iDead) || is_user_alive(iDead) || is_user_bot(iDead))
-				continue;
-
-			if (get_entvar(iDead, var_iuser1) != 1 && 
-				get_entvar(iDead, var_iuser1) != 2 &&
-				get_entvar(iDead, var_iuser1) != 4)
-				continue;
-
-			if (get_entvar(iDead, var_iuser2) != iAlive)
-				continue;
-
-			if (g_UserData[iDead][ud_showSpecListAdmin]){
-				//specList[iDead] = true;
-				// specNum--
-				//continue;
+				if (g_UserData[id][ud_showKeysSpec])
+					add(szMsgHud, charsmax(szMsgHud), szMsgKeysList);
 			}
 
-			hasSpectators = true;
-			specNum++;
-
-			//specList[iDead] = true;
-
-			get_user_name(iDead, szName, charsmax(szName));
-
-			if (!g_UserData[iDead][ud_showSpecListAdmin]){
-				add(szSpectators, charsmax(szSpectators), szName);
-				add(szSpectators, charsmax(szSpectators), "^n");
-			}
-
-			if (!hasSpectators)
-				continue;
-	
-			formatex(szMsgHud, charsmax(szMsgHud), "%s", szMsgTimeDead);
-
-			if (g_UserData[iDead][ud_showKeysSpec]) {
-				add(szMsgHud, charsmax(szMsgHud), szMsgKeylist);
-			}
-
-			if (g_UserData[iDead][ud_showSpecList] && specNum > 0) {
-				add(szMsgHud, charsmax(szMsgHud), "Spectators:^n"); 
+			if (specNum > 0 && g_UserData[id][ud_showSpecList]) {
+				add(szMsgHud, charsmax(szMsgHud), "^nSpectators:^n"); 
 				add(szMsgHud, charsmax(szMsgHud), szSpectators);
 			}
 
-			set_hudmessage(100, 100, 100, 0.80, 0.15, 0, 0.0, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, -1);
-
+			set_hudmessage(100, 100, 100, 0.80, 0.15, 0, 0.0, HUD_UPDATE + 0.05, HUD_UPDATE + 0.05, HUD_UPDATE + 0.05, 1);
+		
 			if (kz_get_timer_state(iAlive) == TIMER_PAUSED) {
-				set_hudmessage(255, 0, 0, 0.80, 0.15, 0, 0.0, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, -1);
+				set_hudmessage(255, 0, 0, 0.80, 0.15, 0, 0.0, HUD_UPDATE, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, -1);
 			}
 
-			ShowSyncHudMsg(iDead, HudSyncObj, szMsgHud);
+			ShowSyncHudMsg(iAlive, HudSyncObj, szMsgHud);
 		}
-		
-		g_iPlayerKeys[iAlive] = 0;
 
+		cmd_ShowStatusText(iAlive);
+		g_iPlayerKeys[iAlive] = 0;
 	}
 }
 
+FormatCheckpointsHud(id, szMsg[], iLen) {
+	new numChecks = kz_get_cp_num(id);
+	new numTeleports = kz_get_tp_num(id);
+
+	switch (kz_get_timer_state(id)) {
+		case TIMER_DISABLED: {
+			formatex(szMsg, iLen, "^t^n^n");
+		}
+		case TIMER_ENABLED: {
+			formatex(szMsg, iLen, "[%d cp %d gc]^n^n", numChecks, numTeleports);
+		}
+		case TIMER_PAUSED: {
+			formatex(szMsg, iLen, "[%d cp %d gc] | PAUSED^n^n", numChecks, numTeleports);
+		}
+	}
+}
+
+FormatTimerHud(id, szMsg[], iLen) {
+	new Float:actualTime = kz_get_actual_time(id);
+
+	UTIL_FormatTime(actualTime, szMsg, iLen, true);
+}
+
+FormatKeysHud(id, szKeyList[], iLen) {
+	static szAddKey[16];
+
+	formatex(szAddKey, charsmax(szAddKey), "%s", 
+		g_iPlayerKeys[id] & IN_FORWARD ? "W^t" : ".^t");
+	add(szKeyList, iLen, szAddKey);
+
+	formatex(szAddKey, charsmax(szAddKey), "%s", 
+		g_iPlayerKeys[id] & IN_JUMP  ? "^tJUMP^n" : "^t^n");
+	add(szKeyList, iLen, szAddKey);
+
+	formatex(szAddKey, charsmax(szAddKey), "%s", 
+		g_iPlayerKeys[id] & IN_MOVELEFT ? "A^t" : ".^t");
+	add(szKeyList, iLen, szAddKey);
+
+	formatex(szAddKey, charsmax(szAddKey), "%s", 
+		g_iPlayerKeys[id] & IN_BACK ? "S^t" : ".^t");
+	add(szKeyList, iLen, szAddKey);
+
+	formatex(szAddKey, charsmax(szAddKey), "%s", 
+		g_iPlayerKeys[id] & IN_MOVERIGHT ? "D^t" : ".^t");
+	add(szKeyList, iLen, szAddKey);
+
+	formatex(szAddKey, charsmax(szAddKey), "%s", 
+		g_iPlayerKeys[id] & IN_DUCK ? "DUCK^n^n" : "^n^n");
+	add(szKeyList, iLen, szAddKey);
+}
+
+FormatSpecList(id, szSpecList[], iLen, &specNum) {
+	static szName[MAX_NAME_LENGTH];
+	specNum = 0;
+
+	for (new iSpec = 1; iSpec <= MAX_PLAYERS; ++iSpec) {
+		if (!is_user_connected(iSpec) || is_user_alive(iSpec) || is_user_bot(iSpec))
+			continue;
+
+		if (get_entvar(iSpec, var_iuser1) != 1 && 
+			get_entvar(iSpec, var_iuser1) != 2 &&
+			get_entvar(iSpec, var_iuser1) != 4)
+			continue;
+
+		if (get_entvar(iSpec, var_iuser2) != id)
+			continue;
+
+		if (!g_UserData[iSpec][ud_hideAdminInSpecList])
+			continue;
+
+		get_user_name(iSpec, szName, charsmax(szName));
+		add(szSpecList, iLen, fmt("%s^n", szName));
+
+		specNum++;
+	}
+}
 
 stock cmd_ShowStatusText(id) {
 	new iTarget, szStatusInfo[256];
