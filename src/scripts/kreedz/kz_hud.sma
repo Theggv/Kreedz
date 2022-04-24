@@ -8,7 +8,7 @@
 #define VERSION 		__DATE__
 #define AUTHOR 			"ggv"
 
-#define HUD_UPDATE		0.09
+#define HUD_UPDATE		0.1
 
 enum _:(+=64) {
 	TASK_HUD = 2048,
@@ -115,10 +115,6 @@ public Task_HudList() {
 
 		specNum = 0;
 		
-		formatex(szSpectators, charsmax(szSpectators), "");
-		formatex(szMsgKeysList, charsmax(szSpectators), "^t ");
-		formatex(szRunData, charsmax(szSpectators), "^t ");
-
 		// get checks and teleports
 		FormatCheckpointsHud(iAlive, szRunData, charsmax(szRunData));
 
@@ -139,7 +135,13 @@ public Task_HudList() {
 					add(szMsgHud, charsmax(szMsgHud), szMsgKeysList);
 			}
 			else {
-				formatex(szMsgHud, charsmax(szMsgHud), "%s %s", szTime, szRunData);
+				if (!is_user_spectating(iAlive, id))
+					continue;
+
+				if (kz_get_timer_state(iAlive) != TIMER_DISABLED)
+					formatex(szMsgHud, charsmax(szMsgHud), "%s %s", szTime, szRunData);
+				else
+					formatex(szMsgHud, charsmax(szMsgHud), "%s", szRunData);
 
 				if (g_UserData[id][ud_showKeysSpec])
 					add(szMsgHud, charsmax(szMsgHud), szMsgKeysList);
@@ -150,13 +152,15 @@ public Task_HudList() {
 				add(szMsgHud, charsmax(szMsgHud), szSpectators);
 			}
 
-			set_hudmessage(100, 100, 100, 0.80, 0.15, 0, 0.0, HUD_UPDATE + 0.05, HUD_UPDATE + 0.05, HUD_UPDATE + 0.05, 1);
+			set_hudmessage(100, 100, 100, 
+				0.80, 0.15, 0, 0.0, HUD_UPDATE, 0.15, 0.15, CHANNEL_HUD);
 		
 			if (kz_get_timer_state(iAlive) == TIMER_PAUSED) {
-				set_hudmessage(255, 0, 0, 0.80, 0.15, 0, 0.0, HUD_UPDATE, HUD_UPDATE + 0.1, HUD_UPDATE + 0.1, -1);
+				set_hudmessage(255, 0, 0,
+					0.80, 0.15, 0, 0.0, HUD_UPDATE, 0.15, 0.15, CHANNEL_HUD);
 			}
 
-			ShowSyncHudMsg(iAlive, HudSyncObj, szMsgHud);
+			ShowSyncHudMsg(id, HudSyncObj, szMsgHud);
 		}
 
 		cmd_ShowStatusText(iAlive);
@@ -190,6 +194,8 @@ FormatTimerHud(id, szMsg[], iLen) {
 FormatKeysHud(id, szKeyList[], iLen) {
 	static szAddKey[16];
 
+	formatex(szKeyList, iLen, "^t ");
+
 	formatex(szAddKey, charsmax(szAddKey), "%s", 
 		g_iPlayerKeys[id] & IN_FORWARD ? "W^t" : ".^t");
 	add(szKeyList, iLen, szAddKey);
@@ -219,19 +225,13 @@ FormatSpecList(id, szSpecList[], iLen, &specNum) {
 	static szName[MAX_NAME_LENGTH];
 	specNum = 0;
 
+	formatex(szSpecList, iLen, "");
+
 	for (new iSpec = 1; iSpec <= MAX_PLAYERS; ++iSpec) {
-		if (!is_user_connected(iSpec) || is_user_alive(iSpec) || is_user_bot(iSpec))
+		if (!is_user_spectating(id, iSpec))
 			continue;
 
-		if (get_entvar(iSpec, var_iuser1) != 1 && 
-			get_entvar(iSpec, var_iuser1) != 2 &&
-			get_entvar(iSpec, var_iuser1) != 4)
-			continue;
-
-		if (get_entvar(iSpec, var_iuser2) != id)
-			continue;
-
-		if (!g_UserData[iSpec][ud_hideAdminInSpecList])
+		if (g_UserData[iSpec][ud_hideAdminInSpecList])
 			continue;
 
 		get_user_name(iSpec, szName, charsmax(szName));
@@ -239,6 +239,21 @@ FormatSpecList(id, szSpecList[], iLen, &specNum) {
 
 		specNum++;
 	}
+}
+
+bool:is_user_spectating(iAlive, iSpec) {
+	if (!is_user_connected(iSpec) || is_user_alive(iSpec) || is_user_bot(iSpec))
+		return false;
+
+	if (get_entvar(iSpec, var_iuser1) != 1 && 
+		get_entvar(iSpec, var_iuser1) != 2 &&
+		get_entvar(iSpec, var_iuser1) != 4)
+		return false;
+
+	if (get_entvar(iSpec, var_iuser2) != iAlive)
+		return false;
+
+	return true;
 }
 
 stock cmd_ShowStatusText(id) {

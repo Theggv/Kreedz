@@ -5,3 +5,7 @@
 #include <kreedz/weapons>
 
 #include <kreedz/utility>
+
+enum _: {
+    CHANNEL_HUD = 2,
+}
