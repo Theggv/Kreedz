@@ -130,6 +130,8 @@ public plugin_init() {
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_r"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_g"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_b"), 0);
+
+	register_dictionary("kreedz_lang.txt");
 }
 
 InitForwards() {
