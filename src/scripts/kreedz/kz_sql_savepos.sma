@@ -13,7 +13,8 @@
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
+#include <kreedz_sql>
 
 #define PLUGIN 	 	"[Kreedz] Sql SavePos"
 #define VERSION 	__DATE__
@@ -28,6 +29,7 @@ enum _:UserData
 	ud_SavedStucksNum,
 	Float:ud_LastCP[3],
 	Float:ud_LastPos[3],
+	Float:ud_LastVel[3],
 	ud_Weapon,
 	bool:ud_hasSavedRun
 }
@@ -131,7 +133,11 @@ public kz_sql_data_recv(id)
 		g_UserData[id][ud_LastCP][1] = (Float:SQL_ReadResult(hQuery, 11));
 		g_UserData[id][ud_LastCP][2] = (Float:SQL_ReadResult(hQuery, 12));
 
-		g_UserData[id][ud_Weapon] = SQL_ReadResult(hQuery, 13);
+		g_UserData[id][ud_LastVel][0] = (Float:SQL_ReadResult(hQuery, 13));
+		g_UserData[id][ud_LastVel][1] = (Float:SQL_ReadResult(hQuery, 14));
+		g_UserData[id][ud_LastVel][2] = (Float:SQL_ReadResult(hQuery, 15));
+
+		g_UserData[id][ud_Weapon] = SQL_ReadResult(hQuery, 16);
 
 		g_UserData[id][ud_hasSavedRun] = true;
 
@@ -146,7 +152,7 @@ LoadRun(id)
 	kz_set_cp_num(id, g_UserData[id][ud_SavedChecksNum]);
 	kz_set_tp_num(id, g_UserData[id][ud_SavedTeleNum]);
 
-	new lastPos[PosStruct], lastCP[PosStruct];
+	new lastPos[PosStruct], lastCP[PosStruct], lastVel[PosStruct];
 
 	lastPos[pos_x] = g_UserData[id][ud_LastPos][0];
 	lastPos[pos_y] = g_UserData[id][ud_LastPos][1];
@@ -165,6 +171,12 @@ LoadRun(id)
 	kz_set_pause(id);
 
 	kz_tp_last_pos(id);
+
+	lastVel[pos_x] = g_UserData[id][ud_LastVel][0];
+	lastVel[pos_y] = g_UserData[id][ud_LastVel][1];
+	lastVel[pos_z] = g_UserData[id][ud_LastVel][2];
+	
+	kz_set_last_vel(id, lastVel);
 
 	kz_set_min_rank(id, g_UserData[id][ud_Weapon]);
 }
@@ -227,9 +239,10 @@ public SavePos_Handler(id, menu, item)
 
 SavePos(id)
 {
-	new iLastPos[3], iLastCp[3];
+	new iLastPos[3], iLastCp[3], iLastVel[3];
 	kz_get_last_pos(id, iLastPos);
 	kz_get_last_cp(id, iLastCp);
+	kz_get_last_vel(id, iLastVel);
 
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
@@ -243,16 +256,21 @@ SavePos(id)
 		INSERT INTO `kz_savedruns` \
 		(`uid`, `mapid`, `time`, `cp`, `tp`, \
 		`pos_x`, `pos_y`, `pos_z`, \
-		`lastcp_x`, `lastcp_y`, `lastcp_z`, `weapon`) \
+		`lastcp_x`, `lastcp_y`, `lastcp_z`, \
+	 	`weapon`, \
+		`lastvel_x`, `lastvel_y`, `lastvel_z`) \
 		\
 		VALUES (%d, %d, %d, %d, %d, \
+		%d, %d, %d, \
 		%d, %d, %d, \
 		%d, %d, %d, %d\
 		);",
 		kz_sql_get_user_uid(id), kz_sql_get_map_uid(),
 		kz_get_actual_time(id), kz_get_cp_num(id), kz_get_tp_num(id),
 		iLastPos[0], iLastPos[1], iLastPos[2],
-		iLastCp[0], iLastCp[1], iLastCp[2], kz_get_min_rank(id)
+		iLastCp[0], iLastCp[1], iLastCp[2],
+		kz_get_min_rank(id),
+		iLastVel[0], iLastVel[1], iLastVel[2]
 		);
 
 

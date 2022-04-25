@@ -1,28 +1,19 @@
 {
-  "name": "kreedz",
-  "version": "1.0.0",
-  "description": "Kreedz Mod",
+  "name": "kreedz-amxx",
+  "version": "1.0.2",
+  "author": "ggv",
+  "description": "Kreedz AMXX",
   "scripts": {
-    "gulp": "gulp",
-    "build": "gulp",
-    "watch": "gulp watch",
-    "pack": "gulp pack",
-    "init-config": "node ./scripts/init-config.js",
-    "update-version": "node ./scripts/update-version.js",
-    "update-config": "node ./scripts/update-config.js",
-    "postinstall": "npm run init-config"
+    "build": "amxxpack build",
+    "watch": "amxxpack build --watch",
+    "postinstall": "amxxpack install",
+    "pack": "gulp"
   },
-  "author": "Hedgehog Fog",
-  "license": "MIT",
   "devDependencies": {
-    "glob": "^7.1.6",
+    "amxxpack": "^1.0.2",
     "gulp": "^4.0.2",
     "gulp-file": "^0.4.0",
-    "gulp-flatten": "^0.4.0",
-    "gulp-sma": "^1.0.8",
-    "gulp-watch": "^5.0.1",
-    "gulp-zip": "^5.0.2",
-    "lodash": "^4.17.20",
-    "merge2": "^1.2.0"
+    "gulp-zip": "^5.1.0",
+    "merge2": "^1.4.1"
   }
 }

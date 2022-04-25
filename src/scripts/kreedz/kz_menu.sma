@@ -7,7 +7,7 @@
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Menu"
 #define VERSION 	__DATE__
@@ -19,6 +19,9 @@ public plugin_init() {
 	kz_register_cmd("menu", "cmd_MainMenu");
 	// dlya dalbichey
 	kz_register_cmd("ьутг", "cmd_MainMenu");
+	
+	register_clcmd("jointeam", "cmd_MainMenu");
+	register_clcmd("chooseteam", "cmd_MainMenu");
 
 	register_dictionary("kz_mode.txt");
 }

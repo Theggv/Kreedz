@@ -1,0 +1,83 @@
+  name: Release
+
+  on:
+    push:
+      branches: [ release ]
+    workflow_dispatch:
+      branches: [ release ]
+
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Install Node.js
+          uses: actions/setup-node@v1
+          with:
+            node-version: 12
+
+        - name: Setup Build Variables
+          id: buildvars
+          uses: actions/github-script@v3
+          with:
+            github-token: ${{secrets.GITHUB_TOKEN}}
+            script: |
+              try {
+                const package = require(`${process.env.GITHUB_WORKSPACE}/package.json`);
+                ['name', 'version', 'description', 'author']
+                  .forEach(k => core.setOutput(k, package[k]));
+                const tagVersion = package.version.replace(/\./g, '');
+                core.setOutput('tagversion', tagVersion);
+                core.setOutput('tagname', `${package.name}-${tagVersion}`);
+                core.setOutput('releasename', `${package.description} Release v${package.version}`);
+              } catch (err) {
+                core.setFailed(err.message);
+              }
+
+        - name: Install Dependencies
+          run: npm install -f
+
+        - name: Build project
+          run: npm run build
+
+        - name: Pack bundles
+          run: npm run pack
+
+        - name: Create Release
+          id: create_release
+          uses: actions/create-release@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: ${{ steps.buildvars.outputs.tagname }}
+            release_name: ${{ steps.buildvars.outputs.releasename }}
+            draft: true
+            prerelease: false
+
+        - name: Upload Release Build
+          id: upload-release-addons
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }}
+            asset_path: ./dist/bundles/${{ steps.buildvars.outputs.tagname }}-addons.zip
+            asset_name: ${{ steps.buildvars.outputs.tagname }}-addons.zip
+            asset_content_type: application/zip
+
+        - name: Upload Release Resources
+          id: upload-release-resources
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }}
+            asset_path: ./dist/bundles/${{ steps.buildvars.outputs.tagname }}-resources.zip
+            asset_name: ${{ steps.buildvars.outputs.tagname }}-resources.zip
+            asset_content_type: application/zip
+
+        - name: Cleanup
+          run: |
+            rm -rf ./.compiler
+            rm -rf ./.thirdparty
+            rm -rf ./dist

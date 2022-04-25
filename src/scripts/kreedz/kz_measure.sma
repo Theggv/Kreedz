@@ -2,7 +2,7 @@
 #include <fakemeta>
 #include <xs>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Measure"
 #define VERSION 	"3.4"

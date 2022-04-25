@@ -3,7 +3,9 @@
 #include <cstrike>
 #include <sqlx>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
+#include <kreedz_sql>
+
 
 #define PLUGIN 	 	"[Kreedz] Sql Core"
 #define VERSION 	__DATE__
@@ -196,6 +198,9 @@ public init_tables()
 		`lastcp_y` int(11) NOT NULL DEFAULT 0,\
 		`lastcp_z` int(11) NOT NULL DEFAULT 0,\
 		`weapon` int(11) NOT NULL DEFAULT 6,\
+		`lastvel_x` int(11) NOT NULL DEFAULT 0,\
+		`lastvel_y` int(11) NOT NULL DEFAULT 0,\
+		`lastvel_z` int(11) NOT NULL DEFAULT 0,\
 		FOREIGN KEY (uid) REFERENCES kz_uid(id)\
 			ON DELETE CASCADE \
 			ON UPDATE CASCADE,\

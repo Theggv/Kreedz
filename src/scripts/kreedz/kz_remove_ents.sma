@@ -1,12 +1,10 @@
 #include <amxmodx>
-#include <cstrike>
 #include <fakemeta>
 #include <engine>
-#include <fun>
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Remove Ents & HP System"
 #define VERSION 	__DATE__
@@ -154,7 +152,21 @@ public kz_timer_start_post(id)
 	if(g_hasInfinityHP)
 	{
 		set_entvar(id, var_takedamage, DAMAGE_NO);
-		set_entvar(id, var_health, 255.0);
+		set_entvar(id, var_health, 4096.0);
+	}
+	else
+	{
+		set_entvar(id, var_takedamage, DAMAGE_YES);
+		set_entvar(id, var_health, 100.0);
+	}
+}
+
+public kz_timer_pause_post(id)
+{
+	if(g_hasInfinityHP)
+	{
+		set_entvar(id, var_takedamage, DAMAGE_NO);
+		set_entvar(id, var_health, 4096.0);
 	}
 	else
 	{
@@ -192,7 +204,7 @@ public ham_TakeDamage_Post(id, iInflictor, iAttacker, Float:fDamage, damagebits)
 
 	if(damagebits)
 	{
-		set_task(0.5, "task_Heal", TASK_HEAL + id);
+		set_task(1.0, "task_Heal", TASK_HEAL + id);
 	}
 
 	return HAM_IGNORED;
@@ -206,14 +218,13 @@ public ham_Respawn_Post(id)
 	if(g_hasInfinityHP)
 	{
 		set_entvar(id, var_takedamage, DAMAGE_NO);
-		set_entvar(id, var_health, 255.0);
+		set_entvar(id, var_health, 4096.0);
 	}
 	else if(kz_get_timer_state(id) == TIMER_ENABLED)
 	{
 		set_entvar(id, var_takedamage, DAMAGE_YES);
 		set_entvar(id, var_health, 100.0);
 	}
-
 
 	return HAM_IGNORED;
 }
@@ -230,14 +241,14 @@ public task_Heal(id)
 {
 	id -= TASK_HEAL;
 
-	if(g_hasInfinityHP)
-	{
-		set_entvar(id, var_health, 255.0);
+	if(!g_hasInfinityHP) set_entvar(id, var_health, 100.0);
+	/*{
+		set_entvar(id, var_health, 4096.0);
 	}
 	else
 	{
 		set_entvar(id, var_health, 100.0);
-	}
+	}*/
 }
 
 public msgStatusIcon(msgid, msgdest, id)

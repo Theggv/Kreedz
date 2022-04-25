@@ -1,8 +1,10 @@
 {
-	"amxxpawn.compiler.executablePath": "${workspaceRoot}/compiler/amxxpc.exe",
-	"amxxpawn.compiler.outputPath": "${workspaceRoot}/compiler/compiled",
+	"amxxpawn.compiler.executablePath": "${workspaceRoot}/.compiler/amxxpc.exe",
+	"amxxpawn.compiler.outputPath": "${workspaceRoot}/.compiler/compiled",
 	"amxxpawn.compiler.includePaths": [
+		"${workspaceRoot}/.compiler/include",
 		"${workspaceRoot}/src/include",
-		"${workspaceRoot}/compiler/include"
+		"${workspaceRoot}/.thirdparty/reapi/addons/amxmodx/scripting/include",
+		"${workspaceRoot}/.thirdparty/curl/amx_includes",
 	]
 }

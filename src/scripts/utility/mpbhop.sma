@@ -26,10 +26,10 @@
 #include <xs>
 
 #if defined CHATCOLOR
-#include <chatcolor>
+#tryinclude <chatcolor>
 #endif
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 new const VERSION[] = "1.1.2";
 

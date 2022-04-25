@@ -5,7 +5,7 @@
 #include <engine>
 #include <hamsandwich>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #pragma semicolon 1
 

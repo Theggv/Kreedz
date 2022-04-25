@@ -7,7 +7,7 @@
 #include <reapi>
 #include <xs>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 enum _:InvisStruct
 {
@@ -40,8 +40,6 @@ public plugin_init() {
 	register_forward(FM_AddToFullPack, "FM_AddToFullPack_Post", 1);
 
 	init_water();
-
-	register_dictionary("kz_mode.txt");
 }
 
 public client_disconnected(id) {

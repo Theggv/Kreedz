@@ -1,15 +1,14 @@
 # Kreedz mod
 
+### Roadmap:
+- Implement settings system
+
 ### Special Thanks:
 - [Credits](./CREDITS.md)
 
 ### Deployment
 - Clone repository.
-- Extract compiler executable and includes to _"compiler"_ folder of project.
 - Install dependencies `npm i`
-
-#### Customize builder
-Use `config.user.js` file (Generated automatically on dependencies install)
 
 #### Build project
 

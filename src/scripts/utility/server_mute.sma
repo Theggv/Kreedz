@@ -1,7 +1,7 @@
 #include <amxmodx>
 #include <fakemeta>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 		"[Server] Mute"
 #define VERSION 	__DATE__

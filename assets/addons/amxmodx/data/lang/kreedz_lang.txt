@@ -30,6 +30,12 @@ LOADPOS_NEW = Start new
 SAVEPOS_TITLE = Save run \w%s \d(%d/%d)\w?
 SAVEPOS_SAVE = Save
 
+GOTOMENU_TITLE = Teleport to player:
+GOTOMENU_ALLOWED = \w%s
+GOTOMENU_FORBIDDEN = \d%s
+GOTO_TELEPORTED_TO_CHAT = ^4[KZ] ^1Teleported to ^3%s^1.
+GOTO_FORBIDDEN_CHAT = ^4[KZ] ^1You can't teleport to ^3%s^1.
+
 [ru]
 KZ_HUD_CANT_SAVE = Невозможно сохраниться в воздухе
 KZ_HUD_CANT_TELEPORT = У вас нет сохранений

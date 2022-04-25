@@ -1,3 +1,9 @@
+#if defined _kreedz_util_included
+	#endinput
+#endif
+
+#define _kreedz_util_included
+
 stock kz_register_cmd(szCmd[], szHandler[]) {
 	new szFormatedCmd[64];
 

@@ -2,7 +2,8 @@
 #include <cstrike>
 #include <sqlx>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
+#include <kreedz_sql>
 
 #pragma dynamic 16384
 
@@ -447,7 +448,6 @@ public cmd_ProTop(id)
 <head>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-	<link rel=^"stylesheet^" href=^"http://5.101.78.189/abyss/protopstyle.css^">\
 </head>\
 <body>\
 	<table>\
@@ -559,7 +559,6 @@ public cmd_NubTop(id)
 <head>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-	<link rel=^"stylesheet^" href=^"http://5.101.78.189/abyss/nubtopstyle.css^">\
 </head>\
 <body>\
 	<table>\

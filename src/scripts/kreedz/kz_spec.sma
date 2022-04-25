@@ -5,42 +5,25 @@
 #include <hamsandwich>
 #include <reapi>
 
-#include <kreedz/kz_api>
+#include <kreedz_api>
 
 #define PLUGIN 	 	"[Kreedz] Spectator"
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
-
-enum _:UserData
-{
-	bool:ud_IsHideList
-}
 
 enum _:eForward {
 	fwd_SpecPre,
 	fwd_SpecPost,
 }
 
-new hudsync;
-
-new g_UserData[MAX_PLAYERS + 1][UserData];
 new g_Forwards[eForward];
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	register_clcmd("jointeam", "cmd_Spec");
-	register_clcmd("chooseteam", "cmd_Spec");
-
 	kz_register_cmd("spec", "cmd_Spec");
 	kz_register_cmd("ct", "cmd_Spec");
-
-	kz_register_cmd("speclist", "cmd_Speclist");
-	
-	set_task(1.0, "Task_SpecList", .flags = "b");
-
-	hudsync = CreateHudSyncObj();
 
 	InitForwards();
 }
@@ -74,13 +57,6 @@ public client_command(id)
 	}
 
 	return PLUGIN_CONTINUE;
-}
-
-public cmd_Speclist(id)
-{
-	g_UserData[id][ud_IsHideList] = !g_UserData[id][ud_IsHideList];
-
-	return PLUGIN_HANDLED;
 }
 
 public cmd_Spec(id)
@@ -117,6 +93,7 @@ public cmd_Spec(id)
 		set_entvar(id, var_movetype, MOVETYPE_FLY);
 		set_entvar(id, var_effects, EF_NODRAW);
 		set_entvar(id, var_deadflag, DEAD_DEAD);
+		
 	}
 	else
 	{
@@ -143,71 +120,6 @@ public cmd_Spec(id)
 	}
 
 	ExecuteForward(g_Forwards[fwd_SpecPost], _, id);
-	
+
 	return PLUGIN_HANDLED;
-}
-
-public Task_SpecList()
-{
-	static szMsg[2048], szSpectators[2048], szName[MAX_NAME_LENGTH];
-	static specNum, bool:hasSpectators;
-
-	for(new iAlive = 1; iAlive <= MAX_PLAYERS; ++iAlive)
-	{
-		if(!is_user_alive(iAlive))
-			continue;
-
-		new bool:specList[MAX_PLAYERS + 1];
-		hasSpectators = false;
-		specNum = 0;
-
-		specList[iAlive] = true;
-
-		formatex(szSpectators, charsmax(szSpectators), "");
-
-		for(new iDead = 1; iDead <= MAX_PLAYERS; ++iDead)
-		{
-			if(!is_user_connected(iDead) || is_user_alive(iDead) || is_user_bot(iDead))
-				continue;
-
-			if(	get_entvar(iDead, var_iuser1) != 1 && 
-				get_entvar(iDead, var_iuser1) != 2 &&
-				get_entvar(iDead, var_iuser1) != 4)
-				continue;
-
-			if(get_entvar(iDead, var_iuser2) != iAlive)
-				continue;
-
-			if(get_user_flags(iDead) & ADMIN_KICK)
-			{
-				specList[iDead] = true;
-				continue;
-			}
-
-			hasSpectators = true;
-			specNum++;
-
-			specList[iDead] = true;
-
-			get_user_name(iDead, szName, charsmax(szName));
-
-			add(szSpectators, charsmax(szSpectators), szName);
-			add(szSpectators, charsmax(szSpectators), "^n");
-		}
-
-		if(!hasSpectators)
-			continue;
-
-		formatex(szMsg, charsmax(szMsg), "%L^n%s", 
-			LANG_PLAYER, "SPECLIST_TITLE", specNum, szSpectators);
-		
-		for(new i = 1; i <= MAX_PLAYERS; ++i)
-		{
-			if(specList[i] && !g_UserData[i][ud_IsHideList])
-			{
-				set_hudmessage(255, 255, 255, 0.75, 0.15, 0, 0.0, 1.0, 0.05, 0.05, -1);
-				ShowSyncHudMsg(i, hudsync, szMsg);
-			}
-		}
-	}
 }
