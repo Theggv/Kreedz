@@ -94,7 +94,6 @@ new Trie:g_tStarts;
 new Trie:g_tStops;
 
 // Timer Roundtime
-new g_fwd_MsgRoundTime;
 new const TIMER_SHOW = (1 << 1)
 
 
@@ -113,9 +112,6 @@ public plugin_init() {
 
 	// Fix for kz_a2_bhop_corruo_ez/h and maps with movable start/end buttons
 	RegisterHam(Ham_Touch, "func_button", "ham_Touch", 0);
-	
-	// RoundTime timer 
-	g_fwd_MsgRoundTime = get_user_msgid("RoundTime");
 
 	// Init section
 	InitTries();
@@ -797,9 +793,8 @@ public ham_Touch(iEnt, id) {
 public ham_PreThink(id) {
 	if (!is_user_alive(id)) return HAM_IGNORED;
 
-	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW) {
+	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW)
 		set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
-	}
 
 	// use detection
 	if ((get_entvar(id, var_button) & IN_USE) && 
@@ -858,7 +853,7 @@ run_start(id) {
 	cmd_Fade(id);
 
 	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD)  & ~HIDEHUD_TIMER);
-	cmd_TimerRoundtime(id, 0);
+	UTIL_TimerRoundtime(id, 0);
 
 	ExecuteForward(g_Forwards[fwd_TimerStartPost], _, id);
 }
@@ -888,8 +883,8 @@ run_finish(id) {
 
 	// optional
 	new curScore = get_user_frags(id) * 60 + get_user_deaths(id);
-	if (curScore > iMin * 60 + iSec || !curScore)
-	{
+
+	if (curScore > iMin * 60 + iSec || !curScore) {
 		set_user_frags(id, iMin);
 		cs_set_user_deaths(id, iSec);
 		
@@ -919,7 +914,7 @@ public timer_handler() {
 		switch (g_UserData[id][ud_TimerState]) {
 			case TIMER_DISABLED: continue;
 			case TIMER_ENABLED, TIMER_PAUSED: {
-				cmd_TimerRoundtime(id, floatround(kz_get_actual_time(id), floatround_floor));
+				UTIL_TimerRoundtime(id, floatround(kz_get_actual_time(id), floatround_floor));
 			}
 		}
 
@@ -960,10 +955,3 @@ public cmd_Fade(id) {
 	}
 }
 
-stock cmd_TimerRoundtime(id, time) {
-	if (is_user_alive(id)) {
-		message_begin(MSG_ONE_UNRELIABLE, g_fwd_MsgRoundTime, .player = id);
-		write_short(time + 1);
-		message_end();
-	}
-}
