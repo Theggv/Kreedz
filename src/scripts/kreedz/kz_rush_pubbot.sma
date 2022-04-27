@@ -6,6 +6,7 @@
 #include <hamsandwich>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #pragma semicolon 1
 

@@ -3,6 +3,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 			"[KZ] Hud"
 #define VERSION 		__DATE__
@@ -106,19 +107,27 @@ public Hook_PostThink(id) {
 }
 
 public Task_HudList() {
+	static Float:timestamp, bool:shouldUpdateTimer;
+
 	static specNum;
 
 	static szMsgHud[2048];
 
-	static szRunData[128], szTime[32];
+	static szRunData[128], szTime[32], iTime;
 	static szMsgKeysList[128];
 	static szSpectators[2048];
+
+	if (get_gametime() - timestamp >= 1.0) {
+		timestamp = get_gametime();
+		shouldUpdateTimer = true;
+	}
 
 	for (new iAlive = 1; iAlive <= MAX_PLAYERS; ++iAlive) {
 		if (!is_user_alive(iAlive) && !is_user_bot(iAlive))
 			continue;
 
 		specNum = 0;
+		iTime = floatround(kz_get_actual_time(iAlive), floatround_floor);
 		
 		// get checks and teleports
 		FormatCheckpointsHud(iAlive, szRunData, charsmax(szRunData));
@@ -142,6 +151,11 @@ public Task_HudList() {
 			else {
 				if (!is_user_spectating(iAlive, id))
 					continue;
+
+				// Show timer in round time
+				if (shouldUpdateTimer) {
+					UTIL_TimerRoundtime(id, iTime);
+				}
 
 				if (kz_get_timer_state(iAlive) != TIMER_DISABLED)
 					formatex(szMsgHud, charsmax(szMsgHud), "%s %s", szTime, szRunData);
@@ -171,6 +185,8 @@ public Task_HudList() {
 		cmd_ShowStatusText(iAlive);
 		g_iPlayerKeys[iAlive] = 0;
 	}
+
+	shouldUpdateTimer = false;
 }
 
 FormatCheckpointsHud(id, szMsg[], iLen) {

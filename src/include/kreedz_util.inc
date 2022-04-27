@@ -34,16 +34,16 @@ stock UTIL_LogToFile(const szPath[], const szLevel[], const szFunction[], const 
 }
 
 stock UTIL_TimeToSec(Float:fTime, &iMin, &iSec, &iMS) {
-	iMin = 	floatround(fTime / 60.0, floatround_floor);
-	iSec = 	floatround(fTime - iMin * 60.0, floatround_floor);
-	iMS  = 	floatround((fTime - (iMin * 60.0 + iSec)) * 100.0, floatround_floor);
+	iMin = floatround(fTime / 60.0, floatround_floor);
+	iSec = floatround(fTime - iMin * 60.0, floatround_floor);
+	iMS  = floatround((fTime - (iMin * 60.0 + iSec)) * 100.0, floatround_floor);
 }
 
-stock UTIL_FormatTime(Float:fTime, szBuffer[], iLen, bool:isNeedMS = false) {
+stock UTIL_FormatTime(Float:fTime, szBuffer[], iLen, bool:withMS = false) {
 	new iMin, iSec, iMS;
 	UTIL_TimeToSec(fTime, iMin, iSec, iMS);
 
-	if (isNeedMS)
+	if (withMS)
 		formatex(szBuffer, iLen, "%02d:%02d.%02d", iMin, iSec, iMS);
 	else
 		formatex(szBuffer, iLen, "%02d:%02d", iMin, iSec);
@@ -101,4 +101,16 @@ stock UTIL_RGBUnpack(color) {
 	rgb[2] = color & 255;
 
 	return rgb;
+}
+
+stock UTIL_TimerRoundtime(id, time) {
+	if (!is_user_connected(id)) return;
+
+	static msgRoundTime;
+
+	if (!msgRoundTime) msgRoundTime = get_user_msgid("RoundTime");
+
+	message_begin(MSG_ONE_UNRELIABLE, msgRoundTime, .player = id);
+	write_short(time + 1);
+	message_end();
 }

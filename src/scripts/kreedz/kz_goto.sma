@@ -2,6 +2,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN			"[KZ] Teleport to player"
 #define VERSION			__DATE__
