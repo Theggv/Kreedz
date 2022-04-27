@@ -1,6 +1,7 @@
 #include <amxmodx>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Server utils"
 #define VERSION 	__DATE__

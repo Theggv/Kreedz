@@ -4,6 +4,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Nightvision"
 #define VERSION 	__DATE__

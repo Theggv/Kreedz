@@ -3,6 +3,7 @@
 #include <xs>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Measure"
 #define VERSION 	"3.4"

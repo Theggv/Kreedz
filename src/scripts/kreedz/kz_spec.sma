@@ -6,6 +6,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Spectator"
 #define VERSION 	__DATE__

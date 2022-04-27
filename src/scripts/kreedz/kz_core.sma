@@ -7,6 +7,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Core"
 #define VERSION 	__DATE__
@@ -92,11 +93,8 @@ new Float:g_PauseChecks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 new Trie:g_tStarts;
 new Trie:g_tStops;
 
-//Timer Roundtime
-new g_fwd_MsgRoundTime;
-const TIMER_SHOW = (1<<1)
-
-
+// Timer Roundtime
+new const TIMER_SHOW = (1 << 1)
 
 
 /**
@@ -114,9 +112,6 @@ public plugin_init() {
 
 	// Fix for kz_a2_bhop_corruo_ez/h and maps with movable start/end buttons
 	RegisterHam(Ham_Touch, "func_button", "ham_Touch", 0);
-	
-	//RoundTime timer 
-	g_fwd_MsgRoundTime = get_user_msgid("RoundTime");
 
 	// Init section
 	InitTries();
@@ -160,8 +155,6 @@ InitForwards() {
 }
 
 InitCommands() {
-	//register_clcmd("kz_version", 	"cmd_ShowVersion");
-
 	register_clcmd("+hook", 		"cmd_DetectHook");
 	register_clcmd("-hook", 		"cmd_DetectHook_Disable");
 
@@ -177,7 +170,8 @@ InitCommands() {
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
 
-	register_clcmd("say /vars", "cmd_vars");
+	// register_clcmd("kz_version", 	"cmd_ShowVersion");
+	// register_clcmd("say /vars", "cmd_vars");
 }
 
 InitTries() {
@@ -475,7 +469,7 @@ public cmd_Checkpoint(id)
 
 	// air check
 	if (!(get_entvar(id, var_flags) & FL_ONGROUND) &&
-		!(get_entvar(id, var_movetype) == MOVETYPE_FLY)
+		(get_entvar(id, var_movetype) != MOVETYPE_FLY)
 		) {
 		set_dhudmessage(150, 0, 0, -1.0, 0.8, 0, 3.0, 1.0, 0.0, 0.0);
 		show_dhudmessage(id, "%L", id, "KZ_HUD_CANT_SAVE");
@@ -668,15 +662,6 @@ public cmd_Pause(id) {
 
 	if (iRet == KZ_SUPERCEDE) return PLUGIN_HANDLED;
 
-	// air check
-	/*if (!(get_entvar(id, var_flags) & FL_ONGROUND) &&
-		!(get_entvar(id, var_movetype) == MOVETYPE_FLY)) {
-		set_dhudmessage(150, 0, 0, -1.0, 0.8, 0, 3.0, 1.0, 0.0, 0.0);
-		show_dhudmessage(id, "%L", id, "KZ_HUD_CANT_SAVE");
-
-		return PLUGIN_HANDLED;
-	}*/
-
 	switch (g_UserData[id][ud_TimerState]) {
 		case TIMER_DISABLED: return PLUGIN_HANDLED;
 		case TIMER_ENABLED: {
@@ -808,9 +793,8 @@ public ham_Touch(iEnt, id) {
 public ham_PreThink(id) {
 	if (!is_user_alive(id)) return HAM_IGNORED;
 
-	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW) {
+	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW)
 		set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
-	}
 
 	// use detection
 	if ((get_entvar(id, var_button) & IN_USE) && 
@@ -869,13 +853,12 @@ run_start(id) {
 	cmd_Fade(id);
 
 	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD)  & ~HIDEHUD_TIMER);
-	cmd_TimerRoundtime(id, 0);
+	UTIL_TimerRoundtime(id, 0);
 
 	ExecuteForward(g_Forwards[fwd_TimerStartPost], _, id);
 }
 
-run_finish(id)
-{
+run_finish(id) {
 	new Float:fTime = get_gametime() - g_UserData[id][ud_StartTime];
 	new iMin, iSec, iMS;
 
@@ -890,7 +873,6 @@ run_finish(id)
 	get_user_name(id, szName, charsmax(szName));
 
 	new iWeaponRank = kz_get_min_rank(id);
-	// new iWeaponRank = 6;
 	new szWeaponName[32];
 
 	kz_get_weapon_name(iWeaponRank, szWeaponName, charsmax(szWeaponName));
@@ -901,8 +883,8 @@ run_finish(id)
 
 	// optional
 	new curScore = get_user_frags(id) * 60 + get_user_deaths(id);
-	if (curScore > iMin * 60 + iSec || !curScore)
-	{
+
+	if (curScore > iMin * 60 + iSec || !curScore) {
 		set_user_frags(id, iMin);
 		cs_set_user_deaths(id, iSec);
 		
@@ -932,7 +914,7 @@ public timer_handler() {
 		switch (g_UserData[id][ud_TimerState]) {
 			case TIMER_DISABLED: continue;
 			case TIMER_ENABLED, TIMER_PAUSED: {
-				cmd_TimerRoundtime(id, floatround(kz_get_actual_time(id), floatround_floor));
+				UTIL_TimerRoundtime(id, floatround(kz_get_actual_time(id), floatround_floor));
 			}
 		}
 
@@ -973,11 +955,3 @@ public cmd_Fade(id) {
 	}
 }
 
-stock cmd_TimerRoundtime(id, time)
-{
-	if(is_user_alive(id)) {
-		message_begin(MSG_ONE_UNRELIABLE, g_fwd_MsgRoundTime, _, id);
-		write_short(time + 1);
-		message_end();
-	}
-}

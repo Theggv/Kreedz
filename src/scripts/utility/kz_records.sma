@@ -2,6 +2,7 @@
 #include <curl>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	"[Kreedz] Records"
 #define VERSION "1.0"

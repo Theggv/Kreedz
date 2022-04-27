@@ -4,6 +4,7 @@
 
 #include <kreedz_api>
 #include <kreedz_sql>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Settings: Timer"
 #define VERSION 	__DATE__

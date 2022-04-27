@@ -3,6 +3,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 			"[KZ] Hud"
 #define VERSION 		__DATE__
@@ -110,7 +111,7 @@ public Task_HudList() {
 
 	static szMsgHud[2048];
 
-	static szRunData[128], szTime[32];
+	static szRunData[128], szTime[32], iTime;
 	static szMsgKeysList[128];
 	static szSpectators[2048];
 
@@ -119,6 +120,7 @@ public Task_HudList() {
 			continue;
 
 		specNum = 0;
+		iTime = floatround(kz_get_actual_time(iAlive), floatround_floor);
 		
 		// get checks and teleports
 		FormatCheckpointsHud(iAlive, szRunData, charsmax(szRunData));
@@ -142,6 +144,9 @@ public Task_HudList() {
 			else {
 				if (!is_user_spectating(iAlive, id))
 					continue;
+
+				// Show timer in round time
+				UTIL_TimerRoundtime(id, iTime);
 
 				if (kz_get_timer_state(iAlive) != TIMER_DISABLED)
 					formatex(szMsgHud, charsmax(szMsgHud), "%s %s", szTime, szRunData);
