@@ -107,6 +107,8 @@ public Hook_PostThink(id) {
 }
 
 public Task_HudList() {
+	static Float:timestamp, bool:shouldUpdateTimer;
+
 	static specNum;
 
 	static szMsgHud[2048];
@@ -114,6 +116,11 @@ public Task_HudList() {
 	static szRunData[128], szTime[32], iTime;
 	static szMsgKeysList[128];
 	static szSpectators[2048];
+
+	if (get_gametime() - timestamp >= 1.0) {
+		timestamp = get_gametime();
+		shouldUpdateTimer = true;
+	}
 
 	for (new iAlive = 1; iAlive <= MAX_PLAYERS; ++iAlive) {
 		if (!is_user_alive(iAlive) && !is_user_bot(iAlive))
@@ -146,7 +153,9 @@ public Task_HudList() {
 					continue;
 
 				// Show timer in round time
-				UTIL_TimerRoundtime(id, iTime);
+				if (shouldUpdateTimer) {
+					UTIL_TimerRoundtime(id, iTime);
+				}
 
 				if (kz_get_timer_state(iAlive) != TIMER_DISABLED)
 					formatex(szMsgHud, charsmax(szMsgHud), "%s %s", szTime, szRunData);
@@ -176,6 +185,8 @@ public Task_HudList() {
 		cmd_ShowStatusText(iAlive);
 		g_iPlayerKeys[iAlive] = 0;
 	}
+
+	shouldUpdateTimer = false;
 }
 
 FormatCheckpointsHud(id, szMsg[], iLen) {
