@@ -4,8 +4,6 @@
 
 #define _kreedz_api_included
 
-#include <kreedz_util>
-
 enum _:KZReturn {
 	KZ_CONTINUE = 0,
 	KZ_SUPERCEDE,

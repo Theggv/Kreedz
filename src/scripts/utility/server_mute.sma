@@ -2,6 +2,7 @@
 #include <fakemeta>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 		"[Server] Mute"
 #define VERSION 	__DATE__

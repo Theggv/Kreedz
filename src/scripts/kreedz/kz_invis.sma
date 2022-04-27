@@ -8,6 +8,7 @@
 #include <xs>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 enum _:InvisStruct
 {

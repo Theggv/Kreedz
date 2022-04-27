@@ -5,6 +5,7 @@
 
 #include <kreedz_api>
 #include <kreedz_sql>
+#include <kreedz_util>
 
 
 #define PLUGIN 	 	"[Kreedz] Sql Core"

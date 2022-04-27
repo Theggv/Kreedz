@@ -7,8 +7,8 @@
 #include <hamsandwich>
 #include <reapi>
 
-// api
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Custom aa"
 #define VERSION 	__DATE__

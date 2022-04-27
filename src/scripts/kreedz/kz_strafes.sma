@@ -4,6 +4,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Strafes analysis"
 #define VERSION 	__DATE__

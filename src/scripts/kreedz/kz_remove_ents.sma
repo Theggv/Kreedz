@@ -5,6 +5,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Remove Ents & HP System"
 #define VERSION 	__DATE__
