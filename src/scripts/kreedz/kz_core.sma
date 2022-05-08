@@ -679,9 +679,6 @@ public cmd_Pause(id) {
 			set_user_noclip(id, 0);
 			amxclient_cmd(id, "-hook");
 
-			g_UserData[id][ud_LastVel] = 0.0;
-			g_UserData[id][ud_LastVel][1] = 0.0;
-			g_UserData[id][ud_LastVel][2] = g_UserData[id][ud_LastVel][2];
 			set_entvar(id, var_velocity, g_UserData[id][ud_LastVel]);
 
 			ExecuteForward(g_Forwards[fwd_TimerPausePost], _, id);
