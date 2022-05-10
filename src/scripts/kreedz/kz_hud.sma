@@ -262,21 +262,6 @@ FormatSpecList(id, szSpecList[], iLen, &specNum) {
 	}
 }
 
-bool:is_user_spectating(iAlive, iSpec) {
-	if (!is_user_connected(iSpec) || is_user_alive(iSpec) || is_user_bot(iSpec))
-		return false;
-
-	if (get_entvar(iSpec, var_iuser1) != 1 && 
-		get_entvar(iSpec, var_iuser1) != 2 &&
-		get_entvar(iSpec, var_iuser1) != 4)
-		return false;
-
-	if (get_entvar(iSpec, var_iuser2) != iAlive)
-		return false;
-
-	return true;
-}
-
 stock cmd_ShowStatusText(id) {
 	new iTarget, szStatusInfo[256];
 	static szMsgTimeDead[128], szTime[32];
