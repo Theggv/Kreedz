@@ -1,11 +1,8 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <fakemeta_util>
-#include <engine>
-#include <fun>
 #include <hamsandwich>
 #include <reapi>
-#include <xs>
 
 #include <kreedz_api>
 #include <kreedz_util>
@@ -38,7 +35,10 @@ public plugin_init() {
 
 	RegisterHam(Ham_Player_PreThink, "player", "fw_PreThink_Post", 1);
 	RegisterHam(Ham_Player_PostThink, "player", "fw_PostThink", 1);
+
 	register_forward(FM_AddToFullPack, "FM_AddToFullPack_Post", 1);
+
+	RegisterHookChain(RH_SV_StartSound, "OnStartSound", .post = false);
 
 	init_water();
 }
@@ -202,4 +202,35 @@ public FM_AddToFullPack_Post(es, e, iEnt, id, hostflags, player, pSet)
 		set_es(es, ES_Effects, get_es( es, ES_Effects ) | EF_NODRAW);
 	
 	return FMRES_IGNORED;
+}
+
+public OnStartSound(
+	const recipients, const entity, const channel, 
+	const sample[], const volume, Float:attenuation, 
+	const fFlags, const pitch) {
+
+	if (!is_user_connected(entity)) return HC_CONTINUE;
+
+	if (IsStepSound(sample)) {
+		for (new i = 0; i <= MAX_PLAYERS; ++i) {
+			if (!is_user_spectating(entity, i)) continue;
+
+			rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
+		}
+		return HC_SUPERCEDE;
+	}
+
+	return HC_CONTINUE;
+}
+
+
+/**
+*	------------------------------------------------------------------
+*	Utils
+*	------------------------------------------------------------------
+*/
+
+
+bool:IsStepSound(const sample[]) {
+	return !!equal(sample, "player/pl_step", 14);
 }
