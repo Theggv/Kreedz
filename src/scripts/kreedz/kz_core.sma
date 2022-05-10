@@ -93,10 +93,6 @@ new Float:g_PauseChecks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 new Trie:g_tStarts;
 new Trie:g_tStops;
 
-// Timer Roundtime
-new const TIMER_SHOW = (1 << 1)
-
-
 /**
  *	------------------------------------------------------------------
  * 	Init section
@@ -120,13 +116,13 @@ public plugin_init() {
 
 	set_task(TIMER_UPDATE, "timer_handler", .flags = "b");
 
-	register_forward(FM_StartFrame, "fw_StartFrame");
-	
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_r"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_g"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_b"), 0);
 
 	register_dictionary("kreedz_lang.txt");
+
+	register_message(get_user_msgid("ResetHUD"), "OnResetHudMessage");
 }
 
 InitForwards() {
@@ -170,7 +166,7 @@ InitCommands() {
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
 
-	// register_clcmd("kz_version", 	"cmd_ShowVersion");
+	register_clcmd("kz_version", 	"cmd_ShowVersion");
 	// register_clcmd("say /vars", "cmd_vars");
 }
 
@@ -458,8 +454,7 @@ public native_set_settings() {
  *	------------------------------------------------------------------
  */
 
-public cmd_Checkpoint(id)
-{
+public cmd_Checkpoint(id) {
 	if (!is_user_alive(id)) return PLUGIN_HANDLED;
 
 	new iRet;
@@ -634,8 +629,7 @@ public cmd_Start(id) {
 	return PLUGIN_HANDLED;
 }
 
-public cmd_Stop(id)
-{
+public cmd_Stop(id) {
 	if (!is_user_alive(id)) return PLUGIN_HANDLED;
 
 	new iRet;
@@ -647,9 +641,8 @@ public cmd_Stop(id)
 
 	cmd_Fade(id);
 
+	UpdateHud(id);
 	ExecuteForward(g_Forwards[fwd_TimerStopPost], iRet, id);
-
-	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
 	
 	return PLUGIN_HANDLED;
 }
@@ -701,12 +694,11 @@ public cmd_DetectHook_Disable(id) {
 }
 
 
-/*public cmd_ShowVersion(id) {
+public cmd_ShowVersion(id) {
 	client_print(id, print_console, "[KZ] Current version: %s", VERSION);
 
 	return PLUGIN_HANDLED;
-}*/
-
+}
 
 
 
@@ -757,9 +749,9 @@ public ham_Use(iEnt, id) {
 	if (TrieKeyExists(g_tStarts, szTarget)) {
 		if (g_UserData[id][ud_isHookEnable] || 
 			g_UserData[id][ud_HookProtection] > get_gametime() - 1.5 ||
-			get_user_noclip(id)
-			)
+			get_user_noclip(id)) {
 			return HAM_IGNORED;
+		}
 
 		run_start(id);
 	}
@@ -790,8 +782,8 @@ public ham_Touch(iEnt, id) {
 public ham_PreThink(id) {
 	if (!is_user_alive(id)) return HAM_IGNORED;
 
-	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW)
-		set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
+	// Update timer hud
+	UpdateHud(id);
 
 	// use detection
 	if ((get_entvar(id, var_button) & IN_USE) && 
@@ -803,9 +795,9 @@ public ham_PreThink(id) {
 			new Float:orig[3];
 
 			for (new i = 0; i < count; i++) {
-				get_brush_entity_origin( entlist[i], orig );
+				get_brush_entity_origin(entlist[i], orig);
 
-				if ( is_in_viewcone( id, orig ) )
+				if (is_in_viewcone(id, orig))
 					ExecuteHamB(Ham_Use, entlist[i], id, 0, 1, true);
 			}
 		}
@@ -821,6 +813,41 @@ public ham_PostThink(id) {
 	get_entvar(id, var_origin, g_UserData[id][ud_LastPos]);
 
 	return HAM_IGNORED;
+}
+
+/**
+*	------------------------------------------------------------------
+*	Message handlers
+*	------------------------------------------------------------------
+*/
+
+public OnResetHudMessage(msgId, msgDest, id) {
+	if (!is_user_connected(id)) return PLUGIN_CONTINUE;
+
+	UpdateHud(id);
+
+	return PLUGIN_CONTINUE;
+}
+
+UpdateHud(id) {
+	if (!is_user_connected(id)) return;
+
+	HudAddBit(id, HIDEHUD_MONEY);
+
+	// hide timer hud if timer is disabled
+	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED) {
+		HudAddBit(id, HIDEHUD_TIMER);
+	} else {
+		HudDelBit(id, HIDEHUD_TIMER);
+	}
+}
+
+HudAddBit(id, bit) {
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | bit);
+}
+
+HudDelBit(id, bit) {
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) & ~bit);
 }
 
 run_start(id) {
@@ -849,7 +876,7 @@ run_start(id) {
 
 	cmd_Fade(id);
 
-	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD)  & ~HIDEHUD_TIMER);
+	UpdateHud(id);
 	UTIL_TimerRoundtime(id, 0);
 
 	ExecuteForward(g_Forwards[fwd_TimerStartPost], _, id);
@@ -895,8 +922,7 @@ run_finish(id) {
 
 	cmd_Fade(id);
 
-	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
-
+	UpdateHud(id);
 	ExecuteForward(g_Forwards[fwd_TimerFinishPost], _, id, fTime);
 }
 
