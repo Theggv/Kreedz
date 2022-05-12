@@ -8,6 +8,7 @@
 
 #include <kreedz_api>
 #include <kreedz_util>
+#include <settings_api>
 
 #define PLUGIN 	 	"[Kreedz] Core"
 #define VERSION 	__DATE__
@@ -56,8 +57,8 @@ enum _:UserDataStruct {
 	TimerState:ud_TimerState,
 
 	// Settings data
+	ud_anglesMode,
 	ud_TimerData[TimerStruct],
-	ud_Settings[SettingsStruct],
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -87,6 +88,13 @@ enum _:eForwards {
 
 new g_Forwards[eForwards];
 
+enum OptionsEnum {
+    optIntSaveAngles,
+};
+
+new g_Options[OptionsEnum];
+
+
 new Float:g_Checks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 new Float:g_PauseChecks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 
@@ -113,6 +121,8 @@ public plugin_init() {
 	InitTries();
 	InitForwards();
 	InitCommands();
+
+	bindOptions();
 
 	set_task(TIMER_UPDATE, "timer_handler", .flags = "b");
 
@@ -191,6 +201,16 @@ InitTries() {
 		TrieSetCell(g_tStops, szStops[i], 1);
 }
 
+public bindOptions() {
+	g_Options[optIntSaveAngles] = find_option_by_name("save_angles");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optIntSaveAngles]) {
+		g_UserData[id][ud_anglesMode] = newValue;
+	}
+}
+
 public cmd_vars(id) {
 	client_print(id, print_console, "%d %d %d %d", 
 		get_entvar(id, var_iuser1), get_entvar(id, var_iuser2),
@@ -235,9 +255,6 @@ public plugin_natives()
 
 	register_native("kz_get_timer_data", 	"native_get_timer_data");
 	register_native("kz_set_timer_data", 	"native_set_timer_data");
-
-	register_native("kz_get_settings", 		"native_get_settings");
-	register_native("kz_set_settings", 		"native_set_settings");
 }
 
 public native_start_timer() {
@@ -430,24 +447,6 @@ public native_set_timer_data() {
 	g_UserData[id][ud_TimerData] = value;
 }
 
-public native_get_settings() {
-	new id = get_param(1);
-
-	new value[SettingsStruct];
-	copy(value, sizeof(value), g_UserData[id][ud_Settings]);
-
-	set_array(2, value, sizeof(value));
-}
-
-public native_set_settings() {
-	new id = get_param(1);
-
-	new value[SettingsStruct];
-	get_array(2, value, sizeof(value));
-
-	g_UserData[id][ud_Settings] = value;
-}
-
 /**
  *	------------------------------------------------------------------
  * 	Commands section
@@ -531,7 +530,7 @@ public cmd_Gocheck(id) {
 
 			set_entvar(id, var_origin, g_PauseChecks[id][i][cp_Pos]);
 
-			if (g_UserData[id][ud_Settings][set_IsSaveAngles]) {
+			if (g_UserData[id][ud_anglesMode] & (1 << 0)) {
 				set_entvar(id, var_angles, g_PauseChecks[id][i][cp_Angle]);
 				set_entvar(id, var_v_angle, g_PauseChecks[id][i][cp_Angle]);
 				set_entvar(id, var_fixangle, 1);
@@ -552,7 +551,7 @@ public cmd_Gocheck(id) {
 
 			set_entvar(id, var_origin, g_Checks[id][i][cp_Pos]);
 
-			if (g_UserData[id][ud_Settings][set_IsSaveAngles]) {
+			if (g_UserData[id][ud_anglesMode] & (1 << 0)) {
 				set_entvar(id, var_angles, g_Checks[id][i][cp_Angle]);
 				set_entvar(id, var_v_angle, g_Checks[id][i][cp_Angle]);
 				set_entvar(id, var_fixangle, 1);
@@ -612,9 +611,12 @@ public cmd_Start(id) {
 
 	if (g_UserData[id][ud_IsStartSaved]) {
 		set_entvar(id, var_origin, g_UserData[id][ud_StartPos][cp_Pos]);
-		set_entvar(id, var_angles, g_UserData[id][ud_StartPos][cp_Angle]);
-		set_entvar(id, var_v_angle, g_UserData[id][ud_StartPos][cp_Angle]);
-		set_entvar(id, var_fixangle, 1);
+
+		if (g_UserData[id][ud_anglesMode] & (1 << 1)) {
+			set_entvar(id, var_angles, g_UserData[id][ud_StartPos][cp_Angle]);
+			set_entvar(id, var_v_angle, g_UserData[id][ud_StartPos][cp_Angle]);
+			set_entvar(id, var_fixangle, 1);
+		}
 
 		set_entvar(id, var_velocity, Float:{0.0, 0.0, 0.0});
 		set_entvar(id, var_view_ofs, Float:{0.0, 0.0, 12.0});

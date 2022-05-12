@@ -1,8 +1,8 @@
 #include <amxmodx>
 #include <fakemeta>
 
-#include <kreedz_api>
 #include <kreedz_util>
+#include <settings_api>
 
 #define PLUGIN 		"[Server] Mute"
 #define VERSION 	__DATE__
@@ -21,27 +21,46 @@ new g_szRadioCommands[][] = {
 
 new g_Muted[MAX_PLAYERS + 1];
 
+enum OptionsEnum {
+	optBoolBlockRadio,
+};
+
+new g_Options[OptionsEnum];
+new bool:g_isRadioBlocked[MAX_PLAYERS + 1];
+
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	register_message(get_user_msgid("TextMsg"), "TextMsg_Handler")
 	register_message(get_user_msgid("SendAudio"), "SendAudio_Handler")
 
-	kz_register_cmd("mute", "cmd_MuteMenu");
+	kz_register_cmd("mute", "cmdMuteMenu");
 
 	for (new i = 0; i < sizeof(g_szRadioCommands); ++i) {
-		register_clcmd(g_szRadioCommands[i], "cmd_CheckRadio");
+		register_clcmd(g_szRadioCommands[i], "cmdCheckRadio");
 	}
 
 	register_forward(FM_Voice_SetClientListening, "fw_SetVoice");
+
+	bindOptions();
+}
+
+public bindOptions() {
+	g_Options[optBoolBlockRadio] = find_option_by_name("block_radio");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optBoolBlockRadio]) {
+		g_isRadioBlocked[id] = !!newValue;
+	}
 }
 
 public client_disconnected(id) {
 	g_Muted[id] = 0;
 }
 
-public cmd_CheckRadio(id) {
-	if (!kz_is_radio_enable(id))
+public cmdCheckRadio(id) {
+	if (g_isRadioBlocked[id])
 		return PLUGIN_HANDLED;
 
 	return PLUGIN_CONTINUE;
@@ -51,10 +70,10 @@ public SendAudio_Handler(iMsgId, msg_dest, msg_entity) {
 	new szMsg[128];
 	get_msg_arg_string(2, szMsg, charsmax(szMsg));
 
-	if (kz_is_radio_enable(msg_entity))
+	if (!g_isRadioBlocked[msg_entity])
 		return PLUGIN_CONTINUE;
 
-	if (	// radio1
+	if (// radio1
 		equal(szMsg, "%!MRAD_COVERME") || 
 		equal(szMsg, "%!MRAD_TAKEPOINT") ||
 		equal(szMsg, "%!MRAD_POSITION") || 
@@ -97,7 +116,7 @@ public TextMsg_Handler(iMsgId, msg_dest, msg_entity) {
 	new szMsg[128];
 	get_msg_arg_string(3, szMsg, charsmax(szMsg));
 
-	if (equal(szMsg, "#Game_radio") && !kz_is_radio_enable(msg_entity)) {
+	if (equal(szMsg, "#Game_radio") && g_isRadioBlocked[msg_entity]) {
 		set_msg_arg_string(3, "");
 
 		return PLUGIN_HANDLED;
@@ -106,7 +125,7 @@ public TextMsg_Handler(iMsgId, msg_dest, msg_entity) {
 	return PLUGIN_CONTINUE;
 }
 
-public cmd_MuteMenu(id) {
+public cmdMuteMenu(id) {
 	new szMsg[128];
 	new i_Menu = menu_create("Mute menu", "MuteMenu_Handler");
 
@@ -154,7 +173,7 @@ public MuteMenu_Handler(id, menu, item) {
 	else
 		g_Muted[id] |= (1 << iCommand);
 
-	cmd_MuteMenu(id);
+	cmdMuteMenu(id);
 
 	return PLUGIN_HANDLED;
 }
