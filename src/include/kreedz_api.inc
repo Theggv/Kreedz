@@ -93,9 +93,6 @@ native kz_set_last_cp(id, value[PosStruct]);
 native Float:kz_get_actual_time(id);
 native kz_set_start_time(id, Float:value);
 
-native kz_get_timer_data(id, value[TimerStruct]);
-native kz_set_timer_data(id, value[TimerStruct]);
-
 //
 // Hook & noclip section
 // 

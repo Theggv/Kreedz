@@ -57,8 +57,7 @@ enum _:UserDataStruct {
 	TimerState:ud_TimerState,
 
 	// Settings data
-	ud_anglesMode,
-	ud_TimerData[TimerStruct],
+	ud_AnglesMode,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -118,9 +117,9 @@ public plugin_init() {
 	RegisterHam(Ham_Touch, "func_button", "ham_Touch", 0);
 
 	// Init section
-	InitTries();
-	InitForwards();
-	InitCommands();
+	initTries();
+	initForwards();
+	initCommands();
 
 	bindOptions();
 
@@ -135,7 +134,7 @@ public plugin_init() {
 	register_message(get_user_msgid("ResetHUD"), "OnResetHudMessage");
 }
 
-InitForwards() {
+initForwards() {
 	g_Forwards[fwd_TimerStartPre] = 	CreateMultiForward("kz_timer_start_pre", ET_CONTINUE, FP_CELL);
 	g_Forwards[fwd_TimerStartPost] = 	CreateMultiForward("kz_timer_start_post", ET_IGNORE, FP_CELL);
 
@@ -160,7 +159,7 @@ InitForwards() {
 	g_Forwards[fwd_StartTeleportPost] = CreateMultiForward("kz_starttp_post", ET_IGNORE, FP_CELL);
 }
 
-InitCommands() {
+initCommands() {
 	register_clcmd("+hook", 		"cmd_DetectHook");
 	register_clcmd("-hook", 		"cmd_DetectHook_Disable");
 
@@ -180,7 +179,7 @@ InitCommands() {
 	// register_clcmd("say /vars", "cmd_vars");
 }
 
-InitTries() {
+initTries() {
 	g_tStarts = TrieCreate();
 	g_tStops  = TrieCreate();
 
@@ -201,13 +200,13 @@ InitTries() {
 		TrieSetCell(g_tStops, szStops[i], 1);
 }
 
-public bindOptions() {
+bindOptions() {
 	g_Options[optIntSaveAngles] = find_option_by_name("save_angles");
 }
 
 public OnCellValueChanged(id, optionId, newValue) {
 	if (optionId == g_Options[optIntSaveAngles]) {
-		g_UserData[id][ud_anglesMode] = newValue;
+		g_UserData[id][ud_AnglesMode] = newValue;
 	}
 }
 
@@ -252,9 +251,6 @@ public plugin_natives()
 
 	register_native("kz_get_actual_time", 	"native_get_actual_time");
 	register_native("kz_set_start_time", 	"native_set_start_time");
-
-	register_native("kz_get_timer_data", 	"native_get_timer_data");
-	register_native("kz_set_timer_data", 	"native_set_timer_data");
 }
 
 public native_start_timer() {
@@ -429,24 +425,6 @@ public TimerState:native_get_timer_state() {
 	return g_UserData[id][ud_TimerState];
 }
 
-public native_get_timer_data() {
-	new id = get_param(1);
-
-	new value[TimerStruct];
-	copy(value, sizeof(value), g_UserData[id][ud_TimerData]);
-
-	set_array(2, value, sizeof(value));
-}
-
-public native_set_timer_data() {
-	new id = get_param(1);
-
-	new value[TimerStruct];
-	get_array(2, value, sizeof(value));
-
-	g_UserData[id][ud_TimerData] = value;
-}
-
 /**
  *	------------------------------------------------------------------
  * 	Commands section
@@ -530,7 +508,7 @@ public cmd_Gocheck(id) {
 
 			set_entvar(id, var_origin, g_PauseChecks[id][i][cp_Pos]);
 
-			if (g_UserData[id][ud_anglesMode] & (1 << 0)) {
+			if (g_UserData[id][ud_AnglesMode] & (1 << 0)) {
 				set_entvar(id, var_angles, g_PauseChecks[id][i][cp_Angle]);
 				set_entvar(id, var_v_angle, g_PauseChecks[id][i][cp_Angle]);
 				set_entvar(id, var_fixangle, 1);
@@ -551,7 +529,7 @@ public cmd_Gocheck(id) {
 
 			set_entvar(id, var_origin, g_Checks[id][i][cp_Pos]);
 
-			if (g_UserData[id][ud_anglesMode] & (1 << 0)) {
+			if (g_UserData[id][ud_AnglesMode] & (1 << 0)) {
 				set_entvar(id, var_angles, g_Checks[id][i][cp_Angle]);
 				set_entvar(id, var_v_angle, g_Checks[id][i][cp_Angle]);
 				set_entvar(id, var_fixangle, 1);
@@ -612,7 +590,7 @@ public cmd_Start(id) {
 	if (g_UserData[id][ud_IsStartSaved]) {
 		set_entvar(id, var_origin, g_UserData[id][ud_StartPos][cp_Pos]);
 
-		if (g_UserData[id][ud_anglesMode] & (1 << 1)) {
+		if (g_UserData[id][ud_AnglesMode] & (1 << 1)) {
 			set_entvar(id, var_angles, g_UserData[id][ud_StartPos][cp_Angle]);
 			set_entvar(id, var_v_angle, g_UserData[id][ud_StartPos][cp_Angle]);
 			set_entvar(id, var_fixangle, 1);
