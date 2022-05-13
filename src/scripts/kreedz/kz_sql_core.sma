@@ -112,7 +112,7 @@ public Handle:native_get_tuple()
 
 public init_tables()
 {
-	g_NumInitQueries = 6;
+	g_NumInitQueries = 4;
 
 	new szQuery[2048];
 
@@ -212,36 +212,6 @@ public init_tables()
 		");
 
 	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
-
-	formatex(szQuery, charsmax(szQuery), "\
-	CREATE TABLE IF NOT EXISTS `kz_settings` (\
-		`uid` int(11) NOT NULL UNIQUE,\
-		`is_save_angles` int(11) NOT NULL DEFAULT 1,\
-		`is_radio_enable` int(11) NOT NULL DEFAULT 0,\
-		FOREIGN KEY (uid) REFERENCES kz_uid(id)\
-			ON DELETE CASCADE \
-			ON UPDATE CASCADE \
-		) DEFAULT CHARSET utf8;\
-		");
-
-	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
-
-	formatex(szQuery, charsmax(szQuery), "\
-	CREATE TABLE IF NOT EXISTS `kz_settings_timer` ( \
-		`uid` int(11) NOT NULL UNIQUE, \
-		`rgb` int(11) NOT NULL DEFAULT 6618980, \
-		`x` int(11) NOT NULL DEFAULT %d, \
-		`y` int(11) NOT NULL DEFAULT %d, \
-		`is_dhud` int(11) NOT NULL DEFAULT 1, \
-		`type` int(11) NOT NULL DEFAULT 0, \
-		`is_ms` int(11) NOT NULL DEFAULT 1, \
-		FOREIGN KEY (uid) REFERENCES kz_uid(id) \
-			ON DELETE CASCADE \
-			ON UPDATE CASCADE \
-		) DEFAULT CHARSET utf8; \
-		", -1.0, 0.01);
-
-	SQL_ThreadQuery(SQL_Tuple, "@InitTables_Callback", szQuery);
 }
 
 @InitTables_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
@@ -307,7 +277,7 @@ public init_map()
 		strtolower(szMapName);
 
 		formatex(szQuery, charsmax(szQuery), "\
-			INSERT INTO `kz_maps` (`mapname`) VALUES (^"%s^");",
+			INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');",
 			szMapName);
 
 		SQL_ThreadQuery(SQL_Tuple, "@WithoutAnswer_Callback", szQuery);
@@ -338,7 +308,7 @@ public client_putinserver(id)
 	// format query
 	formatex(szQuery, charsmax(szQuery), "\
 		SELECT * FROM `kz_uid` \
-		WHERE `steam_id` = ^"%s^";",
+		WHERE `steam_id` = '%s';",
 		szAuth);
 	
 	UTIL_LogToFile(MYSQL_LOG, "DEBUG", "client_putinserver", szQuery);
@@ -377,7 +347,7 @@ public client_putinserver(id)
 	{
 		// format query
 		formatex(szQuery, charsmax(szQuery), "\
-			INSERT INTO `kz_uid` (`steam_id`, `last_name`) VALUES (^"%s^", ^"%s^");\
+			INSERT INTO `kz_uid` (`steam_id`, `last_name`) VALUES ('%s', '%s');\
 			",
 			szAuth, szName);
 		
@@ -389,7 +359,7 @@ public client_putinserver(id)
 		
 		formatex(szQuery, charsmax(szQuery), "\
 			SELECT * FROM `kz_uid` \
-			WHERE `steam_id` = ^"%s^";",
+			WHERE `steam_id` = '%s';",
 			szAuth);
 		
 		UTIL_LogToFile(MYSQL_LOG, "DEBUG", "UserInfo_Callback", szQuery);
@@ -408,7 +378,7 @@ public client_putinserver(id)
 		
 		// format query
 		formatex(szQuery, charsmax(szQuery), "\
-			UPDATE `kz_uid` SET `last_name` = ^"%s^" \
+			UPDATE `kz_uid` SET `last_name` = '%s' \
 			WHERE `id` = %d;",
 			szName, g_UserData[id]);
 		

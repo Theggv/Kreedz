@@ -1,26 +1,30 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <fakemeta_util>
-#include <engine>
-#include <fun>
 #include <hamsandwich>
 #include <reapi>
-#include <xs>
 
 #include <kreedz_api>
 #include <kreedz_util>
+#include <settings_api>
 
-enum _:InvisStruct
-{
+enum _:InvisStruct {
 	bool:isHidePlayers,
 	bool:isHideWater
-}
+};
 
 new g_UserData[MAX_PLAYERS + 1][InvisStruct];
 new bool:g_IsBoostEnable[MAX_PLAYERS + 1];
 
 new gWaterFound;
 new bool:g_IsWaterEntity[2048];
+
+enum OptionsEnum {
+    optIntInvisMode,
+};
+
+new g_Options[OptionsEnum];
+
 
 #define PLUGIN 	 	"[Kreedz] Invis"
 #define VERSION 	__DATE__
@@ -38,9 +42,14 @@ public plugin_init() {
 
 	RegisterHam(Ham_Player_PreThink, "player", "fw_PreThink_Post", 1);
 	RegisterHam(Ham_Player_PostThink, "player", "fw_PostThink", 1);
+
 	register_forward(FM_AddToFullPack, "FM_AddToFullPack_Post", 1);
 
+	RegisterHookChain(RH_SV_StartSound, "OnStartSound", .post = false);
+
 	init_water();
+
+	bindOptions();
 }
 
 public client_disconnected(id) {
@@ -79,6 +88,17 @@ init_water() {
 	}
 }
 
+public bindOptions() {
+	g_Options[optIntInvisMode] = find_option_by_name("invis_mode");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optIntInvisMode]) {
+		g_UserData[id][isHidePlayers] = !!(newValue & (1 << 0));
+		g_UserData[id][isHideWater] = !!(newValue & (1 << 1));
+	}
+}
+
 // 
 // Commands
 // 
@@ -95,13 +115,11 @@ public cmd_Invis(id) {
 	
 	menu_additem(iMenu, szMsg, "1", 0);
 	
-	if (gWaterFound) {
-		formatex(szMsg, charsmax(szMsg), "%L: %L", 
-			id, "INVISMENU_WATER", id, 
-			(g_UserData[id][isHideWater] ? "INVISMENU_HIDE" : "INVISMENU_DRAW"));
+	formatex(szMsg, charsmax(szMsg), "%L: %L", 
+		id, "INVISMENU_WATER", id, 
+		(g_UserData[id][isHideWater] ? "INVISMENU_HIDE" : "INVISMENU_DRAW"));
 
-		menu_additem(iMenu, szMsg, "2", 0);
-	}
+	menu_additem(iMenu, szMsg, "2", 0);
 
 	menu_display(id, iMenu, 0);
 
@@ -126,6 +144,9 @@ public InvisMenu_Handler(id, menu, item) {
 		case 1: g_UserData[id][isHidePlayers] = !g_UserData[id][isHidePlayers];
 		case 2: g_UserData[id][isHideWater] = !g_UserData[id][isHideWater];
 	}
+
+	set_option_cell(id, g_Options[optIntInvisMode], 
+		(_:g_UserData[id][isHideWater] << 1) + (_:g_UserData[id][isHidePlayers] << 0));
 
 	cmd_Invis(id);
 
@@ -202,4 +223,46 @@ public FM_AddToFullPack_Post(es, e, iEnt, id, hostflags, player, pSet)
 		set_es(es, ES_Effects, get_es( es, ES_Effects ) | EF_NODRAW);
 	
 	return FMRES_IGNORED;
+}
+
+public OnStartSound(
+	const recipients, const entity, const channel, 
+	const sample[], const volume, Float:attenuation, 
+	const fFlags, const pitch) {
+
+	if (!is_user_connected(entity)) return HC_CONTINUE;
+	if (is_user_bot(entity)) return HC_CONTINUE;
+
+	if (IsStepSound(sample)) {
+		for (new i = 1; i <= MAX_PLAYERS; ++i) {
+			if (!is_user_connected(i) || entity == i) continue;
+			if (!is_user_spectating(entity, i)) continue;
+
+			// if (is_user_spectating(entity, i)) {
+			// 	rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
+			// 	continue;
+			// }
+			// else if (g_UserData[i][isHidePlayers]) {
+			// 	continue;
+			// }
+
+			rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
+		}
+		
+		return HC_SUPERCEDE;
+	}
+
+	return HC_CONTINUE;
+}
+
+
+/**
+*	------------------------------------------------------------------
+*	Utils
+*	------------------------------------------------------------------
+*/
+
+
+bool:IsStepSound(const sample[]) {
+	return !!equal(sample, "player/pl_step", 14);
 }

@@ -115,35 +115,7 @@ public InitServices()
 {
 	g_Sources = ArrayCreate(SourceStruct);
 
-	ArrayPushArray(g_Sources, InitXJ());
-	ArrayPushArray(g_Sources, InitCosy());
 	ArrayPushArray(g_Sources, InitKZRush());
-}
-
-public InitXJ()
-{
-	new data[SourceStruct];
-
-	data[ServiceName] = 		"Xtreme Jumps";
-	data[CheckPath] = 			"http://files.xtreme-jumps.eu/maps/";
-	data[DownloadPath] = 		"http://files.xtreme-jumps.eu/maps/";
-	data[FileExtension] = 		".rar";
-	data[IsRequireSSL] = 			false;
-
-	return data;
-}
-
-public InitCosy()
-{
-	new data[SourceStruct];
-
-	data[ServiceName] = 		"Cosy Climbing";
-	data[CheckPath] = 			"https://cosy-climbing.net/files/maps/";
-	data[DownloadPath] = 		"https://cosy-climbing.net/files/maps/";
-	data[FileExtension] = 		".rar";
-	data[IsRequireSSL] = 			true;
-
-	return data;
 }
 
 public InitKZRush()
