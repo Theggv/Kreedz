@@ -58,6 +58,7 @@ enum _:UserDataStruct {
 
 	// Settings data
 	ud_AnglesMode,
+	ud_Sunglasses,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -174,6 +175,8 @@ initCommands() {
 	kz_register_cmd("restart", 		"cmd_Start");
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
+
+	kz_register_cmd("sunglasses", 	"cmd_Sunglasses");
 
 	register_clcmd("kz_version", 	"cmd_ShowVersion");
 	// register_clcmd("say /vars", "cmd_vars");
@@ -661,6 +664,14 @@ public cmd_Pause(id) {
 	return PLUGIN_HANDLED;
 }
 
+public cmd_Sunglasses(id) {
+	g_UserData[id][ud_Sunglasses] = !g_UserData[id][ud_Sunglasses];
+
+	cmd_Fade(id);
+
+	return PLUGIN_HANDLED; 
+}
+
 public cmd_DetectHook(id) {
 	if (is_user_alive(id) && g_UserData[id][ud_TimerState] == TIMER_ENABLED)
 		kz_set_pause(id);
@@ -709,6 +720,8 @@ public client_putinserver(id) {
 		g_UserData[id][ud_PauseCheckIndex] = 0;
 		g_UserData[id][ud_LastVel] = Float:{0.0, 0.0, 0.0};
 		g_UserData[id][ud_IsStartSaved] = false;
+
+		g_UserData[id][ud_Sunglasses] = false;
 	}
 }
 
@@ -943,6 +956,17 @@ public cmd_Fade(id) {
 		write_byte(0); 		// g
 		write_byte(0); 		// b
 		write_byte(100); 	// a
+		message_end();
+	}
+	else if (g_UserData[id][ud_Sunglasses]) {
+		message_begin(MSG_ONE, get_user_msgid( "ScreenFade" ), _, id);
+		write_short(1); 	// total duration
+		write_short(0); 	// time it stays one color
+		write_short(5); 	// fade type
+		write_byte(0); 		// r
+		write_byte(0); 		// g
+		write_byte(0); 		// b
+		write_byte(50); 	// a
 		message_end();
 	}
 	else {
