@@ -1,4 +1,5 @@
 #include <amxmodx>
+#include <hamsandwich>
 
 #include <kreedz_util>
 #include <settings_api>
@@ -43,6 +44,8 @@ new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
 
 public plugin_init() {
     register_plugin(PLUGIN, VERSION, AUTHOR);
+
+    RegisterHam(Ham_Spawn, "player", "fwdOnSpawn", .Post = true)
 
     kz_register_cmd("settings", "cmdSettings");
 }
@@ -280,4 +283,12 @@ public taskInitialized(taskId) {
     new id = taskId - TASK_USER_INITIALIZED;
 
     g_UserData[id][ud_initialized] = true;
+}
+
+public fwdOnSpawn(id) {
+    if (!is_user_alive(id)) return;
+
+    if (g_UserData[id][ud_showMenu]) {
+        amxclient_cmd(id, "menu");
+    }
 }
