@@ -652,6 +652,7 @@ public cmd_Pause(id) {
 
 			cmd_Fade(id);
 
+			rg_reset_maxspeed(id);
 			set_user_noclip(id, 0);
 			amxclient_cmd(id, "-hook");
 

@@ -1,10 +1,23 @@
 #include <amxmodx>
 
 #include <kreedz_util>
+#include <settings_api>
 
 #define PLUGIN 	 	"[Kreedz] Menu"
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
+
+enum OptionsEnum {
+    optIntMkeyBehavior,
+};
+
+new g_Options[OptionsEnum];
+
+enum UserDataStruct {
+	ud_mkeyBehavior,
+};
+
+new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -13,15 +26,42 @@ public plugin_init() {
 	// dlya dalbichey
 	kz_register_cmd("ьутг", "cmdMainMenu");
 	
-	register_clcmd("jointeam", "cmdMainMenu");
-	register_clcmd("chooseteam", "cmdMainMenu");
+	register_clcmd("jointeam", "cmdMkeyHandler");
+	register_clcmd("chooseteam", "cmdMkeyHandler");
 
 	register_dictionary("kz_mode.txt");
+
+	bindOptions();
+}
+
+bindOptions() {
+	g_Options[optIntMkeyBehavior] = find_option_by_name("mkey_behavior");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optIntMkeyBehavior]) {
+		g_UserData[id][ud_mkeyBehavior] = newValue;
+	}
+}
+
+public client_putinserver(id) {
+	g_UserData[id][ud_mkeyBehavior] = 0;
 }
 
 // 
 // Commands
 // 
+
+public cmdMkeyHandler(id) {
+	switch (g_UserData[id][ud_mkeyBehavior]) {
+		case 1: amxclient_cmd(id, "spec");
+		default: {
+			cmdMainMenu(id);
+		}
+	}
+
+	return PLUGIN_HANDLED;
+}
 
 public cmdMainMenu(id) {
 	new szMsg[256];

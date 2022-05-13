@@ -18,9 +18,11 @@ enum OptionsEnum {
     optBoolBlockRadio,
     optIntInvisMode,
     optFloatNoclipSpeed,
+    optFloatHookSpeed,
     optBoolFog,
     optBoolShowMenu,
     optBoolAllowGoto,
+    optIntMkeyBehavior,
 };
 
 new g_Options[OptionsEnum];
@@ -34,9 +36,12 @@ enum UserDataStruct {
     bool:ud_blockRadio,
     ud_invisMode,
     Float:ud_noclipSpeed,
+    Float:ud_hookSpeed,
     bool:ud_fog,
     bool:ud_showMenu,
     bool:ud_allowGoto,
+
+    ud_mkeyBehavior,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -48,6 +53,9 @@ public plugin_init() {
     RegisterHam(Ham_Spawn, "player", "fwdOnSpawn", .Post = true)
 
     kz_register_cmd("settings", "cmdSettings");
+
+    register_clcmd("set_hook_speed", "cmdSetHookSpeed");
+    register_clcmd("set_noclip_speed", "cmdSetNoclipSpeed");
 }
 
 public plugin_precache() {
@@ -82,8 +90,13 @@ public plugin_precache() {
 
     // noclip speed:
     // 
+    // default: 250.0
+    g_Options[optFloatNoclipSpeed] = register_players_option_cell("max_noclip_speed", FIELD_TYPE_FLOAT, 250.0);
+
+    // hook speed:
+    // 
     // default: 600.0
-    g_Options[optFloatNoclipSpeed] = register_players_option_cell("noclip_speed", FIELD_TYPE_FLOAT, 600.0);
+    g_Options[optFloatHookSpeed] = register_players_option_cell("hook_speed", FIELD_TYPE_FLOAT, 600.0);
 
     // enable fog:
     // 
@@ -99,6 +112,14 @@ public plugin_precache() {
     // 
     // default: true
     g_Options[optBoolAllowGoto] = register_players_option_cell("allow_goto", FIELD_TYPE_BOOL, true);
+
+    // M key behavior:
+    // 
+    // 0 - open menu
+    // 1 - go to spec/ct
+    // 
+    // default: 0
+    g_Options[optIntMkeyBehavior] = register_players_option_cell("mkey_behavior", FIELD_TYPE_INT, 0);
 }
 
 public client_putinserver(id) {
@@ -108,10 +129,13 @@ public client_putinserver(id) {
     g_UserData[id][ud_anglesMode] = 3;
     g_UserData[id][ud_blockRadio] = false;
     g_UserData[id][ud_invisMode] = 0;
-    g_UserData[id][ud_noclipSpeed] = 600.0;
+    g_UserData[id][ud_noclipSpeed] = 250.0;
+    g_UserData[id][ud_hookSpeed] = 600.0;
     g_UserData[id][ud_fog] = false;
     g_UserData[id][ud_showMenu] = false;
     g_UserData[id][ud_allowGoto] = true;
+
+    g_UserData[id][ud_mkeyBehavior] = 0;
 
     remove_task(TASK_USER_INITIALIZED + id)
     set_task(5.0, "taskInitialized", TASK_USER_INITIALIZED + id);
@@ -139,6 +163,9 @@ public OnCellValueChanged(id, optionId, newValue) {
     else if (optionId == g_Options[optFloatNoclipSpeed]) {
         g_UserData[id][ud_noclipSpeed] = Float:newValue;
     }
+    else if (optionId == g_Options[optFloatHookSpeed]) {
+        g_UserData[id][ud_hookSpeed] = Float:newValue;
+    }
     else if (optionId == g_Options[optBoolFog]) {
         g_UserData[id][ud_fog] = !!newValue;
     }
@@ -154,15 +181,18 @@ public OnCellValueChanged(id, optionId, newValue) {
             amxclient_cmd(id, "menu");
         }
     }
+    else if (optionId == g_Options[optIntMkeyBehavior]) {
+        g_UserData[id][ud_mkeyBehavior] = newValue;
+    }
 }
 
 public cmdSettings(id) {
-    settingMenu(id);
+    settingsMenu(id);
 
     return PLUGIN_HANDLED;
 }
 
-stock settingMenu(id, page = 0) {
+stock settingsMenu(id, page = 0) {
     new szMsg[256];
     formatex(szMsg, charsmax(szMsg), "\yKZ Settings");
     
@@ -190,12 +220,21 @@ stock settingMenu(id, page = 0) {
     
     menu_additem(iMenu, szMsg, "2", 0);
 
+
     switch (g_UserData[id][ud_fog]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Show FOG: \yenabled^n");
-        case false: formatex(szMsg, charsmax(szMsg), "Show FOG: \ddisabled^n");
+        case true: formatex(szMsg, charsmax(szMsg), "Show FOG: \yenabled");
+        case false: formatex(szMsg, charsmax(szMsg), "Show FOG: \ddisabled");
+    }
+
+    menu_additem(iMenu, szMsg, "5", 0);
+
+    switch (g_UserData[id][ud_allowGoto]) {
+        case true: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \yenabled^n");
+        case false: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \ddisabled^n");
     }
     
-    menu_additem(iMenu, szMsg, "5", 0);
+    menu_additem(iMenu, szMsg, "7", 0);
+
 
     switch (g_UserData[id][ud_blockRadio]) {
         case true: formatex(szMsg, charsmax(szMsg), "Radio commands: \ddisabled");
@@ -218,12 +257,20 @@ stock settingMenu(id, page = 0) {
     
     menu_additem(iMenu, szMsg, "6", 0);
 
-    switch (g_UserData[id][ud_allowGoto]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \ddisabled");
+
+    formatex(szMsg, charsmax(szMsg), "Hook speed: \y%.0f \du/s", g_UserData[id][ud_hookSpeed]);
+    menu_additem(iMenu, szMsg, "8", 0);
+
+    formatex(szMsg, charsmax(szMsg), "Noclip speed: \y%.0f \du/s^n", g_UserData[id][ud_noclipSpeed]);
+    menu_additem(iMenu, szMsg, "9", 0);
+    
+
+    switch (g_UserData[id][ud_mkeyBehavior]) {
+        case 0: formatex(szMsg, charsmax(szMsg), "M key behavior: \yopen menu");
+        case 1: formatex(szMsg, charsmax(szMsg), "M key behavior: \rgo to spec/ct");
     }
     
-    menu_additem(iMenu, szMsg, "7", 0);
+    menu_additem(iMenu, szMsg, "10", 0);
 
     menu_display(id, iMenu, page);
 
@@ -278,9 +325,20 @@ stock settingMenu(id, page = 0) {
             
             set_option_cell(id, g_Options[optBoolAllowGoto], g_UserData[id][ud_allowGoto]);
         }
+        case 8: {
+	        client_cmd(id, "messagemode ^"set_hook_speed^"");
+        }
+        case 9: {
+	        client_cmd(id, "messagemode ^"set_noclip_speed^"");
+        }
+        case 10: {
+            g_UserData[id][ud_mkeyBehavior] = (g_UserData[id][ud_mkeyBehavior] + 1) % 2;
+            
+            set_option_cell(id, g_Options[optIntMkeyBehavior], g_UserData[id][ud_mkeyBehavior]);
+        }
     }
 
-    settingMenu(id, item / 7);
+    settingsMenu(id, item / 7);
 
     return PLUGIN_HANDLED;
 }
@@ -297,4 +355,56 @@ public fwdOnSpawn(id) {
     if (g_UserData[id][ud_showMenu]) {
         amxclient_cmd(id, "menu");
     }
+}
+
+public cmdSetHookSpeed(id) {
+    if (!is_user_connected(id)) return PLUGIN_HANDLED;
+
+    if (read_argc() < 2) return PLUGIN_HANDLED;
+
+    enum { arg_value = 1 };
+
+    new szValue[16], Float:newValue;
+    read_argv(arg_value, szValue, charsmax(szValue));
+
+    if (!is_str_num(szValue)) return PLUGIN_HANDLED;
+
+    newValue = str_to_float(szValue);
+
+    if (newValue < 200.0) newValue = 200.0;
+    if (newValue > 1200.0) newValue = 1200.0;
+
+    g_UserData[id][ud_hookSpeed] = newValue;
+            
+    set_option_cell(id, g_Options[optFloatHookSpeed], _:g_UserData[id][ud_hookSpeed]);
+
+    settingsMenu(id, 1);
+
+    return PLUGIN_HANDLED;
+}
+
+public cmdSetNoclipSpeed(id) {
+    if (!is_user_connected(id)) return PLUGIN_HANDLED;
+
+    if (read_argc() < 2) return PLUGIN_HANDLED;
+
+    enum { arg_value = 1 };
+
+    new szValue[16], Float:newValue;
+    read_argv(arg_value, szValue, charsmax(szValue));
+
+    if (!is_str_num(szValue)) return PLUGIN_HANDLED;
+
+    newValue = str_to_float(szValue);
+
+    if (newValue < 200.0) newValue = 200.0;
+    if (newValue > 400.0) newValue = 400.0;
+
+    g_UserData[id][ud_noclipSpeed] = newValue;
+            
+    set_option_cell(id, g_Options[optFloatNoclipSpeed], _:g_UserData[id][ud_noclipSpeed]);
+
+    settingsMenu(id, 1);
+
+    return PLUGIN_HANDLED;
 }
