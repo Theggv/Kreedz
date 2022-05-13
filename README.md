@@ -1,6 +1,12 @@
 # Kreedz mod
 
+## Features
+- Auto savepos on disconnect
+- Settings system with auto save
+- Practice in pause with checkpoints
+
 ## Commands
+### Basic
 | Command  | Description |
 | --- | --- |
 | `cp` | Make checkpoint |
@@ -10,11 +16,10 @@
 | `start` \| `restart` | Teleport to the start |
 | `stop` \| `reset` | Stop timer |
 | `nightvision` | Change nightvision mode |
-| `sunglasses` | Fade screen for bright maps |
 | `+hook` | Enable / disable hook |
 | `nc` \| `noclip` | Enable / disable noclip |
 | `weapons` | Get all weapons |
-| `fog` | Enable / disable frames on ground feature |
+| `spec` \| `ct` | Move to spectators / cts |
 
 ### Top
 | Command  | Description |
@@ -32,12 +37,19 @@
 | `menu` | Main menu |
 | `settings` | Settings menu |
 | `ljsmenu` | Jump stats menu |
+| `mute` | Mute menu |
+
+### Addons
+| Command  | Description |
+| --- | --- |
+| `fog` | Enable / disable frames on ground feature |
+| `sunglasses` | Fade screen for bright maps |
+| `measure` | Measure distance from point A to B |
+| `wr` | Show world record in hud |
+| `goto` | Teleport to the player |
 ---
 
-### Special Thanks:
-- [Credits](./CREDITS.md)
-
-### Deployment
+## Deployment
 - Clone repository.
 - Install dependencies `npm i`
 
@@ -58,3 +70,6 @@ npm run watch
 ```bash
 npm run pack
 ```
+
+### Special Thanks:
+- [Credits](./CREDITS.md)
