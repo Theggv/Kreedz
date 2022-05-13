@@ -1,12 +1,3 @@
-// 
-// TODO:
-//  1. update queries as bundles
-// for cell:
-//  INSERT INTO `kz_option_%s` (id, value) VALUES(%d, %d) ON DUPLICATE KEY UPDATE value=VALUES(value)
-// for string:
-//  INSERT INTO `kz_option_%s` (id, value) VALUES(%d, '%s') ON DUPLICATE KEY UPDATE value=VALUES(value)
-// 
-
 #include <amxmodx>
 #include <amxmisc>
 #include <sqlx>
@@ -88,12 +79,85 @@ initForwards() {
     g_Forwards[fwdOnOptionsInitialized] = CreateMultiForward("OnOptionsInitialized", ET_CONTINUE);
 }
 
+setupLogFile() {
+    new time[32];
+    get_time("%m%d%Y_%H%M%S", time, charsmax(time));
+
+    mkdir(LOGS_FOLDER);
+    formatex(g_logFile, charsmax(g_logFile), "%s/%s.log", LOGS_FOLDER, time);
+}
+
+setupConnection() {
+    loadConfig();
+
+    new szError[512], iError;
+
+    SQL_Tuple = SQL_MakeDbTuple(
+        g_ConnInfo[ConnHostname], 
+        g_ConnInfo[ConnUsername], 
+        g_ConnInfo[ConnPassword], 
+        g_ConnInfo[ConnDatabase]);
+    
+    SQL_Connection = SQL_Connect(SQL_Tuple, iError, szError, charsmax(szError));
+
+    if (SQL_Connection == Empty_Handle) {
+        UTIL_LogToFile(g_logFile, "ERROR", "plugin_cfg", "[%d] %s", iError, szError);
+        set_fail_state(szError);
+    }
+
+    SQL_SetCharset(SQL_Tuple, "utf8");
+    
+    ExecuteForward(g_Forwards[fwdOnConnectionIsReady], _);
+}
+
+loadConfig() {
+    new szConfigPath[256];
+    get_configsdir(szConfigPath, charsmax(szConfigPath));
+    format(szConfigPath, charsmax(szConfigPath), "%s/kreedz.cfg", szConfigPath);
+
+    if (!file_exists(szConfigPath)) return;
+
+    new szData[256];
+    new hFile = fopen(szConfigPath, "rt");
+
+    new szKey[64], szValue[128];
+
+    while (hFile && !feof(hFile)) {
+        fgets(hFile, szData, charsmax(szData));
+        trim(szData);
+        
+        // Skip comments and empty lines
+        if (containi(szData, ";") > -1 || equal(szData, "") || equal(szData, "//", 2))
+            continue;
+        
+        strtok(szData, szKey, 63, szValue, 127, '=');
+
+        trim(szKey);
+        trim(szValue);
+        remove_quotes(szValue);
+
+        if (equal(szKey, "kz_sql_hostname"))
+            copy(g_ConnInfo[ConnHostname], charsmax(g_ConnInfo[ConnHostname]), szValue);
+        else if (equal(szKey, "kz_sql_username"))
+            copy(g_ConnInfo[ConnUsername], charsmax(g_ConnInfo[ConnUsername]), szValue);
+        else if (equal(szKey, "kz_sql_password"))
+            copy(g_ConnInfo[ConnPassword], charsmax(g_ConnInfo[ConnPassword]), szValue);
+        else if (equal(szKey, "kz_sql_database"))
+            copy(g_ConnInfo[ConnDatabase], charsmax(g_ConnInfo[ConnDatabase]), szValue);
+    }
+
+    if (hFile) {
+        fclose(hFile);
+    }
+}
+
 /**
 *	------------------------------------------------------------------
 *	Game events handlers
 *	------------------------------------------------------------------
 */
 
+// LOad user settings after user data was received
 public kz_sql_data_recv(id) {
     new uid = kz_sql_get_user_uid(id);
 
@@ -215,7 +279,14 @@ INSERT INTO `kz_option_%s` (uid, value) VALUES(%d, '%s') ON DUPLICATE KEY UPDATE
     UTIL_DebugMessage("set %s = %s to player %d", optionName, newValue, id);
 }
 
-bundleQueries(szQuery[MAX_REGISTER_QUERY_LENGTH]) {
+/**
+*	------------------------------------------------------------------
+*	Bundle queries
+*	------------------------------------------------------------------
+*/
+
+
+public bundleQueries(szQuery[MAX_REGISTER_QUERY_LENGTH]) {
     // overflow check 
     if (strlen(g_QueryBundle) + strlen(szQuery) >= MAX_BUNDLE_QUERY_LENGTH) {
         executeBundleQuery();
@@ -241,91 +312,6 @@ public executeBundleQuery() {
     formatex(g_QueryBundle, charsmax(g_QueryBundle), "");
 }
 
-/**
-*	------------------------------------------------------------------
-*	Private functions
-*	------------------------------------------------------------------
-*/
-
-
-setupLogFile() {
-    new time[32];
-    get_time("%m%d%Y_%H%M%S", time, charsmax(time));
-
-    mkdir(LOGS_FOLDER);
-    formatex(g_logFile, charsmax(g_logFile), "%s/%s.log", LOGS_FOLDER, time);
-}
-
-setupConnection() {
-    loadConfig();
-
-    new szError[512], iError;
-
-    SQL_Tuple = SQL_MakeDbTuple(
-        g_ConnInfo[ConnHostname], 
-        g_ConnInfo[ConnUsername], 
-        g_ConnInfo[ConnPassword], 
-        g_ConnInfo[ConnDatabase]);
-    
-    SQL_Connection = SQL_Connect(SQL_Tuple, iError, szError, charsmax(szError));
-
-    if (SQL_Connection == Empty_Handle) {
-        UTIL_LogToFile(g_logFile, "ERROR", "plugin_cfg", "[%d] %s", iError, szError);
-        set_fail_state(szError);
-    }
-
-    SQL_SetCharset(SQL_Tuple, "utf8");
-    
-    ExecuteForward(g_Forwards[fwdOnConnectionIsReady], _);
-}
-
-loadConfig() {
-    new szConfigPath[256];
-    get_configsdir(szConfigPath, charsmax(szConfigPath));
-    format(szConfigPath, charsmax(szConfigPath), "%s/kreedz.cfg", szConfigPath);
-
-    if (!file_exists(szConfigPath)) return;
-
-    new szData[256];
-    new hFile = fopen(szConfigPath, "rt");
-
-    new szKey[64], szValue[128];
-
-    while (hFile && !feof(hFile)) {
-        fgets(hFile, szData, charsmax(szData));
-        trim(szData);
-        
-        // Skip comments and empty lines
-        if (containi(szData, ";") > -1 || equal(szData, "") || equal(szData, "//", 2))
-            continue;
-        
-        strtok(szData, szKey, 63, szValue, 127, '=');
-
-        trim(szKey);
-        trim(szValue);
-        remove_quotes(szValue);
-
-        if (equal(szKey, "kz_sql_hostname"))
-            copy(g_ConnInfo[ConnHostname], charsmax(g_ConnInfo[ConnHostname]), szValue);
-        else if (equal(szKey, "kz_sql_username"))
-            copy(g_ConnInfo[ConnUsername], charsmax(g_ConnInfo[ConnUsername]), szValue);
-        else if (equal(szKey, "kz_sql_password"))
-            copy(g_ConnInfo[ConnPassword], charsmax(g_ConnInfo[ConnPassword]), szValue);
-        else if (equal(szKey, "kz_sql_database"))
-            copy(g_ConnInfo[ConnDatabase], charsmax(g_ConnInfo[ConnDatabase]), szValue);
-    }
-
-    if (hFile) {
-        fclose(hFile);
-    }
-}
-
-/**
-*	------------------------------------------------------------------
-*	Query handlers
-*	------------------------------------------------------------------
-*/
-
 @bundleQueryHandler(queryState, Handle:handle, szError[], iError, szData[], iLen, Float:fQueryTime) {
     SQL_FreeHandle(handle);
 
@@ -346,6 +332,13 @@ loadConfig() {
 
     return PLUGIN_HANDLED;
 }
+
+/**
+*	------------------------------------------------------------------
+*	Query handlers
+*	------------------------------------------------------------------
+*/
+
 
 @getUserSettingsHandler(queryState, Handle:handle, szError[], iError, szData[], iLen, Float:fQueryTime) {
     switch (queryState) {
