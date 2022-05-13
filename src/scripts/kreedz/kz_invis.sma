@@ -234,15 +234,16 @@ public OnStartSound(
 
 	if (IsStepSound(sample)) {
 		for (new i = 1; i <= MAX_PLAYERS; ++i) {
-			if (!is_user_connected(i) || entity == i) continue;
+			// if (!is_user_connected(i) || entity == i) continue;
+			if (!is_user_spectating(entity, i)) continue;
 
-			if (is_user_spectating(entity, i)) {
-				rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
-				continue;
-			}
-			else if (g_UserData[i][isHidePlayers]) {
-				continue;
-			}
+			// if (is_user_spectating(entity, i)) {
+			// 	rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
+			// 	continue;
+			// }
+			// else if (g_UserData[i][isHidePlayers]) {
+			// 	continue;
+			// }
 
 			rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
 		}
