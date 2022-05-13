@@ -22,8 +22,6 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	register_dictionary("kz_mode.txt");
-
 	register_clcmd("fullupdate", "cmd_Block");
 
 	RegisterHam(Ham_CS_RoundRespawn, "player", "ham_Respawn_Post", 1);

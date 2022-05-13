@@ -4,6 +4,8 @@
 
 #define _kreedz_util_included
 
+#include <reapi>
+
 stock kz_register_cmd(szCmd[], szHandler[]) {
 	new szFormatedCmd[64];
 
@@ -113,4 +115,19 @@ stock UTIL_TimerRoundtime(id, time) {
 	message_begin(MSG_ONE_UNRELIABLE, msgRoundTime, .player = id);
 	write_short(time + 1);
 	message_end();
+}
+
+stock bool:is_user_spectating(iAlive, iSpec) {
+	if (!is_user_connected(iSpec) || is_user_alive(iSpec) || is_user_bot(iSpec))
+		return false;
+
+	if (get_entvar(iSpec, var_iuser1) != 1 && 
+		get_entvar(iSpec, var_iuser1) != 2 &&
+		get_entvar(iSpec, var_iuser1) != 4)
+		return false;
+
+	if (get_entvar(iSpec, var_iuser2) != iAlive)
+		return false;
+
+	return true;
 }

@@ -8,6 +8,7 @@
 
 #include <kreedz_api>
 #include <kreedz_util>
+#include <settings_api>
 
 #define PLUGIN 	 	"[Kreedz] Core"
 #define VERSION 	__DATE__
@@ -56,8 +57,8 @@ enum _:UserDataStruct {
 	TimerState:ud_TimerState,
 
 	// Settings data
-	ud_TimerData[TimerStruct],
-	ud_Settings[SettingsStruct],
+	ud_AnglesMode,
+	ud_Sunglasses,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -87,15 +88,18 @@ enum _:eForwards {
 
 new g_Forwards[eForwards];
 
+enum OptionsEnum {
+    optIntSaveAngles,
+};
+
+new g_Options[OptionsEnum];
+
+
 new Float:g_Checks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 new Float:g_PauseChecks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 
 new Trie:g_tStarts;
 new Trie:g_tStops;
-
-// Timer Roundtime
-new const TIMER_SHOW = (1 << 1)
-
 
 /**
  *	------------------------------------------------------------------
@@ -114,22 +118,24 @@ public plugin_init() {
 	RegisterHam(Ham_Touch, "func_button", "ham_Touch", 0);
 
 	// Init section
-	InitTries();
-	InitForwards();
-	InitCommands();
+	initTries();
+	initForwards();
+	initCommands();
+
+	bindOptions();
 
 	set_task(TIMER_UPDATE, "timer_handler", .flags = "b");
 
-	register_forward(FM_StartFrame, "fw_StartFrame");
-	
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_r"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_g"), 0);
 	set_pcvar_num(get_cvar_pointer("sv_skycolor_b"), 0);
 
 	register_dictionary("kreedz_lang.txt");
+
+	register_message(get_user_msgid("ResetHUD"), "OnResetHudMessage");
 }
 
-InitForwards() {
+initForwards() {
 	g_Forwards[fwd_TimerStartPre] = 	CreateMultiForward("kz_timer_start_pre", ET_CONTINUE, FP_CELL);
 	g_Forwards[fwd_TimerStartPost] = 	CreateMultiForward("kz_timer_start_post", ET_IGNORE, FP_CELL);
 
@@ -154,7 +160,7 @@ InitForwards() {
 	g_Forwards[fwd_StartTeleportPost] = CreateMultiForward("kz_starttp_post", ET_IGNORE, FP_CELL);
 }
 
-InitCommands() {
+initCommands() {
 	register_clcmd("+hook", 		"cmd_DetectHook");
 	register_clcmd("-hook", 		"cmd_DetectHook_Disable");
 
@@ -170,11 +176,13 @@ InitCommands() {
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
 
-	// register_clcmd("kz_version", 	"cmd_ShowVersion");
+	kz_register_cmd("sunglasses", 	"cmd_Sunglasses");
+
+	register_clcmd("kz_version", 	"cmd_ShowVersion");
 	// register_clcmd("say /vars", "cmd_vars");
 }
 
-InitTries() {
+initTries() {
 	g_tStarts = TrieCreate();
 	g_tStops  = TrieCreate();
 
@@ -193,6 +201,16 @@ InitTries() {
 	
 	for (new i; i < sizeof szStops; i++)
 		TrieSetCell(g_tStops, szStops[i], 1);
+}
+
+bindOptions() {
+	g_Options[optIntSaveAngles] = find_option_by_name("save_angles");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optIntSaveAngles]) {
+		g_UserData[id][ud_AnglesMode] = newValue;
+	}
 }
 
 public cmd_vars(id) {
@@ -236,12 +254,6 @@ public plugin_natives()
 
 	register_native("kz_get_actual_time", 	"native_get_actual_time");
 	register_native("kz_set_start_time", 	"native_set_start_time");
-
-	register_native("kz_get_timer_data", 	"native_get_timer_data");
-	register_native("kz_set_timer_data", 	"native_set_timer_data");
-
-	register_native("kz_get_settings", 		"native_get_settings");
-	register_native("kz_set_settings", 		"native_set_settings");
 }
 
 public native_start_timer() {
@@ -416,50 +428,13 @@ public TimerState:native_get_timer_state() {
 	return g_UserData[id][ud_TimerState];
 }
 
-public native_get_timer_data() {
-	new id = get_param(1);
-
-	new value[TimerStruct];
-	copy(value, sizeof(value), g_UserData[id][ud_TimerData]);
-
-	set_array(2, value, sizeof(value));
-}
-
-public native_set_timer_data() {
-	new id = get_param(1);
-
-	new value[TimerStruct];
-	get_array(2, value, sizeof(value));
-
-	g_UserData[id][ud_TimerData] = value;
-}
-
-public native_get_settings() {
-	new id = get_param(1);
-
-	new value[SettingsStruct];
-	copy(value, sizeof(value), g_UserData[id][ud_Settings]);
-
-	set_array(2, value, sizeof(value));
-}
-
-public native_set_settings() {
-	new id = get_param(1);
-
-	new value[SettingsStruct];
-	get_array(2, value, sizeof(value));
-
-	g_UserData[id][ud_Settings] = value;
-}
-
 /**
  *	------------------------------------------------------------------
  * 	Commands section
  *	------------------------------------------------------------------
  */
 
-public cmd_Checkpoint(id)
-{
+public cmd_Checkpoint(id) {
 	if (!is_user_alive(id)) return PLUGIN_HANDLED;
 
 	new iRet;
@@ -536,7 +511,7 @@ public cmd_Gocheck(id) {
 
 			set_entvar(id, var_origin, g_PauseChecks[id][i][cp_Pos]);
 
-			if (g_UserData[id][ud_Settings][set_IsSaveAngles]) {
+			if (g_UserData[id][ud_AnglesMode] & (1 << 0)) {
 				set_entvar(id, var_angles, g_PauseChecks[id][i][cp_Angle]);
 				set_entvar(id, var_v_angle, g_PauseChecks[id][i][cp_Angle]);
 				set_entvar(id, var_fixangle, 1);
@@ -557,7 +532,7 @@ public cmd_Gocheck(id) {
 
 			set_entvar(id, var_origin, g_Checks[id][i][cp_Pos]);
 
-			if (g_UserData[id][ud_Settings][set_IsSaveAngles]) {
+			if (g_UserData[id][ud_AnglesMode] & (1 << 0)) {
 				set_entvar(id, var_angles, g_Checks[id][i][cp_Angle]);
 				set_entvar(id, var_v_angle, g_Checks[id][i][cp_Angle]);
 				set_entvar(id, var_fixangle, 1);
@@ -617,9 +592,12 @@ public cmd_Start(id) {
 
 	if (g_UserData[id][ud_IsStartSaved]) {
 		set_entvar(id, var_origin, g_UserData[id][ud_StartPos][cp_Pos]);
-		set_entvar(id, var_angles, g_UserData[id][ud_StartPos][cp_Angle]);
-		set_entvar(id, var_v_angle, g_UserData[id][ud_StartPos][cp_Angle]);
-		set_entvar(id, var_fixangle, 1);
+
+		if (g_UserData[id][ud_AnglesMode] & (1 << 1)) {
+			set_entvar(id, var_angles, g_UserData[id][ud_StartPos][cp_Angle]);
+			set_entvar(id, var_v_angle, g_UserData[id][ud_StartPos][cp_Angle]);
+			set_entvar(id, var_fixangle, 1);
+		}
 
 		set_entvar(id, var_velocity, Float:{0.0, 0.0, 0.0});
 		set_entvar(id, var_view_ofs, Float:{0.0, 0.0, 12.0});
@@ -634,8 +612,7 @@ public cmd_Start(id) {
 	return PLUGIN_HANDLED;
 }
 
-public cmd_Stop(id)
-{
+public cmd_Stop(id) {
 	if (!is_user_alive(id)) return PLUGIN_HANDLED;
 
 	new iRet;
@@ -647,9 +624,8 @@ public cmd_Stop(id)
 
 	cmd_Fade(id);
 
+	UpdateHud(id);
 	ExecuteForward(g_Forwards[fwd_TimerStopPost], iRet, id);
-
-	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
 	
 	return PLUGIN_HANDLED;
 }
@@ -679,9 +655,6 @@ public cmd_Pause(id) {
 			set_user_noclip(id, 0);
 			amxclient_cmd(id, "-hook");
 
-			g_UserData[id][ud_LastVel] = 0.0;
-			g_UserData[id][ud_LastVel][1] = 0.0;
-			g_UserData[id][ud_LastVel][2] = g_UserData[id][ud_LastVel][2];
 			set_entvar(id, var_velocity, g_UserData[id][ud_LastVel]);
 
 			ExecuteForward(g_Forwards[fwd_TimerPausePost], _, id);
@@ -689,6 +662,14 @@ public cmd_Pause(id) {
 	}
 
 	return PLUGIN_HANDLED;
+}
+
+public cmd_Sunglasses(id) {
+	g_UserData[id][ud_Sunglasses] = !g_UserData[id][ud_Sunglasses];
+
+	cmd_Fade(id);
+
+	return PLUGIN_HANDLED; 
 }
 
 public cmd_DetectHook(id) {
@@ -704,12 +685,11 @@ public cmd_DetectHook_Disable(id) {
 }
 
 
-/*public cmd_ShowVersion(id) {
+public cmd_ShowVersion(id) {
 	client_print(id, print_console, "[KZ] Current version: %s", VERSION);
 
 	return PLUGIN_HANDLED;
-}*/
-
+}
 
 
 
@@ -740,6 +720,8 @@ public client_putinserver(id) {
 		g_UserData[id][ud_PauseCheckIndex] = 0;
 		g_UserData[id][ud_LastVel] = Float:{0.0, 0.0, 0.0};
 		g_UserData[id][ud_IsStartSaved] = false;
+
+		g_UserData[id][ud_Sunglasses] = false;
 	}
 }
 
@@ -760,9 +742,9 @@ public ham_Use(iEnt, id) {
 	if (TrieKeyExists(g_tStarts, szTarget)) {
 		if (g_UserData[id][ud_isHookEnable] || 
 			g_UserData[id][ud_HookProtection] > get_gametime() - 1.5 ||
-			get_user_noclip(id)
-			)
+			get_user_noclip(id)) {
 			return HAM_IGNORED;
+		}
 
 		run_start(id);
 	}
@@ -793,8 +775,8 @@ public ham_Touch(iEnt, id) {
 public ham_PreThink(id) {
 	if (!is_user_alive(id)) return HAM_IGNORED;
 
-	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED && get_member(id, m_iHideHUD) == TIMER_SHOW)
-		set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
+	// Update timer hud
+	UpdateHud(id);
 
 	// use detection
 	if ((get_entvar(id, var_button) & IN_USE) && 
@@ -806,9 +788,9 @@ public ham_PreThink(id) {
 			new Float:orig[3];
 
 			for (new i = 0; i < count; i++) {
-				get_brush_entity_origin( entlist[i], orig );
+				get_brush_entity_origin(entlist[i], orig);
 
-				if ( is_in_viewcone( id, orig ) )
+				if (is_in_viewcone(id, orig))
 					ExecuteHamB(Ham_Use, entlist[i], id, 0, 1, true);
 			}
 		}
@@ -824,6 +806,41 @@ public ham_PostThink(id) {
 	get_entvar(id, var_origin, g_UserData[id][ud_LastPos]);
 
 	return HAM_IGNORED;
+}
+
+/**
+*	------------------------------------------------------------------
+*	Message handlers
+*	------------------------------------------------------------------
+*/
+
+public OnResetHudMessage(msgId, msgDest, id) {
+	if (!is_user_connected(id)) return PLUGIN_CONTINUE;
+
+	UpdateHud(id);
+
+	return PLUGIN_CONTINUE;
+}
+
+UpdateHud(id) {
+	if (!is_user_connected(id)) return;
+
+	HudAddBit(id, HIDEHUD_MONEY);
+
+	// hide timer hud if timer is disabled
+	if (g_UserData[id][ud_TimerState] == TIMER_DISABLED) {
+		HudAddBit(id, HIDEHUD_TIMER);
+	} else {
+		HudDelBit(id, HIDEHUD_TIMER);
+	}
+}
+
+HudAddBit(id, bit) {
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | bit);
+}
+
+HudDelBit(id, bit) {
+	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) & ~bit);
 }
 
 run_start(id) {
@@ -852,7 +869,7 @@ run_start(id) {
 
 	cmd_Fade(id);
 
-	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD)  & ~HIDEHUD_TIMER);
+	UpdateHud(id);
 	UTIL_TimerRoundtime(id, 0);
 
 	ExecuteForward(g_Forwards[fwd_TimerStartPost], _, id);
@@ -898,8 +915,7 @@ run_finish(id) {
 
 	cmd_Fade(id);
 
-	set_member(id, m_iHideHUD, get_member(id, m_iHideHUD) | HIDEHUD_TIMER);
-
+	UpdateHud(id);
 	ExecuteForward(g_Forwards[fwd_TimerFinishPost], _, id, fTime);
 }
 
@@ -940,6 +956,17 @@ public cmd_Fade(id) {
 		write_byte(0); 		// g
 		write_byte(0); 		// b
 		write_byte(100); 	// a
+		message_end();
+	}
+	else if (g_UserData[id][ud_Sunglasses]) {
+		message_begin(MSG_ONE, get_user_msgid( "ScreenFade" ), _, id);
+		write_short(1); 	// total duration
+		write_short(0); 	// time it stays one color
+		write_short(5); 	// fade type
+		write_byte(0); 		// r
+		write_byte(0); 		// g
+		write_byte(0); 		// b
+		write_byte(50); 	// a
 		message_end();
 	}
 	else {

@@ -21,11 +21,6 @@ enum _:PosStruct {
 	Float:pos_z,
 };
 
-enum _:SettingsStruct {
-	bool:set_IsSaveAngles,
-	bool:set_IsRadioEnable
-};
-
 enum _:TimerStruct {
 	timer_RGB,
 	Float:timer_X,
@@ -97,14 +92,6 @@ native kz_set_last_cp(id, value[PosStruct]);
 
 native Float:kz_get_actual_time(id);
 native kz_set_start_time(id, Float:value);
-
-native kz_get_settings(id, value[SettingsStruct]);
-native kz_set_settings(id, value[SettingsStruct]);
-
-native kz_get_timer_data(id, value[TimerStruct]);
-native kz_set_timer_data(id, value[TimerStruct]);
-
-native kz_is_radio_enable(id);
 
 //
 // Hook & noclip section

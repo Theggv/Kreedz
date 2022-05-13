@@ -262,32 +262,13 @@ FormatSpecList(id, szSpecList[], iLen, &specNum) {
 	}
 }
 
-bool:is_user_spectating(iAlive, iSpec) {
-	if (!is_user_connected(iSpec) || is_user_alive(iSpec) || is_user_bot(iSpec))
-		return false;
-
-	if (get_entvar(iSpec, var_iuser1) != 1 && 
-		get_entvar(iSpec, var_iuser1) != 2 &&
-		get_entvar(iSpec, var_iuser1) != 4)
-		return false;
-
-	if (get_entvar(iSpec, var_iuser2) != iAlive)
-		return false;
-
-	return true;
-}
-
 stock cmd_ShowStatusText(id) {
 	new iTarget, szStatusInfo[256];
 	static szMsgTimeDead[128], szTime[32];
-	static iMin, iSec, iMS;
 
 	get_user_aiming(id, iTarget, .dist = 1000);
 
 	if (is_user_alive(iTarget)) {
-		new timerData[TimerStruct];
-		kz_get_timer_data(iTarget, timerData);
-
 		new numChecks = kz_get_cp_num(iTarget);
 		new numTeleports = kz_get_tp_num(iTarget); 
 
@@ -298,15 +279,13 @@ stock cmd_ShowStatusText(id) {
 				formatex(szMsgTimeDead, charsmax(szMsgTimeDead), "^t");
 			}
 			case TIMER_ENABLED: {
-				UTIL_TimeToSec(time, iMin, iSec, iMS);
-
-				UTIL_FormatTime(time, szTime, charsmax(szTime), timerData[timer_MS]);
+				UTIL_FormatTime(time, szTime, charsmax(szTime), true);
 
 				formatex(szMsgTimeDead, charsmax(szMsgTimeDead), "| %s [%d cp %d gc]",
 					szTime, numChecks, numTeleports);
 			}
 			case TIMER_PAUSED: {
-				UTIL_FormatTime(time, szTime, charsmax(szTime), timerData[timer_MS]);
+				UTIL_FormatTime(time, szTime, charsmax(szTime), true);
 
 				formatex(szMsgTimeDead, charsmax(szMsgTimeDead), 
 					"| %s [%d cp %d gc] | PAUSED",

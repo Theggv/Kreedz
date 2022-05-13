@@ -1,13 +1,5 @@
 #include <amxmodx>
-#include <amxmisc>
-#include <cstrike>
-#include <fakemeta>
-#include <engine>
-#include <fun>
-#include <hamsandwich>
-#include <reapi>
 
-#include <kreedz_api>
 #include <kreedz_util>
 
 #define PLUGIN 	 	"[Kreedz] Menu"
@@ -17,12 +9,12 @@
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	kz_register_cmd("menu", "cmd_MainMenu");
+	kz_register_cmd("menu", "cmdMainMenu");
 	// dlya dalbichey
-	kz_register_cmd("ьутг", "cmd_MainMenu");
+	kz_register_cmd("ьутг", "cmdMainMenu");
 	
-	register_clcmd("jointeam", "cmd_MainMenu");
-	register_clcmd("chooseteam", "cmd_MainMenu");
+	register_clcmd("jointeam", "cmdMainMenu");
+	register_clcmd("chooseteam", "cmdMainMenu");
 
 	register_dictionary("kz_mode.txt");
 }
@@ -31,7 +23,7 @@ public plugin_init() {
 // Commands
 // 
 
-public cmd_MainMenu(id) {
+public cmdMainMenu(id) {
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "Menu");
 	
@@ -72,9 +64,8 @@ public cmd_MainMenu(id) {
 	return PLUGIN_HANDLED;
 }
 
-public MainMenu_Handler(id, menu, item)
-{
-	if(item == MENU_EXIT) {
+public MainMenu_Handler(id, menu, item) {
+	if (item == MENU_EXIT) {
 		menu_destroy(menu);
 		
 		return PLUGIN_HANDLED;
@@ -86,8 +77,7 @@ public MainMenu_Handler(id, menu, item)
 	
 	menu_destroy(menu);
 	
-	switch(iItem)
-	{
+	switch(iItem) {
 		case 1: amxclient_cmd(id, "cp");
 		case 2: amxclient_cmd(id, "tp");
 		case 3: amxclient_cmd(id, "p");
@@ -112,7 +102,7 @@ public MainMenu_Handler(id, menu, item)
 		}
 	}
 
-	cmd_MainMenu(id);
+	cmdMainMenu(id);
 
 	return PLUGIN_HANDLED;
 }
