@@ -157,6 +157,12 @@ public OnCellValueChanged(id, optionId, newValue) {
 }
 
 public cmdSettings(id) {
+    settingMenu(id);
+
+    return PLUGIN_HANDLED;
+}
+
+stock settingMenu(id, page = 0) {
     new szMsg[256];
     formatex(szMsg, charsmax(szMsg), "\yKZ Settings");
     
@@ -219,7 +225,7 @@ public cmdSettings(id) {
     
     menu_additem(iMenu, szMsg, "7", 0);
 
-    menu_display(id, iMenu, 0);
+    menu_display(id, iMenu, page);
 
     return PLUGIN_HANDLED;
 }
@@ -274,7 +280,7 @@ public cmdSettings(id) {
         }
     }
 
-    cmdSettings(id);
+    settingMenu(id, item / 7);
 
     return PLUGIN_HANDLED;
 }
