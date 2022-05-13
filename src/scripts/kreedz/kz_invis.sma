@@ -231,10 +231,11 @@ public OnStartSound(
 	const fFlags, const pitch) {
 
 	if (!is_user_connected(entity)) return HC_CONTINUE;
+	if (is_user_bot(entity)) return HC_CONTINUE;
 
 	if (IsStepSound(sample)) {
 		for (new i = 1; i <= MAX_PLAYERS; ++i) {
-			// if (!is_user_connected(i) || entity == i) continue;
+			if (!is_user_connected(i) || entity == i) continue;
 			if (!is_user_spectating(entity, i)) continue;
 
 			// if (is_user_spectating(entity, i)) {
