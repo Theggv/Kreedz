@@ -7,6 +7,9 @@
 #define VERSION 		__DATE__
 #define AUTHOR 			"ggv"
 
+enum (+=50) {
+    TASK_USER_INITIALIZED = 1024,
+};
 
 enum OptionsEnum {
     optBoolStopSound,
@@ -21,6 +24,8 @@ new g_Options[OptionsEnum];
 
 
 enum UserDataStruct {
+    bool:ud_initialized,
+
     bool:ud_stopSound,
     ud_anglesMode,
     bool:ud_blockRadio,
@@ -80,17 +85,24 @@ public plugin_precache() {
 }
 
 public client_putinserver(id) {
+    g_UserData[id][ud_initialized] = false;
+
     g_UserData[id][ud_stopSound] = false;
     g_UserData[id][ud_anglesMode] = 3;
     g_UserData[id][ud_blockRadio] = false;
     g_UserData[id][ud_invisMode] = 0;
     g_UserData[id][ud_noclipSpeed] = 600.0;
     g_UserData[id][ud_fog] = false;
+
+    remove_task(TASK_USER_INITIALIZED + id)
+    set_task(5.0, "taskInitialized", TASK_USER_INITIALIZED + id);
 }
 
 public OnCellValueChanged(id, optionId, newValue) {
     if (optionId == g_Options[optBoolStopSound]) {
         g_UserData[id][ud_stopSound] = !!newValue;
+
+        if (g_UserData[id][ud_initialized]) return;
 
         if (g_UserData[id][ud_stopSound] && is_user_connected(id)) {
             client_cmd(id, "stopsound");
@@ -210,4 +222,10 @@ public cmdSettings(id) {
     cmdSettings(id);
 
     return PLUGIN_HANDLED;
+}
+
+public taskInitialized(taskId) {
+    new id = taskId - TASK_USER_INITIALIZED;
+
+    g_UserData[id][ud_initialized] = true;
 }
