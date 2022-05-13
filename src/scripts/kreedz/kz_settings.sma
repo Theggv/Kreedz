@@ -18,6 +18,8 @@ enum OptionsEnum {
     optIntInvisMode,
     optFloatNoclipSpeed,
     optBoolFog,
+    optBoolShowMenu,
+    optBoolAllowGoto,
 };
 
 new g_Options[OptionsEnum];
@@ -32,6 +34,8 @@ enum UserDataStruct {
     ud_invisMode,
     Float:ud_noclipSpeed,
     bool:ud_fog,
+    bool:ud_showMenu,
+    bool:ud_allowGoto,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
@@ -82,6 +86,16 @@ public plugin_precache() {
     // 
     // default: false
     g_Options[optBoolFog] = register_players_option_cell("fog", FIELD_TYPE_BOOL, false);
+
+    // show menu on connect:
+    // 
+    // default: false
+    g_Options[optBoolShowMenu] = register_players_option_cell("show_menu", FIELD_TYPE_BOOL, false);
+
+    // allow go to:
+    // 
+    // default: true
+    g_Options[optBoolAllowGoto] = register_players_option_cell("allow_goto", FIELD_TYPE_BOOL, true);
 }
 
 public client_putinserver(id) {
@@ -93,6 +107,8 @@ public client_putinserver(id) {
     g_UserData[id][ud_invisMode] = 0;
     g_UserData[id][ud_noclipSpeed] = 600.0;
     g_UserData[id][ud_fog] = false;
+    g_UserData[id][ud_showMenu] = false;
+    g_UserData[id][ud_allowGoto] = true;
 
     remove_task(TASK_USER_INITIALIZED + id)
     set_task(5.0, "taskInitialized", TASK_USER_INITIALIZED + id);
@@ -122,6 +138,18 @@ public OnCellValueChanged(id, optionId, newValue) {
     }
     else if (optionId == g_Options[optBoolFog]) {
         g_UserData[id][ud_fog] = !!newValue;
+    }
+    else if (optionId == g_Options[optBoolAllowGoto]) {
+        g_UserData[id][ud_allowGoto] = !!newValue;
+    }
+    else if (optionId == g_Options[optBoolShowMenu]) {
+        g_UserData[id][ud_showMenu] = !!newValue;
+
+        if (g_UserData[id][ud_initialized]) return;
+
+        if (g_UserData[id][ud_showMenu]) {
+            amxclient_cmd(id, "menu");
+        }
     }
 }
 
@@ -174,6 +202,20 @@ public cmdSettings(id) {
     
     menu_additem(iMenu, szMsg, "4", 0);
 
+    switch (g_UserData[id][ud_showMenu]) {
+        case true: formatex(szMsg, charsmax(szMsg), "Show menu on connect: \yenabled");
+        case false: formatex(szMsg, charsmax(szMsg), "Show menu on connect: \ddisabled");
+    }
+    
+    menu_additem(iMenu, szMsg, "6", 0);
+
+    switch (g_UserData[id][ud_allowGoto]) {
+        case true: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \yenabled");
+        case false: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \ddisabled");
+    }
+    
+    menu_additem(iMenu, szMsg, "7", 0);
+
     menu_display(id, iMenu, 0);
 
     return PLUGIN_HANDLED;
@@ -216,6 +258,16 @@ public cmdSettings(id) {
             g_UserData[id][ud_fog] = !g_UserData[id][ud_fog];
 
             set_option_cell(id, g_Options[optBoolFog], g_UserData[id][ud_fog]);
+        }
+        case 6: {
+            g_UserData[id][ud_showMenu] = !g_UserData[id][ud_showMenu];
+            
+            set_option_cell(id, g_Options[optBoolShowMenu], g_UserData[id][ud_showMenu]);
+        }
+        case 7: {
+            g_UserData[id][ud_allowGoto] = !g_UserData[id][ud_allowGoto];
+            
+            set_option_cell(id, g_Options[optBoolAllowGoto], g_UserData[id][ud_allowGoto]);
         }
     }
 
