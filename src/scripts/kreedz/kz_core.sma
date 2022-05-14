@@ -967,7 +967,7 @@ public cmd_Fade(id) {
 		write_byte(0); 		// r
 		write_byte(0); 		// g
 		write_byte(0); 		// b
-		write_byte(50); 	// a
+		write_byte(75); 	// a
 		message_end();
 	}
 	else {
