@@ -879,9 +879,17 @@ run_start(id) {
 run_finish(id) {
 	new Float:fTime = get_gametime() - g_UserData[id][ud_StartTime];
 	new iMin, iSec, iMS;
+	new iWeaponRank = kz_get_min_rank(id);
+
+	new runInfo[RunStruct];
+	runInfo[run_time] = fTime;
+	runInfo[run_cpCount] = g_UserData[id][ud_ChecksNum];
+	runInfo[run_tpCount] = g_UserData[id][ud_TeleNum];
+	runInfo[run_weapon] = iWeaponRank;
+	runInfo[run_airaccelerate] = 0;
 
 	new iRet;
-	ExecuteForward(g_Forwards[fwd_TimerFinishPre], iRet, id, fTime);
+	ExecuteForward(g_Forwards[fwd_TimerFinishPre], iRet, id, PrepareArray(runInfo, RunStruct));
 
 	if (iRet == KZ_SUPERCEDE) return;
 
@@ -890,9 +898,7 @@ run_finish(id) {
 	new szName[MAX_NAME_LENGTH];
 	get_user_name(id, szName, charsmax(szName));
 
-	new iWeaponRank = kz_get_min_rank(id);
 	new szWeaponName[32];
-
 	kz_get_weapon_name(iWeaponRank, szWeaponName, charsmax(szWeaponName));
 
 	client_print_color(0, print_team_default, "%L", LANG_PLAYER, "KZ_CHAT_FINISHED",
@@ -917,7 +923,7 @@ run_finish(id) {
 	cmd_Fade(id);
 
 	UpdateHud(id);
-	ExecuteForward(g_Forwards[fwd_TimerFinishPost], _, id, fTime);
+	ExecuteForward(g_Forwards[fwd_TimerFinishPost], _, id, PrepareArray(runInfo, RunStruct));
 }
 
 public timer_handler() {
