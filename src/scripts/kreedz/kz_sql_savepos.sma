@@ -60,30 +60,16 @@ public client_disconnected(id)
 	g_UserData[id][ud_Weapon] = -1;
 }
 
-public kz_timer_start_post(id)
-{
-	if(g_UserData[id][ud_hasSavedRun])
-	{
-		g_UserData[id][ud_hasSavedRun] = false;
-
-		new szQuery[512];
-		formatex(szQuery, charsmax(szQuery), "\
-			DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
-			kz_sql_get_user_uid(id), kz_sql_get_map_uid());
-
-		new szData[5];
-		num_to_str(id, szData, charsmax(szData));
-		SQL_ThreadQuery(SQL_Tuple, "@RunDeleted_Callback", szQuery, szData, charsmax(szData));
-	}
+public kz_timer_start_post(id) {
+	deleteSavedRun(id);
 }
 
-public kz_timer_finish_post(id)
-{
-	kz_timer_start_post(id);
+public kz_timer_finish_post(id) {
+	deleteSavedRun(id);
 }
 
 public kz_timer_stop_post(id) {
-	kz_timer_start_post(id);
+	deleteSavedRun(id);
 }
 
 public kz_sql_initialized()
@@ -102,6 +88,21 @@ public kz_sql_data_recv(id)
 	new szData[5];
 	num_to_str(id, szData, charsmax(szData));
 	SQL_ThreadQuery(SQL_Tuple, "@UserRun_Callback", szQuery, szData, charsmax(szData));
+}
+
+public deleteSavedRun(id) {
+	if (g_UserData[id][ud_hasSavedRun]) {
+		g_UserData[id][ud_hasSavedRun] = false;
+
+		new szQuery[512];
+		formatex(szQuery, charsmax(szQuery), "\
+DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
+			kz_sql_get_user_uid(id), kz_sql_get_map_uid());
+
+		new szData[5];
+		num_to_str(id, szData, charsmax(szData));
+		SQL_ThreadQuery(SQL_Tuple, "@RunDeleted_Callback", szQuery, szData, charsmax(szData));
+	}
 }
 
 @UserRun_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
