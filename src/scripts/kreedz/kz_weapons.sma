@@ -56,9 +56,11 @@ public plugin_init()
 	RegisterHam(Ham_Spawn, "player", "ham_Spawn_Post", 1);
 
 	register_dictionary("kz_mode.txt");
+}
 
-	for (new i; i <= MAX_PLAYERS; ++i) {
-		native_set_min_rank(i, -1);
+public plugin_precache() {
+	for (new i = 0; i <= MAX_PLAYERS; ++i) {
+		kz_set_min_rank(i, -1);
 	}
 }
 
@@ -71,35 +73,50 @@ public plugin_init()
 
 public plugin_natives()
 {
-	register_native("kz_get_min_rank", "native_get_min_rank", 1);
-	register_native("kz_set_min_rank", "native_set_min_rank", 1);
-	register_native("kz_get_weapon_name", "native_get_weapon_name", 1);
-	register_native("kz_get_usp", "native_get_usp", 1);
+	register_native("kz_get_min_rank", "native_get_min_rank");
+	register_native("kz_set_min_rank", "native_set_min_rank");
+	register_native("kz_get_weapon_name", "native_get_weapon_name");
+	register_native("kz_get_usp", "native_get_usp");
 }
 
-public native_get_min_rank(id)
-{
+public native_get_min_rank(pluginId, argc) {
+	enum { arg_id = 1 };
+
+	new id = get_param(arg_id);
+
 	return g_UserData[id][ud_MinRank];
 }
 
-public native_set_min_rank(id, value)
-{
+public native_set_min_rank(pluginId, argc) {
+	enum { arg_id = 1, arg_value };
+
+	new id = get_param(arg_id);
+	new value = get_param(arg_value);
+
 	g_UserData[id][ud_MinRank] = value;
 	g_UserData[id][ud_TemporaryRank] = value;
 
-	if (is_user_alive(id)) ham_Spawn_Post(id);
-
-	// server_print("[DEBUG] Min rank: %d", value);
+	if (is_user_alive(id)) {
+		ham_Spawn_Post(id);
+	}
 }
 
-public native_get_weapon_name(iRank, szWeapon[], iLen)
-{
-	param_convert(2);
-	wpn_rank_to_name(szWeapon, iLen, iRank);
+public native_get_weapon_name(pluginId, argc) {
+	enum { arg_rank = 1, arg_buffer, arg_len };
+
+	new rank = get_param(arg_rank);
+	new len = get_param(arg_len);
+	new szWeapon[32];
+
+	wpn_rank_to_name(szWeapon, len, rank);
+	set_string(arg_buffer, szWeapon, len);
 }
 
-public native_get_usp(id)
-{
+public native_get_usp(pluginId, argc) {
+	enum { arg_id = 1 };
+
+	new id = get_param(arg_id);
+
 	rg_give_item(id, "weapon_knife", GT_REPLACE);
 	give_user_item(id, "weapon_usp", 10, GT_REPLACE);
 }
@@ -134,7 +151,7 @@ public cmd_Scout(id)
 
 public cmd_Usp(id)
 {
-	native_get_usp(id);
+	kz_get_usp(id);
 	return PLUGIN_HANDLED;
 }
 
@@ -156,13 +173,11 @@ public cmd_M4A1(id)
 *	------------------------------------------------------------------
 */
 
-public client_connect(id)  {
-	native_set_min_rank(id, -1);
+public client_connect(id) {
+	kz_set_min_rank(id, -1);
 }
 
-
-public kz_timer_start_post(id)
-{
+public kz_timer_start_post(id) {
 	g_UserData[id][ud_MinRank] = get_min_rank(id);
 	g_UserData[id][ud_TemporaryRank] = g_UserData[id][ud_MinRank];
 }
@@ -175,8 +190,7 @@ public kz_timer_pause_post(id) {
 	HookResetMaxSpeed(id);
 }
 
-public HookResetMaxSpeed(id)
-{
+public HookResetMaxSpeed(id) {
 	if (kz_get_timer_state(id) != TIMER_ENABLED) 
 		return HC_CONTINUE;
 
