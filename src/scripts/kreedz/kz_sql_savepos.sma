@@ -43,11 +43,6 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	kz_register_cmd("savepos", "cmd_SavePos");
-	kz_register_cmd("saverun", "cmd_SavePos");
-	kz_register_cmd("loadpos", "cmd_LoadPos");
-	kz_register_cmd("loadrun", "cmd_LoadPos");
-
 	for (new i; i <= MAX_PLAYERS; ++i)
 		g_UserData[i][ud_Weapon] = -1;
 }
@@ -184,62 +179,6 @@ LoadRun(id)
 	kz_set_min_rank(id, g_UserData[id][ud_Weapon]);
 }
 
-public cmd_SavePos(id)
-{
-	if(kz_get_timer_state(id) == TIMER_DISABLED)
-	{
-		return PLUGIN_HANDLED;
-	}
-
-	if(kz_get_timer_state(id) == TIMER_ENABLED)
-		kz_set_pause(id);
-
-	new szTime[32];
-	UTIL_FormatTime(kz_get_actual_time(id), szTime, charsmax(szTime), true);
-
-	new szMsg[256];
-	formatex(szMsg, charsmax(szMsg), "\y%L", id, "SAVEPOS_TITLE",
-		szTime,
-		g_UserData[id][ud_SavedChecksNum], 
-		g_UserData[id][ud_SavedTeleNum]);
-	
-	new iMenu = menu_create(szMsg, "SavePos_Handler");
-	
-	formatex(szMsg, charsmax(szMsg), "%L", id, "SAVEPOS_SAVE");
-	
-	menu_additem(iMenu, szMsg, "1", 0);
-
-	menu_display(id, iMenu, 0);
-
-	return PLUGIN_HANDLED;
-}
-
-public SavePos_Handler(id, menu, item)
-{
-	if(item == MENU_EXIT)
-	{
-		menu_destroy(menu);
-		
-		return PLUGIN_HANDLED;
-	}
-	
-	static s_Data[6], s_Name[64], i_Access, i_Callback;
-	menu_item_getinfo(menu, item, i_Access, s_Data, charsmax(s_Data), s_Name, charsmax(s_Name), i_Callback);
-	new iItem = str_to_num(s_Data);
-	
-	menu_destroy(menu);
-	
-	switch(iItem)
-	{
-		case 1:
-		{
-			SavePos(id);
-		}
-	}
-
-	return PLUGIN_HANDLED;
-}
-
 SavePos(id)
 {
 	new iLastPos[3], iLastCp[3], iLastVel[3];
@@ -280,71 +219,6 @@ SavePos(id)
 	new szData[5];
 	num_to_str(id, szData, charsmax(szData));
 	SQL_ThreadQuery(SQL_Tuple, "@SavePos_Callback", szQuery, szData, charsmax(szData));
-}
-
-public cmd_LoadPos(id)
-{
-	if(!g_UserData[id][ud_hasSavedRun])
-	{
-		return PLUGIN_HANDLED;
-	}
-
-	new szTime[32];
-	UTIL_FormatTime(g_UserData[id][ud_SavedTime], szTime, charsmax(szTime), true);
-
-	new szWeapon[32];
-	kz_get_weapon_name(g_UserData[id][ud_Weapon], szWeapon, charsmax(szWeapon));
-
-	new szMsg[256];
-	formatex(szMsg, charsmax(szMsg), "\y%L", id, "LOADPOS_TITLE",
-		szTime, 
-		g_UserData[id][ud_SavedChecksNum], 
-		g_UserData[id][ud_SavedTeleNum],
-		szWeapon);
-	
-	new iMenu = menu_create(szMsg, "LoadPos_Handler");
-	
-	formatex(szMsg, charsmax(szMsg), "%L", id, "LOADPOS_LOAD");
-	
-	menu_additem(iMenu, szMsg, "1", 0);
-
-	formatex(szMsg, charsmax(szMsg), "%L", id, "LOADPOS_NEW");
-	
-	menu_additem(iMenu, szMsg, "2", 0);
-
-	menu_display(id, iMenu, 0);
-
-	return PLUGIN_HANDLED;
-}
-
-public LoadPos_Handler(id, menu, item)
-{
-	if(item == MENU_EXIT || !g_UserData[id][ud_hasSavedRun])
-	{
-		menu_destroy(menu);
-		
-		return PLUGIN_HANDLED;
-	}
-	
-	static s_Data[6], s_Name[64], i_Access, i_Callback;
-	menu_item_getinfo(menu, item, i_Access, s_Data, charsmax(s_Data), s_Name, charsmax(s_Name), i_Callback);
-	new iItem = str_to_num(s_Data);
-	
-	menu_destroy(menu);
-	
-	switch(iItem)
-	{
-		case 1:
-		{
-			LoadRun(id);
-		}
-		case 2:
-		{
-			amxclient_cmd(id, "start");
-		}
-	}
-
-	return PLUGIN_HANDLED;
 }
 
 @SavePos_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
