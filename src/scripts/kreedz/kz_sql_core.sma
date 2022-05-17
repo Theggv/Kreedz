@@ -416,6 +416,7 @@ public taskShowBestScore(taskId) {
 		}
 	}
 
+	checkIsMigrationNeeded();
 	initMap();
 
 	new iRet;
@@ -710,4 +711,63 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 	}
 	
 	return PLUGIN_HANDLED;
+}
+
+/**
+*	------------------------------------------------------------------
+*	Migrations
+*	------------------------------------------------------------------
+*/
+
+checkIsMigrationNeeded() {
+	new szQuery[1024];
+
+	formatex(szQuery, charsmax(szQuery), "\
+SELECT \
+	(SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_NAME = 'kz_protop'),\
+	(SELECT COUNT(*) FROM `kz_records` WHERE 1);\
+		");
+
+	SQL_ThreadQuery(SQL_Tuple, "@isMigrationNeededHandler", szQuery);
+}
+
+@isMigrationNeededHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "isMigrationNeededHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+			SQL_FreeHandle(hQuery);
+			
+			return PLUGIN_HANDLED;
+		}
+	}
+
+	if (SQL_NumResults(hQuery) > 0) {
+		new isProtopExists = SQL_ReadResult(hQuery, 0);
+		new count = SQL_ReadResult(hQuery, 1);
+
+		if (isProtopExists && count == 0) {
+			migrateRecords();
+		}
+	}
+
+	SQL_FreeHandle(hQuery);
+	return PLUGIN_HANDLED;
+}
+
+
+migrateRecords() {
+	new szQuery[1024];
+
+	formatex(szQuery, charsmax(szQuery), "\
+INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `date`) \
+    (SELECT `uid`, `mapid`, `time`, `date` FROM `kz_protop` WHERE 1); \
+\
+INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `date`, `cp`, `tp`) \
+   (SELECT `uid`, `mapid`, `time`, `date`, `cp`, `tp` FROM `kz_nubtop` WHERE 1);\
+\
+INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `date`, `cp`, `tp`, `weapon`) \
+    (SELECT `uid`, `mapid`, `time`, `date`, `cp`, `tp`, `weapon` FROM `kz_weapontop` WHERE 1); \
+		");
+
+	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 }
