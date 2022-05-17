@@ -1,17 +1,5 @@
-/*
-*	Changelog:
-*	
-*	08.06.2021: 
-*		- Fixed giving weapons on LoadPos
-*	
-*/
-
 #include <amxmodx>
-#include <cstrike>
-#include <fakemeta>
 #include <sqlx>
-#include <hamsandwich>
-#include <reapi>
 
 #include <kreedz_api>
 #include <kreedz_sql>
@@ -21,8 +9,7 @@
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
 
-enum _:UserData
-{
+enum _:UserData {
 	ud_Uid,
 	Float:ud_SavedTime,
 	ud_SavedChecksNum,
@@ -32,25 +19,23 @@ enum _:UserData
 	Float:ud_LastPos[3],
 	Float:ud_LastVel[3],
 	ud_Weapon,
-	bool:ud_hasSavedRun
-}
-
-new Handle:SQL_Tuple;
+	bool:ud_hasSavedRun,
+};
 
 new g_UserData[MAX_PLAYERS + 1][UserData];
 
-public plugin_init()
-{
+new Handle:SQL_Tuple;
+
+public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	for (new i; i <= MAX_PLAYERS; ++i)
 		g_UserData[i][ud_Weapon] = -1;
 }
 
-public client_disconnected(id)
-{
+public client_disconnected(id) {
 	if (kz_get_timer_state(id) != TIMER_DISABLED) {
-		SavePos(id);
+		savePos(id);
 	}
 
 	g_UserData[id][ud_Weapon] = -1;
@@ -68,54 +53,48 @@ public kz_timer_stop_post(id) {
 	deleteSavedRun(id);
 }
 
-public kz_sql_initialized()
-{
+public kz_sql_initialized() {
 	SQL_Tuple = kz_sql_get_tuple();
 }
 
-public kz_sql_data_recv(id)
-{
+public kz_sql_data_recv(id) {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
-		SELECT * FROM `kz_savedruns` \
-		WHERE `uid` = %d AND `mapid` = %d;",
+SELECT * FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 		kz_sql_get_user_uid(id), kz_sql_get_map_uid());
 
 	new szData[5];
 	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@UserRun_Callback", szQuery, szData, charsmax(szData));
+	SQL_ThreadQuery(SQL_Tuple, "@loadRunHandler", szQuery, szData, charsmax(szData));
 }
 
 public deleteSavedRun(id) {
-	if (g_UserData[id][ud_hasSavedRun]) {
-		g_UserData[id][ud_hasSavedRun] = false;
+	if (!g_UserData[id][ud_hasSavedRun]) return;
 
-		new szQuery[512];
-		formatex(szQuery, charsmax(szQuery), "\
+	g_UserData[id][ud_hasSavedRun] = false;
+
+	new szQuery[512];
+	formatex(szQuery, charsmax(szQuery), "\
 DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
-			kz_sql_get_user_uid(id), kz_sql_get_map_uid());
+		kz_sql_get_user_uid(id), kz_sql_get_map_uid());
 
-		new szData[5];
-		num_to_str(id, szData, charsmax(szData));
-		SQL_ThreadQuery(SQL_Tuple, "@RunDeleted_Callback", szQuery, szData, charsmax(szData));
-	}
+	new szData[16];
+	formatex(szData, charsmax(szData), "%d", id);
+
+	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery, szData, charsmax(szData));
 }
 
-@UserRun_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "UserRun_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@loadRunHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "loadRunHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
 		}
 	}
 
-	if(SQL_NumResults(hQuery) > 0)
-	{
+	if (SQL_NumResults(hQuery) > 0) {
 		new id = str_to_num(szData);
 
 		g_UserData[id][ud_SavedTime] = Float:SQL_ReadResult(hQuery, 2);
@@ -139,14 +118,13 @@ DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 
 		g_UserData[id][ud_hasSavedRun] = true;
 
-		LoadRun(id);
+		setLoadedRun(id);
 	}
 
 	return PLUGIN_HANDLED;
 }
 
-LoadRun(id)
-{
+setLoadedRun(id) {
 	kz_set_cp_num(id, g_UserData[id][ud_SavedChecksNum]);
 	kz_set_tp_num(id, g_UserData[id][ud_SavedTeleNum]);
 
@@ -179,8 +157,7 @@ LoadRun(id)
 	kz_set_min_rank(id, g_UserData[id][ud_Weapon]);
 }
 
-SavePos(id)
-{
+savePos(id) {
 	new iLastPos[3], iLastCp[3], iLastVel[3];
 	kz_get_last_pos(id, iLastPos);
 	kz_get_last_cp(id, iLastCp);
@@ -188,24 +165,25 @@ SavePos(id)
 
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
-		DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
+DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 		kz_sql_get_user_uid(id), kz_sql_get_map_uid()
 		);
 
-	SQL_ThreadQuery(SQL_Tuple, "@WithoutAnswer_Callback", szQuery);
+	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 
 	formatex(szQuery, charsmax(szQuery), "\
-		INSERT INTO `kz_savedruns` \
-		(`uid`, `mapid`, `time`, `cp`, `tp`, \
-		`pos_x`, `pos_y`, `pos_z`, \
-		`lastcp_x`, `lastcp_y`, `lastcp_z`, \
-	 	`weapon`, \
-		`lastvel_x`, `lastvel_y`, `lastvel_z`) \
-		\
-		VALUES (%d, %d, %d, %d, %d, \
-		%d, %d, %d, \
-		%d, %d, %d, \
-		%d, %d, %d, %d\
+INSERT INTO `kz_savedruns` \
+	(`uid`, `mapid`, `time`, `cp`, `tp`, \
+	`pos_x`, `pos_y`, `pos_z`, \
+	`lastcp_x`, `lastcp_y`, `lastcp_z`, \
+	`weapon`, \
+	`lastvel_x`, `lastvel_y`, `lastvel_z`) \
+	\
+	VALUES (%d, %d, %d, %d, %d, \
+	%d, %d, %d, \
+	%d, %d, %d, \
+	%d, \
+	%d, %d, %d\
 		);",
 		kz_sql_get_user_uid(id), kz_sql_get_map_uid(),
 		kz_get_actual_time(id), kz_get_cp_num(id), kz_get_tp_num(id),
@@ -216,18 +194,15 @@ SavePos(id)
 		);
 
 
-	new szData[5];
+	new szData[16];
 	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@SavePos_Callback", szQuery, szData, charsmax(szData));
+	SQL_ThreadQuery(SQL_Tuple, "@savePosHandler", szQuery, szData, charsmax(szData));
 }
 
-@SavePos_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "SavePos_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@savePosHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "savePosHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
@@ -240,41 +215,20 @@ SavePos(id)
 
 	client_print_color(id, print_team_default, "^4[KZ] ^1Your run was successfully saved.");
 
+	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 
-@WithoutAnswer_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "WithoutAnswer_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
-			SQL_FreeHandle(hQuery);
+@dummyHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	SQL_FreeHandle(hQuery);
+
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "dummyHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			
 			return PLUGIN_HANDLED;
 		}
 	}
-
-	return PLUGIN_HANDLED;
-}
-
-@RunDeleted_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "WithoutAnswer_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
-			SQL_FreeHandle(hQuery);
-			
-			return PLUGIN_HANDLED;
-		}
-	}
-
-	// new id = str_to_num(szData);
-
-	// client_print_color(id, print_team_default, "^4[KZ] ^1Your previous saved run was deleted.");
 
 	return PLUGIN_HANDLED;
 }
