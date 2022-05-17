@@ -14,52 +14,48 @@
 
 new Handle:SQL_Tuple;
 
+new const g_szTopCSS[] = "*{box-sizing:border-box;font-family:-apple-system,\
+BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,\
+Helvetica Neue,sans-serif}\
+body,html{padding:0;margin:0;background-color:#1b1b1b;color:#ccc}\
+.container{margin:24px auto;width:600px}\
+table{width:100%;background-color:#4e4e4e;border-radius:.5rem}\
+td,th{padding:.5rem}th{font-weight:700}";
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	kz_register_cmd("top", "cmd_Top");
-	kz_register_cmd("top15", "cmd_Top");
-	kz_register_cmd("pro15", "cmd_ProTop");
-	kz_register_cmd("nub15", "cmd_NubTop");
-	kz_register_cmd("noob15", "cmd_NubTop");
-	kz_register_cmd("weapontop", "cmd_WeaponTop");
-	kz_register_cmd("rec", "cmd_ProRecord");
-	kz_register_cmd("record", "cmd_ProRecord");
+	kz_register_cmd("top", "cmdTop");
+	kz_register_cmd("top15", "cmdTop");
+	kz_register_cmd("pro15", "cmdProTop");
+	kz_register_cmd("nub15", "cmdNubTop");
+	kz_register_cmd("noob15", "cmdNubTop");
+	kz_register_cmd("rec", "cmdProRecord");
+	kz_register_cmd("record", "cmdProRecord");
 }
 
-public kz_sql_initialized()
-{
+public kz_sql_initialized() {
 	SQL_Tuple = kz_sql_get_tuple();
 }
 
-public cmd_Top(id)
-{
+public cmdTop(id) {
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "Top");
 	new iMenu = menu_create(szMsg, "TopMenu_Handler");
 	
 	formatex(szMsg, charsmax(szMsg), "Pro top");
-	
 	menu_additem(iMenu, szMsg, "1", 0);
 
-	formatex(szMsg, charsmax(szMsg), "Nub top^n");
-	
+	formatex(szMsg, charsmax(szMsg), "Nub top");
 	menu_additem(iMenu, szMsg, "2", 0);
-
-	formatex(szMsg, charsmax(szMsg), "Weapon top");
-	
-	menu_additem(iMenu, szMsg, "3", 0);
 
 	menu_display(id, iMenu, 0);
 
 	return PLUGIN_HANDLED;
 }
 
-public TopMenu_Handler(id, menu, item)
-{
-	if(item == MENU_EXIT)
-	{
+public TopMenu_Handler(id, menu, item) {
+	if (item == MENU_EXIT) {
 		menu_destroy(menu);
 		
 		return PLUGIN_HANDLED;
@@ -71,39 +67,34 @@ public TopMenu_Handler(id, menu, item)
 	
 	menu_destroy(menu);
 
-	switch(iItem)
-	{
-		case 1: cmd_ProTop(id);
-		case 2: cmd_NubTop(id);
-		case 3: cmd_WeaponTop(id);
+	switch (iItem) {
+		case 1: cmdProTop(id);
+		case 2: cmdNubTop(id);
 	}
 
 	return PLUGIN_HANDLED;
 }
 
-public cmd_ProTop(id)
-{
+public cmdProTop(id) {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
-		SELECT `last_name`, `time`, `date` FROM `kz_uid` as t1 INNER JOIN \
-		(SELECT * FROM `kz_protop` WHERE `mapid` = %d ORDER BY TIME LIMIT 20) as t2 \
-		ON t1.id = t2.uid ORDER BY TIME;",
+SELECT `last_name`, `time` FROM `kz_uid` as user INNER JOIN \
+(SELECT * FROM `kz_records` \
+WHERE `map_id` = %d AND `aa` = 0 AND `weapon` = 6 AND `tp` = 0 ORDER BY `time` LIMIT 15) as record \
+ON user.id = record.user_id ORDER BY `time`;",
 		kz_sql_get_map_uid());
 
-	new szData[5];
-	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@ProTop_Callback", szQuery, szData, charsmax(szData));
+	new szData[16];
+	formatex(szData, charsmax(szData), "%d", id);
+	SQL_ThreadQuery(SQL_Tuple, "@proTopHandler", szQuery, szData, charsmax(szData));
 
 	return PLUGIN_HANDLED;
 }
 
-@ProTop_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "WithoutAnswer_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@proTopHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "dummyHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
@@ -112,109 +103,91 @@ public cmd_ProTop(id)
 
 	new id = str_to_num(szData);
 
-	if(SQL_NumResults(hQuery) > 0)
-	{
+	if (SQL_NumResults(hQuery) > 0) {
 		new index = 1;
 		new szBuffer[4096];
 		new szMapName[64];
 		get_mapname(szMapName, charsmax(szMapName));
 		
 		formatex(szBuffer, charsmax(szBuffer), "\
-<!DOCTYPE html>\
-<html>\
-<head>\
+<!DOCTYPE HTML PUBLIC ^"-//W3C//DTD HTML 4.01//EN^"\
+   ^"http://www.w3.org/TR/html4/strict.dtd^">\
+<HTML>\
+<HEAD>\
+	<style>%s</style>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-</head>\
-<body>\
-	<table>\
-		<thead>\
-			<tr>\
-				<th scope=^"col^">Place</th>\
-				<th scope=^"col^">Nick</th>\
-				<th scope=^"col^">Time</th>\
-			</tr>\
-		</thead>\
-		<tbody>\
-			", szMapName);
+</HEAD>\
+<BODY>\
+	<H2>Pro records on %s</H2>\
+	<TABLE>\
+		<THEAD>\
+			<TR>\
+				<TH width=^"10%^" scope=^"col^">Place</TH>\
+				<TH width=^"50%^" scope=^"col^">Nick</TH>\
+				<TH width=^"40%^" scope=^"col^">Time</TH>\
+			</TR>\
+		</THEAD>\
+		<TBODY>\
+			", g_szTopCSS, szMapName, szMapName);
 		
 		new szName[MAX_NAME_LENGTH];
 		new Float:fTime;
-		new szDate[64], szTime[32];
+		new szTime[32];
 		new szAddString[256];
 		
-		while(SQL_MoreResults(hQuery))
-		{
+		while (SQL_MoreResults(hQuery)) {
 			SQL_ReadResult(hQuery, 0, szName, charsmax(szName));
 			fTime = Float:SQL_ReadResult(hQuery, 1);
-			SQL_ReadResult(hQuery, 2, szDate, charsmax(szDate));
 
 			UTIL_FormatTime(fTime, szTime, charsmax(szTime), true);
-			
 
-			formatex(szAddString, charsmax(szAddString), "<tr>\
-				<th scope=^"row^">%d\
-				<td>%s\
-				<td>%s\
-				</tr>",
+			formatex(szAddString, charsmax(szAddString), "<TR>\
+				<TH scope=^"row^">%d</TH>\
+				<TD>%s\
+				<TD>%s\
+				</TR>",
 				index++, szName, szTime);
 
 			add(szBuffer, charsmax(szBuffer), szAddString);
 				
-				
 			SQL_NextRow(hQuery);
 		}
 
-		for(new i = index; i <= 20; i++)
-		{
-			formatex(szAddString, charsmax(szAddString), "\
-				<tr>\
-				<td>\
-				<td>\
-				<td>\
-				</tr>");
-
-			add(szBuffer, charsmax(szBuffer), szAddString);
-		}
-
 		formatex(szAddString, charsmax(szAddString), "\
-			</tbody></table><footer>.</footer>");
+			</TBODY></TABLE>");
 
 		add(szBuffer, charsmax(szBuffer), szAddString);
-		
+
 		show_motd(id, szBuffer, szMapName);
 	}
-	else
-	{
+	else {
 		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_NO_PRO_RECORDS");
 	}
 
 	return PLUGIN_HANDLED;
 }
 
-public cmd_NubTop(id)
-{
+public cmdNubTop(id) {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
-		SELECT `last_name`, `time`, `date`, `cp`, `tp` FROM `kz_uid` as t1 INNER JOIN \
-		(SELECT * FROM `kz_nubtop` WHERE `mapid` = %d ORDER BY TIME LIMIT 20) as t2 \
-		ON t1.id = t2.uid ORDER BY TIME;",
+SELECT `last_name`, `time`, `cp`, `tp` FROM `kz_uid` as user INNER JOIN \
+(SELECT * FROM `kz_records` \
+WHERE `map_id` = %d AND `aa` = 0 AND `weapon` = 6 AND `tp` > 0 ORDER BY `time` LIMIT 15) as record \
+ON user.id = record.user_id ORDER BY `time`;",
 		kz_sql_get_map_uid());
 
 	new szData[5];
 	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@NubTop_Callback", szQuery, szData, charsmax(szData));
+	SQL_ThreadQuery(SQL_Tuple, "@nubTopHandler", szQuery, szData, charsmax(szData));
 
 	return PLUGIN_HANDLED;
 }
 
-@NubTop_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "NubTop_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@nubTopHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch(QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "nubTopHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
@@ -223,47 +196,47 @@ public cmd_NubTop(id)
 
 	new id = str_to_num(szData);
 
-	if(SQL_NumResults(hQuery) > 0)
-	{
+	if (SQL_NumResults(hQuery) > 0) {
 		new index = 1;
 		new szBuffer[3072];
 		new szMapName[64];
 		get_mapname(szMapName, charsmax(szMapName));
-		
+
 		formatex(szBuffer, charsmax(szBuffer), "\
-<!DOCTYPE html>\
-<html>\
-<head>\
+<!DOCTYPE HTML PUBLIC ^"-//W3C//DTD HTML 4.01//EN^"\
+   ^"http://www.w3.org/TR/html4/strict.dtd^">\
+<HTML>\
+<HEAD>\
+	<style>%s</style>\
 	<meta charset=^"utf-8^">\
 	<title>%s</title>\
-</head>\
-<body>\
-	<table>\
-		<thead>\
-			<tr>\
-				<th scope=^"col^">Place</th>\
-				<th scope=^"col^">Nick</th>\
-				<th scope=^"col^">Time</th>\
-				<th scope=^"col^">CPs</th>\
-				<th scope=^"col^">GCs</th>\
-			</tr>\
-		</thead>\
-		<tbody>\
-			", szMapName);
+</HEAD>\
+<BODY>\
+	<H2>Nub records on %s</H2>\
+	<TABLE>\
+		<THEAD>\
+			<TR>\
+				<TH width=^"10%^" scope=^"col^">Place</TH>\
+				<TH width=^"40%^" scope=^"col^">Nick</TH>\
+				<TH width=^"15%^" scope=^"col^">CPs</TH>\
+				<TH width=^"15%^" scope=^"col^">GCs</TH>\
+				<TH width=^"20%^" scope=^"col^">Time</TH>\
+			</TR>\
+		</THEAD>\
+		<TBODY>\
+			", g_szTopCSS, szMapName, szMapName);
 		
 		new szName[MAX_NAME_LENGTH];
 		new Float:fTime;
-		new szDate[64], szTime[32];
+		new szTime[32];
 		new szAddString[256];
-		new iCPNum, iTPNum;
+		new cpCount, tpCount;
 		
-		while(SQL_MoreResults(hQuery))
-		{
+		while (SQL_MoreResults(hQuery)) {
 			SQL_ReadResult(hQuery, 0, szName, charsmax(szName));
 			fTime = Float:SQL_ReadResult(hQuery, 1);
-			SQL_ReadResult(hQuery, 2, szDate, charsmax(szDate));
-			iCPNum = SQL_ReadResult(hQuery, 3);
-			iTPNum = SQL_ReadResult(hQuery, 4);
+			cpCount = SQL_ReadResult(hQuery, 2);
+			tpCount = SQL_ReadResult(hQuery, 3);
 
 			UTIL_FormatTime(fTime, szTime, charsmax(szTime), true);
 
@@ -271,27 +244,14 @@ public cmd_NubTop(id)
 				<tr>\
 				<th scope=^"row^">%d\
 				<td>%s\
-				<td>%s\
 				<td>%d\
-				<td>%d",
-				index++, szName, szTime, iCPNum, iTPNum);
+				<td>%d\
+				<td>%s",
+				index++, szName, cpCount, tpCount, szTime);
 
 			add(szBuffer, charsmax(szBuffer), szAddString);
 				
 			SQL_NextRow(hQuery);
-		}
-
-		for(new i = index; i <= 20; i++)
-		{
-			formatex(szAddString, charsmax(szAddString), "\
-				<tr>\
-				<th scope=^"row^">\
-				<td>\
-				<td>\
-				<td>\
-				<td>");
-
-			add(szBuffer, charsmax(szBuffer), szAddString);
 		}
 
 		formatex(szAddString, charsmax(szAddString), "\
@@ -301,199 +261,17 @@ public cmd_NubTop(id)
 		
 		show_motd(id, szBuffer, szMapName);
 	}
-	else
-	{
+	else {
 		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_NO_NUB_RECORDS");
 	}
 
 	return PLUGIN_HANDLED;
 }
 
-public cmd_WeaponTop(id)
-{
-	new szMsg[256];
-	formatex(szMsg, charsmax(szMsg), "Weapon Top");
-	new iMenu = menu_create(szMsg, "WeaponTopMenu_Handler");
-	
-	formatex(szMsg, charsmax(szMsg), "AWP");
-	menu_additem(iMenu, szMsg, "0", 0);
-
-	formatex(szMsg, charsmax(szMsg), "M249");
-	menu_additem(iMenu, szMsg, "1", 0);
-
-	formatex(szMsg, charsmax(szMsg), "M4A1");
-	menu_additem(iMenu, szMsg, "2", 0);
-
-	formatex(szMsg, charsmax(szMsg), "SG552");
-	menu_additem(iMenu, szMsg, "3", 0);
-
-	formatex(szMsg, charsmax(szMsg), "Famas");
-	menu_additem(iMenu, szMsg, "4", 0);
-
-	formatex(szMsg, charsmax(szMsg), "P90");
-	menu_additem(iMenu, szMsg, "5", 0);
-
-	formatex(szMsg, charsmax(szMsg), "Scout");
-	menu_additem(iMenu, szMsg, "7", 0);
-
-	menu_display(id, iMenu, 0);
-
-	return PLUGIN_HANDLED;
-}
-
-public WeaponTopMenu_Handler(id, menu, item)
-{
-	if(item == MENU_EXIT)
-	{
-		menu_destroy(menu);
-		
-		return PLUGIN_HANDLED;
-	}
-	
-	static s_Data[6], s_Name[64], i_Access, i_Callback;
-	menu_item_getinfo(menu, item, i_Access, s_Data, charsmax(s_Data), s_Name, charsmax(s_Name), i_Callback);
-	new iItem = str_to_num(s_Data);
-	
-	menu_destroy(menu);
-
-	new szQuery[512];
-	formatex(szQuery, charsmax(szQuery), "\
-		SELECT `last_name`, `time`, `date`, `cp`, `tp` FROM `kz_uid` as t1 INNER JOIN \
-		((SELECT * FROM `kz_weapontop` \
-         	WHERE `mapid` = %d AND `weapon` = %d AND `tp` = 0 ORDER BY TIME LIMIT 20) \
-        UNION \
-     	(SELECT * FROM `kz_weapontop` \
-         	WHERE `mapid` = %d AND `weapon` = %d AND `tp` > 0 ORDER BY TIME LIMIT 20)) as t2 \
-		ON t1.id = t2.uid \
-		LIMIT 20; \
-		",
-		kz_sql_get_map_uid(), iItem, kz_sql_get_map_uid(), iItem);
-
-	server_print(szQuery);
-
-	new szData[64];
-	formatex(szData, charsmax(szData), "%d %d", id, iItem);
-
-	SQL_ThreadQuery(SQL_Tuple, "@WeaponTop_Callback", szQuery, szData, charsmax(szData));
-
-	return PLUGIN_HANDLED;
-}
-
-@WeaponTop_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "WeaponTop_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
-			SQL_FreeHandle(hQuery);
-			
-			return PLUGIN_HANDLED;
-		}
-	}
-
-	new szId[16], szWeaponId[16], szWeapon[64];
-	parse(szData, szId, 15, szWeaponId, 15);
-
-	new id = str_to_num(szId);
-	kz_get_weapon_name(str_to_num(szWeaponId), szWeapon, charsmax(szWeapon));
-
-	if(SQL_NumResults(hQuery) > 0)
-	{
-		new index = 1;
-		new szBuffer[4096];
-		new szMapName[64];
-		get_mapname(szMapName, charsmax(szMapName));
-		
-		formatex(szBuffer, charsmax(szBuffer), "\
-<!DOCTYPE html>\
-<html>\
-<head>\
-	<meta charset=^"utf-8^">\
-	<title>%s</title>\
-</head>\
-<body>\
-	<table>\
-		<thead>\
-			<tr>\
-				<th scope=^"col^">Place</th>\
-				<th scope=^"col^">Nick</th>\
-				<th scope=^"col^">Time</th>\
-				<th scope=^"col^">CPs</th>\
-				<th scope=^"col^">GCs</th>\
-			</tr>\
-		</thead>\
-		<tbody>\
-			", szMapName);
-		
-		new szName[MAX_NAME_LENGTH];
-		new Float:fTime;
-		new szDate[64], szTime[32];
-		new szAddString[256];
-		new iCPNum, iTPNum;
-
-		while(SQL_MoreResults(hQuery))
-		{
-			SQL_ReadResult(hQuery, 0, szName, charsmax(szName));
-			fTime = Float:SQL_ReadResult(hQuery, 1);
-			SQL_ReadResult(hQuery, 2, szDate, charsmax(szDate));
-			iCPNum = SQL_ReadResult(hQuery, 3);
-			iTPNum = SQL_ReadResult(hQuery, 4);
-
-			UTIL_FormatTime(fTime, szTime, charsmax(szTime), true);
-
-			formatex(szAddString, charsmax(szAddString), "\
-				<tr>\
-				<th scope=^"row^">%d\
-				<td>%s\
-				<td>%s\
-				<td>%d\
-				<td>%d",
-				index++, szName, szTime, iCPNum, iTPNum);
-
-			add(szBuffer, charsmax(szBuffer), szAddString);
-				
-			SQL_NextRow(hQuery);
-		}
-
-		for(new i = index; i <= 20; i++)
-		{
-			formatex(szAddString, charsmax(szAddString), "\
-				<tr>\
-				<th scope=^"row^">\
-				<td>\
-				<td>\
-				<td>\
-				<td>");
-
-			add(szBuffer, charsmax(szBuffer), szAddString);
-		}
-
-		formatex(szAddString, charsmax(szAddString), "\
-			</tbody></table><footer>.</footer>");
-
-		add(szBuffer, charsmax(szBuffer), szAddString);
-		
-		show_motd(id, szBuffer, fmt("%s - %s", szMapName, szWeapon));
-	}
-	else
-	{
-		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_NO_WEAPON_RECORDS",
-			szWeapon);
-	}
-
-	cmd_WeaponTop(id);
-
-	return PLUGIN_HANDLED;
-}
-
-@WithoutAnswer_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "WithoutAnswer_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@dummyHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "dummyHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
@@ -503,29 +281,25 @@ public WeaponTopMenu_Handler(id, menu, item)
 	return PLUGIN_HANDLED;
 }
 
-public cmd_ProRecord(id)
-{
+public cmdProRecord(id) {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
-		SELECT `last_name`, `time` FROM `kz_uid` as t1 INNER JOIN \
-		(SELECT * FROM `kz_protop` WHERE `mapid` = %d ORDER BY TIME LIMIT 1) as t2 \
-		ON t1.id = t2.uid;",
+SELECT `last_name`, `time` FROM `kz_uid` as user INNER JOIN \
+(SELECT * FROM `kz_records` WHERE `map_id` = %d AND `aa` = 0 AND `weapon` = 6 ORDER BY TIME LIMIT 1) as rec \
+ON user.id = rec.user_id;",
 		kz_sql_get_map_uid());
 
 	new szData[5];
 	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@ProRecord_Callback", szQuery, szData, charsmax(szData));
+	SQL_ThreadQuery(SQL_Tuple, "@proRecordHandler", szQuery, szData, charsmax(szData));
 
 	return PLUGIN_HANDLED;
 }
 
-@ProRecord_Callback(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "WithoutAnswer_Callback", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@proRecordHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "dummyHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
@@ -534,8 +308,7 @@ public cmd_ProRecord(id)
 
 	new id = str_to_num(szData);
 
-	if(SQL_NumResults(hQuery) > 0)
-	{
+	if (SQL_NumResults(hQuery) > 0) {
 		new szName[MAX_NAME_LENGTH];
 		new Float:fTime, szTime[32];
 
@@ -547,8 +320,7 @@ public cmd_ProRecord(id)
 		client_print_color(id, print_team_default, "^4[KZ] ^1Pro record: [^4%s^1] by ^3%s^1.", 
 			szTime, szName);
 	}
-	else
-	{
+	else {
 		client_print_color(id, print_team_red, "^4[KZ] ^1Pro record: ^3No data^1.");
 	}
 
