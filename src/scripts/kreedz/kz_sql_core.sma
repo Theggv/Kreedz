@@ -426,7 +426,6 @@ public taskShowBestScore(taskId) {
 	ExecuteForward(g_Forwards[fwdInitialized], iRet);
 	
 	SQL_FreeHandle(hQuery);
-	
 	return PLUGIN_HANDLED;
 }
 
@@ -457,6 +456,7 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 		g_MapId = SQL_ReadResult(hQuery, 0);
 	}
 
+	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 
@@ -514,7 +514,6 @@ UPDATE `kz_uid` SET `last_name` = '%s' WHERE `id` = %d;\
 	}
 	
 	SQL_FreeHandle(hQuery);
-	
 	return PLUGIN_HANDLED;
 }
 
@@ -548,11 +547,11 @@ UPDATE `kz_records` SET `time` = %d, `date` = CURRENT_TIMESTAMP, \
 				g_Candidates[id][run_time], g_Candidates[id][run_cpCount],
 				g_Candidates[id][run_tpCount], runId);
 
-			UTIL_LogToFile(MYSQL_LOG, "DEBUG", "insertOrUpdateRecHandler", szQuery);
 			SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
-
-			// Print map achievement
-			getAchievement(id);
+		}
+		else {
+			SQL_FreeHandle(hQuery);
+			return PLUGIN_HANDLED;
 		}
 	}
 	// Or insert if not
@@ -567,13 +566,27 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 			g_Candidates[id][run_cpCount], g_Candidates[id][run_tpCount],
 			g_Candidates[id][run_weapon], g_Candidates[id][run_airaccelerate]);
 
-		UTIL_LogToFile(MYSQL_LOG, "DEBUG", "insertOrUpdateRecHandler", szQuery);
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
-
-		// Print map achievement
-		getAchievement(id);
 	}
 
+	// Print map achievement
+	getAchievement(id);
+
+	// Update personal record info
+	if (g_Candidates[id][run_tpCount] == 0) {
+		g_ProRecords[id][ud_bestTime] = g_Candidates[id][run_time];
+		g_ProRecords[id][ud_cpCount] = g_Candidates[id][run_cpCount];
+		g_ProRecords[id][ud_tpCount] = g_Candidates[id][run_tpCount];
+		g_ProRecords[id][ud_hasRecord] = true;
+	}
+	else {
+		g_NubRecords[id][ud_bestTime] = g_Candidates[id][run_time];
+		g_NubRecords[id][ud_cpCount] = g_Candidates[id][run_cpCount];
+		g_NubRecords[id][ud_tpCount] = g_Candidates[id][run_tpCount];
+		g_NubRecords[id][ud_hasRecord] = true;
+	}
+
+	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 
