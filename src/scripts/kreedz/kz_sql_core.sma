@@ -12,6 +12,10 @@
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
 
+enum _:(+=50) {
+	TASK_SHOWBESTSCORE = 1024,
+};
+
 enum _:ConnectionStruct {
 	eHostName[64],
 	eUser[64],
@@ -22,8 +26,10 @@ enum _:ConnectionStruct {
 new g_ConnInfo[ConnectionStruct];
 
 enum _:eForwards {
-	fwd_Initialized,
-	fwd_InfoReceived,
+	fwdInitialized,
+	fwdInfoReceived,
+	fwdNewProRecord,
+	fwdNewNubRecord,
 };
 
 new g_Forwards[eForwards];
@@ -31,21 +37,43 @@ new g_Forwards[eForwards];
 new Handle:SQL_Tuple;
 new Handle:SQL_Connection;
 
-new g_UserData[MAX_PLAYERS + 1];
 new g_MapId;
+
+enum _:UserRecordStruct {
+	bool:ud_hasRecord,
+	bool:ud_isLoaded,
+	Float:ud_bestTime,
+	ud_cpCount,
+	ud_tpCount,
+};
+
+// Best personal records storage
+new g_ProRecords[MAX_PLAYERS + 1][UserRecordStruct];
+new g_NubRecords[MAX_PLAYERS + 1][UserRecordStruct];
+
+// Run info for insert/update queries
+new g_Candidates[MAX_PLAYERS + 1][RunStruct];
+
+// User ids
+new g_UserData[MAX_PLAYERS + 1];
 
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	initForwards();
-
-	register_srvcmd("amx_updatecharset", "cmd_UpdateEncoding");
+	initCommands();
 }
 
 initForwards() {
-	g_Forwards[fwd_Initialized] = 	CreateMultiForward("kz_sql_initialized", ET_IGNORE);
-	g_Forwards[fwd_InfoReceived] = 	CreateMultiForward("kz_sql_data_recv", ET_IGNORE, FP_CELL);
+	g_Forwards[fwdInitialized] = 	CreateMultiForward("kz_sql_initialized", ET_IGNORE);
+	g_Forwards[fwdInfoReceived] = 	CreateMultiForward("kz_sql_data_recv", ET_IGNORE, FP_CELL);
+	g_Forwards[fwdNewProRecord] = 	CreateMultiForward("kz_top_new_pro_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
+	g_Forwards[fwdNewNubRecord] = 	CreateMultiForward("kz_top_new_nub_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
+}
+
+initCommands() {
+	kz_register_cmd("cfr", "cmdShowPersonalBest");
 }
 
 public plugin_cfg() {
@@ -54,7 +82,7 @@ public plugin_cfg() {
 
 	format(szCfgDir, charsmax(szCfgDir), "%s/kreedz.cfg", szCfgDir);
 
-	LoadConfig(szCfgDir);
+	loadConfig(szCfgDir);
 
 	mkdir("addons/amxmodx/logs/kz_db_log");
 	
@@ -154,7 +182,7 @@ SELECT * FROM `kz_maps` WHERE `mapname` = '%s';\
 	SQL_ThreadQuery(SQL_Tuple, "@initMapHandler", szQuery);
 }
 
-LoadConfig(szFileName[]) {
+loadConfig(szFileName[]) {
 	if (!file_exists(szFileName)) return;
 	
 	new szData[256];
@@ -227,6 +255,35 @@ public Handle:native_get_tuple() {
 
 /**
 *	------------------------------------------------------------------
+*	Commands
+*	------------------------------------------------------------------
+*/
+
+public cmdShowPersonalBest(id) {
+	new szTime[32];
+
+	if (g_ProRecords[id][ud_hasRecord]) {
+		UTIL_FormatTime(g_ProRecords[id][ud_bestTime],
+			szTime, charsmax(szTime), true);
+
+		client_print_color(id , print_team_default, "%L", id, "KZ_CHAT_BEST_PRO", szTime);
+	}
+	else if(g_NubRecords[id][ud_hasRecord]) {
+		UTIL_FormatTime(g_NubRecords[id][ud_bestTime],
+			szTime, charsmax(szTime), true);
+
+		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_BEST_NUB", 
+			szTime, g_NubRecords[id][ud_cpCount], g_NubRecords[id][ud_tpCount]);
+	}
+	else {
+		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_NO_RECORD");
+	}
+
+	return PLUGIN_HANDLED;
+}
+
+/**
+*	------------------------------------------------------------------
 *	Game events handlers
 *	------------------------------------------------------------------
 */
@@ -245,13 +302,94 @@ public client_putinserver(id) {
 	
 	// format query
 	formatex(szQuery, charsmax(szQuery), "\
-SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
-		", szAuth);
+SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';", 
+		szAuth);
 	
 	UTIL_LogToFile(MYSQL_LOG, "DEBUG", "client_putinserver", szQuery);
 	
 	// async query to get user info
 	SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, charsmax(szData));
+}
+
+public kz_timer_finish_post(id, runInfo[RunStruct]) {
+	insertOrUpdateRecord(id, runInfo);
+}
+
+public kz_sql_data_recv(id) {
+	new szQuery[256], szData[32];
+
+	new mapId = kz_sql_get_map_uid();
+	new userId = kz_sql_get_user_uid(id);
+
+
+	for (new isProRecord = 0; isProRecord <= 1; ++isProRecord) {
+		formatex(szQuery, charsmax(szQuery), "\
+SELECT `time`, `cp`, `tp`, `weapon`, `aa` FROM `kz_records` WHERE `user_id` = %d AND `map_id` = %d \
+AND `weapon` = 6 AND `aa` = 0 AND `is_pro_record` = %d;",
+			userId, mapId, isProRecord);
+
+		formatex(szData, charsmax(szData), "%d %d", id, isProRecord);
+		SQL_ThreadQuery(SQL_Tuple, "@getPersonalRecordHandler", szQuery, szData, charsmax(szData));
+	}
+}
+
+insertOrUpdateRecord(id, runInfo[RunStruct]) {
+	new szQuery[256];
+
+	new userId = kz_sql_get_user_uid(id);
+	new mapId = kz_sql_get_map_uid();
+
+	copy(g_Candidates[id], RunStruct, runInfo);
+
+	formatex(szQuery, charsmax(szQuery), "\
+SELECT `id`, `time` FROM `kz_records` WHERE `user_id` = %d AND `map_id` = %d \
+AND `weapon` = %d AND `aa` = %d AND `is_pro_record` = %d;",
+		userId, mapId, g_Candidates[id][run_weapon], 
+		g_Candidates[id][run_airaccelerate], (g_Candidates[id][run_tpCount] == 0));
+
+	new szData[32];
+	formatex(szData, charsmax(szData), "%d", id);
+
+	SQL_ThreadQuery(SQL_Tuple, "@insertOrUpdateRecHandler", szQuery, szData, charsmax(szData));
+}
+
+printTimeDifference(id, Float:oldTime, Float:newTime) {
+	if (!is_user_connected(id)) return;
+
+	new Float:diff = floatabs(oldTime - newTime);
+
+	new szTime[32];
+	UTIL_FormatTime(diff, szTime, charsmax(szTime), true);
+
+	if (newTime < oldTime) {
+		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_BEAT_RECORD", szTime);
+	}
+	else {
+		client_print_color(id, print_team_red, "%L", id, "KZ_CHAT_LOSE_RECORD", szTime);
+	}
+}
+
+getAchievement(id) {
+	new mapId = kz_sql_get_map_uid();
+
+	new szQuery[512];
+	formatex(szQuery, charsmax(szQuery), "\
+SELECT COUNT(*) FROM `kz_records` \
+WHERE `map_id` = %d AND `weapon` = %d AND `aa` = %d AND `is_pro_record` = %d` AND `time` <= %d;",
+		mapId, g_Candidates[id][run_weapon], g_Candidates[id][run_airaccelerate], 
+		(g_Candidates[id][run_tpCount] == 0), g_Candidates[id][run_time]);
+
+	new szData[32];
+	formatex(szData, charsmax(szData), "%d", id);
+	SQL_ThreadQuery(SQL_Tuple, "@getAchievementHandler", szQuery, szData, charsmax(szData));
+}
+
+public taskShowBestScore(taskId) {
+	new id = taskId - TASK_SHOWBESTSCORE;
+
+	if (!is_user_connected(id)) return;
+
+	cmdShowPersonalBest(id);
 }
 
 /**
@@ -273,7 +411,7 @@ SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
 	initMap();
 
 	new iRet;
-	ExecuteForward(g_Forwards[fwd_Initialized], iRet);
+	ExecuteForward(g_Forwards[fwdInitialized], iRet);
 	
 	SQL_FreeHandle(hQuery);
 	
@@ -356,7 +494,7 @@ SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
 		g_UserData[id] = SQL_ReadResult(hQuery, 0);
 		
 		new iRet;
-		ExecuteForward(g_Forwards[fwd_InfoReceived], iRet, id);
+		ExecuteForward(g_Forwards[fwdInfoReceived], iRet, id);
 		
 		// format query
 		formatex(szQuery, charsmax(szQuery), "\
@@ -374,13 +512,192 @@ UPDATE `kz_uid` SET `last_name` = '%s' WHERE `id` = %d;\
 	return PLUGIN_HANDLED;
 }
 
+@insertOrUpdateRecHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "insertOrUpdateRecHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+			SQL_FreeHandle(hQuery);
+			
+			return PLUGIN_HANDLED;
+		}
+	}
+
+	new id = str_to_num(szData);
+
+	new szQuery[512];
+
+	// Update record if exists
+	if (SQL_NumResults(hQuery) > 0) {
+		new runId = SQL_ReadResult(hQuery, 0);
+		new Float:curTime = Float:SQL_ReadResult(hQuery, 1);
+
+		// Print time difference to user
+		printTimeDifference(id, curTime, g_Candidates[id][run_time]);
+
+		// Update record if user has beaten previous one
+		if (g_Candidates[id][run_time] < curTime) {
+			formatex(szQuery, charsmax(szQuery), "\
+UPDATE `kz_records` SET `time` = %d, `date` = CURRENT_TIMESTAMP, \
+`cp` = %d, `tp` = %d WHERE `id` = %d;",
+				g_Candidates[id][run_time], g_Candidates[id][run_cpCount],
+				g_Candidates[id][run_tpCount], runId);
+
+			SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
+
+			// Print map achievement
+			getAchievement(id);
+		}
+	}
+	// Or insert if not
+	else {
+		new userId = kz_sql_get_user_uid(id);
+		new mapId = kz_sql_get_map_uid();
+
+		formatex(szQuery, charsmax(szQuery), "\
+INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa`) VALUES \
+(%d, %d, %d, %d, %d, %d, %d);",
+			userId, mapId, g_Candidates[id][run_time],
+			g_Candidates[id][run_cpCount], g_Candidates[id][run_tpCount],
+			g_Candidates[id][run_weapon], g_Candidates[id][run_airaccelerate]);
+
+		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
+
+		// Print map achievement
+		getAchievement(id);
+	}
+
+	return PLUGIN_HANDLED;
+}
+
+@getPersonalRecordHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "getPersonalRecordHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+			SQL_FreeHandle(hQuery);
+			
+			return PLUGIN_HANDLED;
+		}
+	}
+
+	new szId[16], szIsPro[16];
+	parse(szData, szId, 15, szIsPro, 15);
+
+	new id = str_to_num(szId);
+	new bool:isProRecord = bool:str_to_num(szIsPro);
+
+	if (SQL_NumResults(hQuery) > 0) {
+		if (isProRecord) {
+			g_ProRecords[id][ud_bestTime] = Float:SQL_ReadResult(hQuery, 0);
+			g_ProRecords[id][ud_cpCount] = SQL_ReadResult(hQuery, 1);
+			g_ProRecords[id][ud_tpCount] = SQL_ReadResult(hQuery, 2);
+			g_ProRecords[id][ud_hasRecord] = true;
+		}
+		else {
+			g_NubRecords[id][ud_bestTime] = Float:SQL_ReadResult(hQuery, 0);
+			g_NubRecords[id][ud_cpCount] = SQL_ReadResult(hQuery, 1);
+			g_NubRecords[id][ud_tpCount] = SQL_ReadResult(hQuery, 2);
+			g_NubRecords[id][ud_hasRecord] = true;
+		}
+	}
+	else {
+		if (isProRecord)
+			g_ProRecords[id][ud_hasRecord] = false;
+		else
+			g_NubRecords[id][ud_hasRecord] = false;
+	}
+
+	if (isProRecord)
+		g_ProRecords[id][ud_isLoaded] = true;
+	else
+		g_NubRecords[id][ud_isLoaded] = true;
+
+	// Show best record if all data has received
+	if (g_ProRecords[id][ud_isLoaded] && g_NubRecords[id][ud_isLoaded]) {
+		set_task(1.0, "taskShowBestScore", TASK_SHOWBESTSCORE + id);
+	}
+
+	SQL_FreeHandle(hQuery);
+	return PLUGIN_HANDLED;
+}
+
+@getAchievementHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "getAchievementHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+			SQL_FreeHandle(hQuery);
+			
+			return PLUGIN_HANDLED;
+		}
+	}
+
+	new id = str_to_num(szData);
+
+	if (SQL_NumResults(hQuery) > 0) {
+		new place = SQL_ReadResult(hQuery, 0);
+
+		new szPlace[32], szTopType[32];
+		new printType = print_team_default;
+
+		new szName[MAX_NAME_LENGTH];
+		get_user_name(id, szName, charsmax(szName));
+
+		new szWeaponName[32];
+		kz_get_weapon_name(g_Candidates[id][run_weapon], szWeaponName, charsmax(szWeaponName));
+
+		if (g_Candidates[id][run_tpCount] == 0) {
+			formatex(szTopType, charsmax(szTopType), "pro");
+		}
+		else {
+			formatex(szTopType, charsmax(szTopType), "nub");
+		}
+
+		switch (place) {
+			case 1: {
+				printType = print_team_red;
+				formatex(szPlace, charsmax(szPlace), "^31");
+			}
+			case 2: {
+				printType = print_team_grey;
+				formatex(szPlace, charsmax(szPlace), "^32");
+			}
+			case 3: {
+				printType = print_team_blue;
+				formatex(szPlace, charsmax(szPlace), "^33");
+			}
+			default: {
+				printType = print_team_default;
+				formatex(szPlace, charsmax(szPlace), "^1%d", place);
+			}
+		}
+
+		// Print achievement message
+		client_print_color(0, printType, 
+			"^4[KZ]^1 %s achieved %s^1 place in the %s top with %s!", 
+			szName, szTopType, szWeaponName);
+
+		
+		// Call forward
+		if (g_Candidates[id][run_weapon] == 6) {
+			new fwd = (g_Candidates[id][run_tpCount] == 0) ? 
+				g_Forwards[fwdNewProRecord] :
+				g_Forwards[fwdNewNubRecord];
+
+			new Float:time = (place == 1) ? g_Candidates[id][run_time] : 0.0;
+
+			ExecuteForward(fwd, _, id, time);
+		}
+	}
+
+	SQL_FreeHandle(hQuery);
+	return PLUGIN_HANDLED;
+}
+
 @dummyHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
 	SQL_FreeHandle(hQuery);
 
 	switch (QueryState) {
 		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
 			UTIL_LogToFile(MYSQL_LOG, "ERROR", "dummyHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
-			return PLUGIN_HANDLED;
 		}
 	}
 	

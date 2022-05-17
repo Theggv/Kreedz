@@ -13,41 +13,32 @@
 #define AUTHOR	 	"ggv"
 
 
-enum _:UserDataPro
-{
-	Float:ud_BestTime,
-	ud_Date[64],
-	bool:ud_hasRecord,
-	bool:ud_isLoaded
-}
-
-enum _:UserDataNub
-{
-	Float:ud_BestTime,
-	ud_Date[64],
+enum _:UserDataStruct {
 	bool:ud_hasRecord,
 	bool:ud_isLoaded,
-	ud_ChecksNum,
-	ud_TeleNum,
-}
+	Float:ud_bestTime,
+	ud_cpCount,
+	ud_tpCount,
+};
 
-enum _:eForward
-{
-	fwd_NewProRec
-}
+new g_UserDataPro[MAX_PLAYERS + 1][UserDataStruct];
+new g_UserDataNub[MAX_PLAYERS + 1][UserDataStruct];
 
-new Handle:SQL_Tuple;
+new g_Candidates[MAX_PLAYERS + 1][RunStruct];
 
-new g_UserDataPro[MAX_PLAYERS + 1][UserDataPro];
-new g_UserDataNub[MAX_PLAYERS + 1][UserDataNub];
+enum _:eForward {
+	fwdNewProRecord,
+	fwdNewNubRecord,
+};
 
 new g_Forwards[eForward];
 
-public plugin_init()
-{
-	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	g_Forwards[fwd_NewProRec] = CreateMultiForward("kz_top_new_pro_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
+new Handle:SQL_Tuple;
+
+
+public plugin_init() {
+	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	kz_register_cmd("top", "cmd_Top");
 	kz_register_cmd("top15", "cmd_Top");
@@ -58,10 +49,16 @@ public plugin_init()
 	kz_register_cmd("cfr", "ShowBestScore");
 	kz_register_cmd("rec", "cmd_ProRecord");
 	kz_register_cmd("record", "cmd_ProRecord");
+
+	initForwards();
 }
 
-public client_disconnected(id)
-{
+initForwards() {
+	g_Forwards[fwdNewProRecord] = CreateMultiForward("kz_top_new_pro_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
+	g_Forwards[fwdNewNubRecord] = CreateMultiForward("kz_top_new_nub_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
+}
+
+public client_disconnected(id) {
 	g_UserDataPro[id][ud_hasRecord] = false;
 	g_UserDataPro[id][ud_isLoaded] = false;
 
@@ -69,27 +66,25 @@ public client_disconnected(id)
 	g_UserDataNub[id][ud_isLoaded] = false;
 }
 
-public kz_timer_finish_post(id, Float:fTime)
-{
+
+
+public kz_timer_finish_post(id, runInfo[RunStruct]) {
 	new szQuery[512];
 
-	if(kz_get_min_rank(id) != 6)
-	{
+	if (kz_get_min_rank(id) != 6) {
 		formatex(szQuery, charsmax(szQuery), "\
-			SELECT * FROM `kz_weapontop` \
-			WHERE `uid` = %d AND `mapid` = %d AND `weapon` = %d;",
-			kz_sql_get_user_uid(id), kz_sql_get_map_uid(),
-			kz_get_min_rank(id));
+SELECT * FROM `kz_weapontop` WHERE `uid` = %d AND `mapid` = %d AND `weapon` = %d;\
+			", kz_sql_get_user_uid(id), kz_sql_get_map_uid(), kz_get_min_rank(id));
 
 		new szData[64];
 		formatex(szData, charsmax(szData), "%d %f", id, fTime);
 
-		SQL_ThreadQuery(SQL_Tuple, "@CheckRun_CallBack", szQuery, szData, charsmax(szData));
+		SQL_ThreadQuery(SQL_Tuple, "@findCurrentRecHandler", szQuery, szData, charsmax(szData));
 	}
 	else if(!kz_get_tp_num(id))
 	{
 		if( g_UserDataPro[id][ud_hasRecord] && 
-			fTime < g_UserDataPro[id][ud_BestTime])
+			fTime < g_UserDataPro[id][ud_bestTime])
 		{
 			formatex(szQuery, charsmax(szQuery), "\
 				UPDATE `kz_protop` SET `time` = %d, `date` = CURRENT_TIMESTAMP \
@@ -99,12 +94,12 @@ public kz_timer_finish_post(id, Float:fTime)
 			SQL_ThreadQuery(SQL_Tuple, "@WithoutAnswer_Callback", szQuery);
 
 			new szTime[32];
-			UTIL_FormatTime(g_UserDataPro[id][ud_BestTime] - fTime,
+			UTIL_FormatTime(g_UserDataPro[id][ud_bestTime] - fTime,
 				szTime, charsmax(szTime), true);
 
 			client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_BEAT_RECORD", szTime);
 
-			g_UserDataPro[id][ud_BestTime] = fTime;
+			g_UserDataPro[id][ud_bestTime] = fTime;
 
 			show_place_pro(id, fTime);
 		}
@@ -117,7 +112,7 @@ public kz_timer_finish_post(id, Float:fTime)
 
 			SQL_ThreadQuery(SQL_Tuple, "@WithoutAnswer_Callback", szQuery);
 
-			g_UserDataPro[id][ud_BestTime] = fTime;
+			g_UserDataPro[id][ud_bestTime] = fTime;
 			g_UserDataPro[id][ud_hasRecord] = true;
 
 			show_place_pro(id, fTime);
@@ -125,7 +120,7 @@ public kz_timer_finish_post(id, Float:fTime)
 		else
 		{
 			new szTime[32];
-			UTIL_FormatTime(fTime - g_UserDataPro[id][ud_BestTime],
+			UTIL_FormatTime(fTime - g_UserDataPro[id][ud_bestTime],
 				szTime, charsmax(szTime), true);
 
 			client_print_color(id, print_team_red, "%L", id, "KZ_CHAT_LOSE_RECORD", szTime);
@@ -134,7 +129,7 @@ public kz_timer_finish_post(id, Float:fTime)
 	else
 	{
 		if( g_UserDataNub[id][ud_hasRecord] && 
-			fTime < g_UserDataNub[id][ud_BestTime])
+			fTime < g_UserDataNub[id][ud_bestTime])
 		{
 			formatex(szQuery, charsmax(szQuery), "\
 				UPDATE `kz_nubtop` SET `time` = %d, `date` = CURRENT_TIMESTAMP, \
@@ -146,14 +141,14 @@ public kz_timer_finish_post(id, Float:fTime)
 			SQL_ThreadQuery(SQL_Tuple, "@WithoutAnswer_Callback", szQuery);
 
 			new szTime[32];
-			UTIL_FormatTime(g_UserDataNub[id][ud_BestTime] - fTime,
+			UTIL_FormatTime(g_UserDataNub[id][ud_bestTime] - fTime,
 				szTime, charsmax(szTime), true);
 
 			client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_BEAT_RECORD", szTime);
 
-			g_UserDataNub[id][ud_BestTime] = fTime;
-			g_UserDataNub[id][ud_ChecksNum] = kz_get_cp_num(id);
-			g_UserDataNub[id][ud_TeleNum] = kz_get_tp_num(id);
+			g_UserDataNub[id][ud_bestTime] = fTime;
+			g_UserDataNub[id][ud_cpCount] = kz_get_cp_num(id);
+			g_UserDataNub[id][ud_tpCount] = kz_get_tp_num(id);
 
 			show_place_nub(id, fTime);
 		}
@@ -167,9 +162,9 @@ public kz_timer_finish_post(id, Float:fTime)
 
 			SQL_ThreadQuery(SQL_Tuple, "@WithoutAnswer_Callback", szQuery);
 
-			g_UserDataNub[id][ud_BestTime] = fTime;
-			g_UserDataNub[id][ud_ChecksNum] = kz_get_cp_num(id);
-			g_UserDataNub[id][ud_TeleNum] = kz_get_tp_num(id);
+			g_UserDataNub[id][ud_bestTime] = fTime;
+			g_UserDataNub[id][ud_cpCount] = kz_get_cp_num(id);
+			g_UserDataNub[id][ud_tpCount] = kz_get_tp_num(id);
 			g_UserDataNub[id][ud_hasRecord] = true;
 
 			show_place_nub(id, fTime);
@@ -177,7 +172,7 @@ public kz_timer_finish_post(id, Float:fTime)
 		else
 		{
 			new szTime[32];
-			UTIL_FormatTime(fTime - g_UserDataNub[id][ud_BestTime],
+			UTIL_FormatTime(fTime - g_UserDataNub[id][ud_bestTime],
 				szTime, charsmax(szTime), true);
 
 			client_print_color(id, print_team_red, "%L", id, "KZ_CHAT_LOSE_RECORD", szTime);
@@ -211,13 +206,10 @@ public kz_sql_data_recv(id)
 	SQL_ThreadQuery(SQL_Tuple, "@UserNubTop_Callback", szQuery, szData, charsmax(szData));
 }
 
-@CheckRun_CallBack(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime)
-{
-	switch(QueryState)
-	{
-		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED:
-		{
-			UTIL_LogToFile(MYSQL_LOG, "ERROR", "CheckRun_CallBack", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+@findCurrentRecHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "findCurrentRecHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
 			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
@@ -230,9 +222,8 @@ public kz_sql_data_recv(id)
 	new id = str_to_num(szId);
 	new Float:fTime = str_to_float(szTime);
 
-	if(SQL_NumResults(hQuery) > 0)
-	{
-		new Float:curTime = Float:SQL_ReadResult(hQuery, 2);
+	if (SQL_NumResults(hQuery) > 0) {
+		new Float:curTime = Float:SQL_ReadResult(hQuery, 0);
 		new numTPs = SQL_ReadResult(hQuery, 5);
 
 		if((!kz_get_tp_num(id) && numTPs) || 
@@ -280,8 +271,8 @@ public kz_sql_data_recv(id)
 
 	if(SQL_NumResults(hQuery) > 0)
 	{
-		g_UserDataPro[id][ud_BestTime] = Float:SQL_ReadResult(hQuery, 2);
-		SQL_ReadResult(hQuery, 3, g_UserDataPro[id][ud_Date], 63);
+		g_UserDataPro[id][ud_bestTime] = Float:SQL_ReadResult(hQuery, 2);
+		SQL_ReadResult(hQuery, 3, g_UserDataPro[id][ud_date], 63);
 		g_UserDataPro[id][ud_hasRecord] = true;
 	}
 
@@ -312,12 +303,12 @@ public kz_sql_data_recv(id)
 
 	if(SQL_NumResults(hQuery) > 0)
 	{
-		g_UserDataNub[id][ud_BestTime] = Float:SQL_ReadResult(hQuery, 2);
-		SQL_ReadResult(hQuery, 3, g_UserDataNub[id][ud_Date], 63);
+		g_UserDataNub[id][ud_bestTime] = Float:SQL_ReadResult(hQuery, 2);
+		SQL_ReadResult(hQuery, 3, g_UserDataNub[id][ud_date], 63);
 		g_UserDataNub[id][ud_hasRecord] = true;
 
-		g_UserDataNub[id][ud_ChecksNum] = SQL_ReadResult(hQuery, 4);
-		g_UserDataNub[id][ud_TeleNum] = SQL_ReadResult(hQuery, 5);
+		g_UserDataNub[id][ud_cpCount] = SQL_ReadResult(hQuery, 4);
+		g_UserDataNub[id][ud_tpCount] = SQL_ReadResult(hQuery, 5);
 	}
 
 	g_UserDataNub[id][ud_isLoaded] = true;
@@ -336,18 +327,18 @@ public ShowBestScore(id)
 
 	if(g_UserDataPro[id][ud_hasRecord])
 	{
-		UTIL_FormatTime(g_UserDataPro[id][ud_BestTime],
+		UTIL_FormatTime(g_UserDataPro[id][ud_bestTime],
 			szTime, charsmax(szTime), true);
 
 		client_print_color(id , print_team_default, "%L", id, "KZ_CHAT_BEST_PRO", szTime);
 	}
 	else if(g_UserDataNub[id][ud_hasRecord])
 	{
-		UTIL_FormatTime(g_UserDataNub[id][ud_BestTime],
+		UTIL_FormatTime(g_UserDataNub[id][ud_bestTime],
 			szTime, charsmax(szTime), true);
 
 		client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_BEST_NUB", 
-			szTime, g_UserDataNub[id][ud_ChecksNum], g_UserDataNub[id][ud_TeleNum]);
+			szTime, g_UserDataNub[id][ud_cpCount], g_UserDataNub[id][ud_tpCount]);
 	}
 	else
 	{
@@ -884,11 +875,11 @@ public show_place_pro(id, Float:fTime)
 
 		if(iPlace <= 1)
 		{
-			ExecuteForward(g_Forwards[fwd_NewProRec], iRet, id, g_UserDataPro[id][ud_BestTime]);
+			ExecuteForward(g_Forwards[fwdNewProRecord], iRet, id, g_UserDataPro[id][ud_bestTime]);
 		}
 		else
 		{
-			ExecuteForward(g_Forwards[fwd_NewProRec], iRet, id, 0.0);
+			ExecuteForward(g_Forwards[fwdNewProRecord], iRet, id, 0.0);
 		}
 	}
 
