@@ -92,18 +92,22 @@ CREATE TABLE IF NOT EXISTS `kz_maps` (\
 \
 CREATE TABLE IF NOT EXISTS `kz_records` (\
 	`id` int(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,\
-	`uid` int(11) NOT NULL,\
-	`mapid` int(11) NOT NULL,\
+	`user_id` int(11) NOT NULL,\
+	`map_id` int(11) NOT NULL,\
 	`time` int(11) NOT NULL,\
 	`date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
 	`cp` int(11) NOT NULL DEFAULT 0,\
 	`tp` int(11) NOT NULL DEFAULT 0,\
 	`weapon` int(11) NOT NULL DEFAULT 6,\
 	`aa` int(11) NOT NULL DEFAULT 0,\
-	FOREIGN KEY (uid) REFERENCES kz_uid(id)\
+	`is_pro_record` tinyint(1) GENERATED ALWAYS AS (`tp` = 0) STORED,\
+	INDEX user_idx (`user_id`),\
+	INDEX map_idx (`map_id`),\
+	INDEX rec_idx (`map_id`, `weapon`, `aa`, `is_pro_record`),\
+	FOREIGN KEY (user_id) REFERENCES kz_uid(id)\
 		ON DELETE CASCADE \
 		ON UPDATE CASCADE,\
-	FOREIGN KEY (mapid) REFERENCES kz_maps(id)\
+	FOREIGN KEY (map_id) REFERENCES kz_maps(id)\
 		ON DELETE CASCADE \
 		ON UPDATE CASCADE \
 	) DEFAULT CHARSET utf8; \
