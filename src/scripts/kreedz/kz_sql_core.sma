@@ -7,6 +7,7 @@
 #include <kreedz_sql>
 #include <kreedz_util>
 
+#pragma dynamic 16384
 
 #define PLUGIN 	 	"[Kreedz] Sql Core"
 #define VERSION 	__DATE__
@@ -305,8 +306,6 @@ public client_putinserver(id) {
 SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';", 
 		szAuth);
 	
-	UTIL_LogToFile(MYSQL_LOG, "DEBUG", "client_putinserver", szQuery);
-	
 	// async query to get user info
 	SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, charsmax(szData));
 }
@@ -320,7 +319,13 @@ public client_disconnected(id) {
 }
 
 public kz_timer_finish_post(id, runInfo[RunStruct]) {
-	insertOrUpdateRecord(id, runInfo);
+	g_Candidates[id][run_time] = runInfo[run_time];
+	g_Candidates[id][run_cpCount] = runInfo[run_cpCount];
+	g_Candidates[id][run_tpCount] = runInfo[run_tpCount];
+	g_Candidates[id][run_weapon] = runInfo[run_weapon];
+	g_Candidates[id][run_airaccelerate] = runInfo[run_airaccelerate];
+
+	insertOrUpdateRecord(id);
 }
 
 public kz_sql_data_recv(id) {
@@ -341,13 +346,11 @@ AND `weapon` = 6 AND `aa` = 0 AND `is_pro_record` = %d;",
 	}
 }
 
-insertOrUpdateRecord(id, runInfo[RunStruct]) {
+insertOrUpdateRecord(id) {
 	new szQuery[256];
 
 	new userId = kz_sql_get_user_uid(id);
 	new mapId = kz_sql_get_map_uid();
-
-	copy(g_Candidates[id], RunStruct, runInfo);
 
 	formatex(szQuery, charsmax(szQuery), "\
 SELECT `id`, `time` FROM `kz_records` WHERE `user_id` = %d AND `map_id` = %d \
@@ -383,7 +386,7 @@ getAchievement(id) {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
 SELECT COUNT(*) FROM `kz_records` \
-WHERE `map_id` = %d AND `weapon` = %d AND `aa` = %d AND `is_pro_record` = %d` AND `time` <= %d;",
+WHERE `map_id` = %d AND `weapon` = %d AND `aa` = %d AND `is_pro_record` = %d AND `time` <= %d;",
 		mapId, g_Candidates[id][run_weapon], g_Candidates[id][run_airaccelerate], 
 		(g_Candidates[id][run_tpCount] == 0), g_Candidates[id][run_time]);
 
@@ -483,16 +486,12 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 INSERT INTO `kz_uid` (`steam_id`, `last_name`) VALUES ('%s', '%s');\
 			", szAuth, szName);
 		
-		UTIL_LogToFile(MYSQL_LOG, "DEBUG", "getUserInfoHandler", szQuery);
-
 		// async query to get user info again
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 		
 		formatex(szQuery, charsmax(szQuery), "\
 SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
 			", szAuth);
-		
-		UTIL_LogToFile(MYSQL_LOG, "DEBUG", "getUserInfoHandler", szQuery);
 		
 		// async query to get user info
 		SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, iLen);
@@ -509,8 +508,6 @@ SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
 		formatex(szQuery, charsmax(szQuery), "\
 UPDATE `kz_uid` SET `last_name` = '%s' WHERE `id` = %d;\
 			", szName, g_UserData[id]);
-		
-		UTIL_LogToFile(MYSQL_LOG, "DEBUG", "getUserInfoHandler", szQuery);
 		
 		// async query to get user info again
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
@@ -551,6 +548,7 @@ UPDATE `kz_records` SET `time` = %d, `date` = CURRENT_TIMESTAMP, \
 				g_Candidates[id][run_time], g_Candidates[id][run_cpCount],
 				g_Candidates[id][run_tpCount], runId);
 
+			UTIL_LogToFile(MYSQL_LOG, "DEBUG", "insertOrUpdateRecHandler", szQuery);
 			SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 
 			// Print map achievement
@@ -569,6 +567,7 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 			g_Candidates[id][run_cpCount], g_Candidates[id][run_tpCount],
 			g_Candidates[id][run_weapon], g_Candidates[id][run_airaccelerate]);
 
+		UTIL_LogToFile(MYSQL_LOG, "DEBUG", "insertOrUpdateRecHandler", szQuery);
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 
 		// Print map achievement
@@ -663,26 +662,26 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 		switch (place) {
 			case 1: {
 				printType = print_team_red;
-				formatex(szPlace, charsmax(szPlace), "^31");
+				formatex(szPlace, charsmax(szPlace), "^3 1");
 			}
 			case 2: {
 				printType = print_team_grey;
-				formatex(szPlace, charsmax(szPlace), "^32");
+				formatex(szPlace, charsmax(szPlace), "^3 2");
 			}
 			case 3: {
 				printType = print_team_blue;
-				formatex(szPlace, charsmax(szPlace), "^33");
+				formatex(szPlace, charsmax(szPlace), "^3 3");
 			}
 			default: {
 				printType = print_team_default;
-				formatex(szPlace, charsmax(szPlace), "^1%d", place);
+				formatex(szPlace, charsmax(szPlace), "^1 %d", place);
 			}
 		}
 
 		// Print achievement message
 		client_print_color(0, printType, 
-			"^4[KZ]^1 %s achieved %s^1 place in the %s top with %s!", 
-			szName, szTopType, szWeaponName);
+			"^4[KZ]^1 %s achieved%s^1 place in the %s top with %s!", 
+			szName, szPlace, szTopType, szWeaponName);
 
 		
 		// Call forward
