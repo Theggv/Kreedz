@@ -21,18 +21,17 @@ enum _:PosStruct {
 	Float:pos_z,
 };
 
-enum _:TimerStruct {
-	timer_RGB,
-	Float:timer_X,
-	Float:timer_Y,
-	bool:timer_isDhud,
-	timer_Type,
-	bool:timer_MS
+enum _:RunStruct {
+	Float:run_time,
+	run_cpCount,
+	run_tpCount,
+	run_weapon,
+	run_airaccelerate,
 };
 
 enum _: {
     CHANNEL_HUD = 2,
-}
+};
 
 // 
 // Core section
@@ -46,9 +45,9 @@ forward kz_timer_pause_pre(id);
 
 forward kz_timer_pause_post(id);
 
-forward kz_timer_finish_pre(id, Float:time);
+forward kz_timer_finish_pre(id, runInfo[RunStruct]);
 
-forward kz_timer_finish_post(id, Float:time);
+forward kz_timer_finish_post(id, runInfo[RunStruct]);
 
 forward kz_timer_stop_pre(id);
 
