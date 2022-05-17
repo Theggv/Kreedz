@@ -143,9 +143,9 @@ initForwards() {
 	g_Forwards[fwd_TimerPausePost] = 	CreateMultiForward("kz_timer_pause_post", ET_IGNORE, FP_CELL);
 
 	g_Forwards[fwd_TimerFinishPre] = 	
-		CreateMultiForward("kz_timer_finish_pre", ET_CONTINUE, FP_CELL, FP_FLOAT);
+		CreateMultiForward("kz_timer_finish_pre", ET_CONTINUE, FP_CELL, FP_ARRAY);
 	g_Forwards[fwd_TimerFinishPost] = 	
-		CreateMultiForward("kz_timer_finish_post", ET_IGNORE, FP_CELL, FP_FLOAT);
+		CreateMultiForward("kz_timer_finish_post", ET_IGNORE, FP_CELL, FP_ARRAY);
 
 	g_Forwards[fwd_TimerStopPre] = 		CreateMultiForward("kz_timer_stop_pre", ET_CONTINUE, FP_CELL);
 	g_Forwards[fwd_TimerStopPost] = 	CreateMultiForward("kz_timer_stop_post", ET_IGNORE, FP_CELL);
