@@ -311,6 +311,14 @@ SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';",
 	SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, charsmax(szData));
 }
 
+public client_disconnected(id) {
+	g_ProRecords[id][ud_hasRecord] = false;
+	g_ProRecords[id][ud_isLoaded] = false;
+
+	g_NubRecords[id][ud_hasRecord] = false;
+	g_NubRecords[id][ud_isLoaded] = false;
+}
+
 public kz_timer_finish_post(id, runInfo[RunStruct]) {
 	insertOrUpdateRecord(id, runInfo);
 }
