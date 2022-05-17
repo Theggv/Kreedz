@@ -54,8 +54,9 @@ public plugin_init()
 
 public client_disconnected(id)
 {
-	if(kz_get_timer_state(id) != TIMER_DISABLED)
+	if (kz_get_timer_state(id) != TIMER_DISABLED) {
 		SavePos(id);
+	}
 
 	g_UserData[id][ud_Weapon] = -1;
 }
@@ -135,11 +136,11 @@ DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 		g_UserData[id][ud_LastCP][1] = (Float:SQL_ReadResult(hQuery, 11));
 		g_UserData[id][ud_LastCP][2] = (Float:SQL_ReadResult(hQuery, 12));
 
-		g_UserData[id][ud_LastVel][0] = (Float:SQL_ReadResult(hQuery, 13));
-		g_UserData[id][ud_LastVel][1] = (Float:SQL_ReadResult(hQuery, 14));
-		g_UserData[id][ud_LastVel][2] = (Float:SQL_ReadResult(hQuery, 15));
+		g_UserData[id][ud_Weapon] = SQL_ReadResult(hQuery, 13);
 
-		g_UserData[id][ud_Weapon] = SQL_ReadResult(hQuery, 16);
+		g_UserData[id][ud_LastVel][0] = (Float:SQL_ReadResult(hQuery, 14));
+		g_UserData[id][ud_LastVel][1] = (Float:SQL_ReadResult(hQuery, 15));
+		g_UserData[id][ud_LastVel][2] = (Float:SQL_ReadResult(hQuery, 16));
 
 		g_UserData[id][ud_hasSavedRun] = true;
 
