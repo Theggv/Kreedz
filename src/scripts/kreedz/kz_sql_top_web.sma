@@ -19,13 +19,13 @@ new g_szRecordsFrontendUrl[128];
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	kz_register_cmd("top", "cmd_Top");
-	kz_register_cmd("top15", "cmd_Top");
-	kz_register_cmd("pro15", "cmd_ProTop");
-	kz_register_cmd("nub15", "cmd_NubTop");
-	kz_register_cmd("noob15", "cmd_NubTop");
-	kz_register_cmd("rec", "cmdProTop");
-	kz_register_cmd("record", "cmdProTop");
+	kz_register_cmd("top", "cmdTop");
+	kz_register_cmd("top15", "cmdTop");
+	kz_register_cmd("pro15", "cmdProTop");
+	kz_register_cmd("nub15", "cmdNubTop");
+	kz_register_cmd("noob15", "cmdNubTop");
+	kz_register_cmd("rec", "cmdProRecord");
+	kz_register_cmd("record", "cmdProRecord");
 }
 
 public plugin_cfg() {
@@ -41,7 +41,7 @@ public kz_sql_initialized() {
 	SQL_Tuple = kz_sql_get_tuple();
 }
 
-public cmd_Top(id) {
+public cmdTop(id) {
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "Top");
 	new iMenu = menu_create(szMsg, "TopMenu_Handler");
@@ -71,14 +71,14 @@ public TopMenu_Handler(id, menu, item) {
 	menu_destroy(menu);
 
 	switch (iItem) {
-		case 1: cmd_ProTop(id);
-		case 2: cmd_NubTop(id);
+		case 1: cmdProTop(id);
+		case 2: cmdNubTop(id);
 	}
 
 	return PLUGIN_HANDLED;
 }
 
-public cmd_ProTop(id) {
+public cmdProTop(id) {
 	new szMap[64], szUrl[256];
 	get_mapname(szMap, charsmax(szMap));
 
@@ -91,7 +91,7 @@ public cmd_ProTop(id) {
 }
 
 
-public cmd_NubTop(id) {
+public cmdNubTop(id) {
 	new szMap[64], szUrl[256];
 	get_mapname(szMap, charsmax(szMap));
 
@@ -116,7 +116,7 @@ public cmd_NubTop(id) {
 	return PLUGIN_HANDLED;
 }
 
-public cmdProTop(id) {
+public cmdProRecord(id) {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "\
 SELECT `last_name`, `time` FROM `kz_uid` as user INNER JOIN \
