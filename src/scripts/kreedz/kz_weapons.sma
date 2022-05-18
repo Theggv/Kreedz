@@ -21,16 +21,15 @@
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
 
-enum _:UserData
-{
+enum _:UserData {
 	ud_MinRank,
 	ud_TemporaryRank,
-}
+};
 
 new g_UserData[MAX_PLAYERS + 1][UserData];
 
-public plugin_init()
-{
+
+public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	kz_register_cmd("weapons", "cmd_Weapons");
@@ -71,8 +70,7 @@ public plugin_precache() {
 */
 
 
-public plugin_natives()
-{
+public plugin_natives() {
 	register_native("kz_get_min_rank", "native_get_min_rank");
 	register_native("kz_set_min_rank", "native_set_min_rank");
 	register_native("kz_get_weapon_name", "native_get_weapon_name");
@@ -128,41 +126,35 @@ public native_get_usp(pluginId, argc) {
 */
 
 
-public cmd_Weapons(id)
-{
+public cmd_Weapons(id) {
 	give_user_item(id, "weapon_awp", 10);
 	give_user_item(id, "weapon_m249", 10);
 	give_user_item(id, "weapon_m4a1", 10);
 	give_user_item(id, "weapon_sg552", 10);
 	give_user_item(id, "weapon_famas", 10);
 	give_user_item(id, "weapon_p90", 10);
-	give_user_item(id, "weapon_usp", 12, GT_REPLACE);
+	give_user_item(id, "weapon_usp", 10, GT_REPLACE);
 	give_user_item(id, "weapon_scout", 10);
 
 	return PLUGIN_HANDLED;
 }
 
-public cmd_Scout(id)
-{
+public cmd_Scout(id) {
 	give_user_item(id, "weapon_scout", 10, GT_REPLACE);
-
 	return PLUGIN_HANDLED;
 }
 
-public cmd_Usp(id)
-{
+public cmd_Usp(id) {
 	kz_get_usp(id);
 	return PLUGIN_HANDLED;
 }
 
-public cmd_AWP(id)
-{
+public cmd_AWP(id) {
 	give_user_item(id, "weapon_awp", 2, GT_REPLACE);
 	return PLUGIN_HANDLED;
 }
 
-public cmd_M4A1(id)
-{
+public cmd_M4A1(id) {
 	give_user_item(id, "weapon_m4a1", 10, GT_REPLACE);
 	return PLUGIN_HANDLED;
 }
@@ -221,28 +213,7 @@ public ham_Spawn_Post(id) {
 	}
 }
 
-// deprecated
-public ham_Silent_Shoot(iEnt)
-{
-	if(!is_entity(iEnt))
-		return HAM_IGNORED;
-
-	cs_set_weapon_silen(iEnt, 1, 0);
-
-	new id = get_member(iEnt, m_pPlayer);
-
-	if (id < 1 || id > MaxClients || !is_user_alive(id))
-		return HAM_IGNORED;
-
-	new iItem = get_user_weapon(id);
-
-	cs_set_user_bpammo(id, iItem, 10);
-
-	return HAM_IGNORED;
-}
-
-public ham_Other_Shoot(iEnt)
-{
+public ham_Other_Shoot(iEnt) {
 	if (!is_entity(iEnt))
 		return HAM_IGNORED;
 	
@@ -277,48 +248,42 @@ public ham_Jump_Post(id) {
 */
 
 
-public wpn_rank_to_name(szWeapon[], iLen, iRank)
-{
-	switch(iRank)
-	{
-		case 0: formatex(szWeapon, iLen, "AWP");
-		case 1: formatex(szWeapon, iLen, "M249");
-		case 2: formatex(szWeapon, iLen, "M4A1");
-		case 3: formatex(szWeapon, iLen, "SG552");
-		case 4: formatex(szWeapon, iLen, "Famas");
-		case 5: formatex(szWeapon, iLen, "P90");
-		case 6: formatex(szWeapon, iLen, "USP");
-		case 7: formatex(szWeapon, iLen, "Scout");
+public wpn_rank_to_name(szWeapon[], iLen, iRank) {
+	switch (iRank) {
+		case WPN_AWP: formatex(szWeapon, iLen, "AWP");
+		case WPN_M249: formatex(szWeapon, iLen, "M249");
+		case WPN_M4A1: formatex(szWeapon, iLen, "M4A1");
+		case WPN_SG552: formatex(szWeapon, iLen, "SG552");
+		case WPN_FAMAS: formatex(szWeapon, iLen, "Famas");
+		case WPN_P90: formatex(szWeapon, iLen, "P90");
+		case WPN_USP: formatex(szWeapon, iLen, "USP");
+		case WPN_SCOUT: formatex(szWeapon, iLen, "Scout");
 	}
 }
 
-public get_min_rank(id)
-{
+public get_min_rank(id) {
 	new iMaxSpeed = floatround(Float:get_entvar(id, var_maxspeed));
 
-	switch(iMaxSpeed)
-	{
-		case 210: return 0;
-		case 220: return 1;
-		case 230: return 2;
-		case 235: return 3;
-		case 240: return 4;
-		case 245: return 5;
-		case 250: return 6;
-		case 260: return 7;
+	switch (iMaxSpeed) {
+		case 210: return WPN_AWP;
+		case 220: return WPN_M249;
+		case 230: return WPN_M4A1;
+		case 235: return WPN_SG552;
+		case 240: return WPN_FAMAS;
+		case 245: return WPN_P90;
+		case 250: return WPN_USP;
+		case 260: return WPN_SCOUT;
 	}
 
 	return -1;
 }
 
-stock give_user_item(id, const szWeapon[], numBullets, GiveType:giveType = GT_APPEND)
-{
+stock give_user_item(id, const szWeapon[], numBullets, GiveType:giveType = GT_APPEND) {
 	if (!is_user_alive(id)) return;
 
 	new iWeapon = rg_give_item(id, szWeapon, giveType);
 
-	if (!is_nullent(iWeapon) && iWeapon != -1)
-	{
+	if (!is_nullent(iWeapon) && iWeapon != -1) {
 		rg_set_iteminfo(iWeapon, ItemInfo_iMaxClip, numBullets);
 		rg_set_user_ammo(id, rg_get_weapon_info(szWeapon, WI_ID), numBullets);		
 	}

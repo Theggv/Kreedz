@@ -33,6 +33,17 @@ enum _: {
     CHANNEL_HUD = 2,
 };
 
+enum _:WeaponsEnum {
+	WPN_AWP = 0,
+    WPN_M249 = 1,
+    WPN_M4A1 = 2,
+    WPN_SG552 = 3,
+    WPN_FAMAS = 4,
+    WPN_P90 = 5,
+    WPN_USP = 6,
+    WPN_SCOUT = 7,
+};
+
 // 
 // Core section
 // 
