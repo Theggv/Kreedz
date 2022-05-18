@@ -1,11 +1,11 @@
 #include <amxmodx>
-#include <curl>
+#include <easy_http>
 
 #include <kreedz_api>
 #include <kreedz_util>
 
 #define PLUGIN 	"[Kreedz] Records"
-#define VERSION "1.0"
+#define VERSION "1.1"
 #define AUTHOR 	"ggv"
 
 enum _:SourceStruct {
@@ -26,7 +26,6 @@ enum _:RecordsStruct {
 new Array:ga_Records;
 
 new g_szWorkDir[256];
-new g_hDlFile;
 new g_szMapName[64];
 
 public plugin_init( )
@@ -56,26 +55,26 @@ public plugin_cfg( )
 		fnParseInfo(i);
 	}
 
-	// new temp[256];
-	// format( temp, 255, "%s/last_update.ini", g_szWorkDir );
+	new temp[256];
+	format( temp, 255, "%s/last_update.ini", g_szWorkDir );
 	
-	// if( !file_exists( temp ) )
-	// {
-	// 	fnUpdate( );
-	// 	return PLUGIN_CONTINUE;
-	// }
+	if( !file_exists( temp ) )
+	{
+		fnUpdate( );
+		return PLUGIN_CONTINUE;
+	}
 	
-	// new year, month, day;
-	// date( year, month, day );
+	new year, month, day;
+	date( year, month, day );
 	
-	// new f = fopen( temp, "rt" );
-	// fgets( f, temp, 255 );
-	// fclose( f );
+	new f = fopen( temp, "rt" );
+	fgets( f, temp, 255 );
+	fclose( f );
 	
-	// if( str_to_num( temp[0] ) > year || str_to_num( temp[5] ) > month || str_to_num( temp[8] ) > day ) {
-	// 	fnUpdate( );
-	// 	return PLUGIN_CONTINUE;
-	// }
+	if( str_to_num( temp[0] ) > year || str_to_num( temp[5] ) > month || str_to_num( temp[8] ) > day ) {
+		fnUpdate( );
+		return PLUGIN_CONTINUE;
+	}
 	
 	return PLUGIN_CONTINUE;
 }
@@ -112,53 +111,36 @@ public fnDownload(sourceIndex) {
 	new source[SourceStruct];
 	ArrayGetArray(ga_Sources, sourceIndex, source);
 
-	new CURL:hCurl;
+	delete_file(source[RecordsFile]);
 
-	if ((hCurl = curl_easy_init())) {
-		// Setup file
-		delete_file(source[RecordsFile]);
-		g_hDlFile = fopen(source[RecordsFile], "wb");
+	new EzHttpOptions:ezhttpOpt = ezhttp_create_options();
 
-		// Setup curl
+	new szData[1];
+	szData[0] = sourceIndex;
+	ezhttp_option_set_user_data(ezhttpOpt, szData, sizeof szData);
 
-		curl_easy_setopt(hCurl, CURLOPT_BUFFERSIZE, 512);
-		curl_easy_setopt(hCurl, CURLOPT_URL, source[Link]);
-		curl_easy_setopt(hCurl, CURLOPT_FAILONERROR, 1);
-
-		curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
-		curl_easy_setopt(hCurl, CURLOPT_CAINFO, "cstrike/addons/amxmodx/data/cert/cacert.pem");
-
-		new szData[1];
-		szData[0] = sourceIndex;
-
-		curl_easy_setopt(hCurl, CURLOPT_WRITEFUNCTION, "@fnDownloadWriteCallback");
-
-		curl_easy_perform(hCurl, "@fnDownloadOnFinishCallback", szData, sizeof(szData));
-	}
+	ezhttp_get(source[Link], "@fnDownloadOnFinishCallback", ezhttpOpt);
 }
 
-@fnDownloadOnFinishCallback(const CURL:hCurl, const CURLcode:iCode, const data[]) {
-	new iResponceCode;
-	curl_easy_getinfo(hCurl, CURLINFO_RESPONSE_CODE, iResponceCode); 
+@fnDownloadOnFinishCallback(EzHttpRequest:request_id) {
+	new szData[1];
+	ezhttp_get_user_data(request_id, szData);
 
-	if (iCode != CURLE_OK) {
-		server_print("[Error] http code: %d", iResponceCode);
+	new sourceIndex = szData[0];
+
+	if (ezhttp_get_error_code(request_id) != EZH_OK) {
+        new error[64];
+        ezhttp_get_error_message(request_id, error, charsmax(error));
+        server_print("Response error: %s", error);
+    }
+	else {
+		new source[SourceStruct];
+		ArrayGetArray(ga_Sources, sourceIndex, source);
+
+		ezhttp_save_data_to_file(request_id, source[RecordsFile]);
 	}
 
-	curl_easy_cleanup(hCurl);
-	fclose(g_hDlFile);
-
-	new idx = str_to_num(data);
-
-	OnSourceUpdated(idx);
-}
-
-@fnDownloadWriteCallback(const data[], const size, const nmemb) {
-	new real_size = size * nmemb;
-
-	fwrite_blocks(g_hDlFile, data, real_size, BLOCK_CHAR);
-
-	return real_size;
+	OnSourceUpdated(sourceIndex);
 }
 
 public OnSourceUpdated(sourceIndex) {
