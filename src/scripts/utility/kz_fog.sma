@@ -16,10 +16,15 @@ enum OptionsEnum {
 
 new g_Options[OptionsEnum];
 
-new bool:g_isFogEnabled[MAX_PLAYERS + 1];
-new g_fogCounter[MAX_PLAYERS + 1];
+enum _:UserDataStruct {
+	bool:ud_isFogEnabled,
+	ud_fogCounter,
+	ud_flags,
+	Float:ud_prevTime,
+};
 
-new g_entFlags[MAX_PLAYERS + 1];
+new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
+
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -37,47 +42,57 @@ public bindOptions() {
 
 public OnCellValueChanged(id, optionId, newValue) {
 	if (optionId == g_Options[optBoolFog]) {
-		g_isFogEnabled[id] = !!newValue;
+		g_UserData[id][ud_isFogEnabled] = !!newValue;
 	}
 }
 
 public cmdFog(id) {
-	g_isFogEnabled[id] = !g_isFogEnabled[id];
+	g_UserData[id][ud_isFogEnabled] = !g_UserData[id][ud_isFogEnabled];
 
-	if (g_isFogEnabled[id]) {
+	if (g_UserData[id][ud_isFogEnabled]) {
 		client_print_color(id, print_team_default, "^4[KZ] ^1Fog enabled.");
 	} else {
 		client_print_color(id, print_team_default, "^4[KZ] ^1Fog disabled.");
 	}
 
-	set_option_cell(id, g_Options[optBoolFog], g_isFogEnabled[id]);
+	set_option_cell(id, g_Options[optBoolFog], g_UserData[id][ud_isFogEnabled]);
 
 	return PLUGIN_HANDLED;
 }
 
 public OnPlayerPreThink(id) {
-	if (!g_isFogEnabled[id] || !is_user_alive(id)) {
+	if (!g_UserData[id][ud_isFogEnabled] || !is_user_alive(id)) {
 		return;
 	}
 
-	g_entFlags[id] = pev(id, pev_flags);
+	g_UserData[id][ud_flags] = pev(id, pev_flags);
 
-	if (g_entFlags[id] & FL_ONGROUND) {
-		if (g_fogCounter[id] <= 10)
-			g_fogCounter[id]++;
+	if (g_UserData[id][ud_flags] & FL_ONGROUND) {
+		if (g_UserData[id][ud_fogCounter] <= 10)
+			g_UserData[id][ud_fogCounter]++;
 	}
 	else {
 		if (isUserSurfing(id)) {
-			g_fogCounter[id] = 0;
+			g_UserData[id][ud_fogCounter] = 0;
 			return;
 		}
 
-		if (g_fogCounter[id] > 0 && g_fogCounter[id] < 10) {
+		if (g_UserData[id][ud_fogCounter] > 0 && g_UserData[id][ud_fogCounter] < 10) {
+			if (get_gametime() - g_UserData[id][ud_prevTime] <= 0.3) {
+				// prevent fog spam on mcj
+				g_UserData[id][ud_prevTime] = get_gametime();
+				g_UserData[id][ud_fogCounter] = 0;
+
+				return;
+			}
+
 			set_dhudmessage(255, 255, 255, -1.0, 0.75, 0, 0.0, 0.5, 0.05, 0.05);
-			show_dhudmessage(id, "fog: %d", g_fogCounter[id]);
+			show_dhudmessage(id, "fog: %d", g_UserData[id][ud_fogCounter]);
+
+			g_UserData[id][ud_prevTime] = get_gametime();
 		}
 
-		g_fogCounter[id] = 0;
+		g_UserData[id][ud_fogCounter] = 0;
 	}
 }
 
@@ -91,7 +106,9 @@ stock bool:isUserSurfing(id) {
 
 	static Float:flFraction;
 
-	engfunc(EngFunc_TraceHull, origin, dest, 0, g_entFlags[id] & FL_DUCKING ? HULL_HEAD : HULL_HUMAN, id, 0);
+	engfunc(EngFunc_TraceHull, origin, dest, 0, 
+		g_UserData[id][ud_flags] & FL_DUCKING ? HULL_HEAD : HULL_HUMAN, id, 0);
+
 	get_tr2(0, TR_flFraction, flFraction);
 
 	if (flFraction >= 1.0) return false;
