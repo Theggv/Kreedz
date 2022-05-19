@@ -19,8 +19,7 @@ enum _:eForward {
 
 new g_Forwards[eForward];
 
-public plugin_init()
-{
+public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
 	kz_register_cmd("spec", "cmd_Spec");
@@ -34,15 +33,13 @@ InitForwards() {
 	g_Forwards[fwd_SpecPost] = CreateMultiForward("kz_spectator_post", ET_IGNORE, FP_CELL);
 }
  
-public client_kill(id)
-{
+public client_kill(id) {
 	cmd_Spec(id);
 	
 	return PLUGIN_HANDLED;
 }
 
-public client_command(id)
-{
+public client_command(id) {
 	static szCommand[256];
 	read_args(szCommand, charsmax(szCommand));
 
@@ -50,8 +47,7 @@ public client_command(id)
 
 	// client_print(id, print_chat, szCommand);
 
-	if(equal(szCommand, "/spec ", 6))
-	{
+	if (equal(szCommand, "/spec ", 6)) {
 		amxclient_cmd(id, "spec", szCommand[6]);
 
 		return PLUGIN_HANDLED;
@@ -60,22 +56,18 @@ public client_command(id)
 	return PLUGIN_CONTINUE;
 }
 
-public cmd_Spec(id)
-{
+public cmd_Spec(id) {
 	new iRet;
 	ExecuteForward(g_Forwards[fwd_SpecPre], iRet, id);
 
-	if(iRet == KZ_SUPERCEDE) return PLUGIN_HANDLED;
+	if (iRet == KZ_SUPERCEDE) return PLUGIN_HANDLED;
 	
-	if(cs_get_user_team(id) == CS_TEAM_CT)
-	{
-		if(kz_get_timer_state(id) == TIMER_ENABLED)
-		{
+	if (cs_get_user_team(id) == CS_TEAM_CT) {
+		if (kz_get_timer_state(id) == TIMER_ENABLED) {
 			kz_set_pause(id);
 		}
 
-		if(read_argc() > 0)
-		{
+		if (read_argc() > 0) {
 			new szName[MAX_NAME_LENGTH];
 			read_argv(1, szName, charsmax(szName));
 
@@ -96,8 +88,7 @@ public cmd_Spec(id)
 		set_entvar(id, var_deadflag, DEAD_DEAD);
 		
 	}
-	else
-	{
+	else {
 		cs_set_user_team(id, CS_TEAM_CT);
 
 		set_entvar(id, var_effects, 0);
