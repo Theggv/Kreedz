@@ -57,6 +57,10 @@ public client_command(id) {
 }
 
 public cmd_Spec(id) {
+	if (!is_user_connected(id)) {
+		return PLUGIN_HANDLED;
+	}
+
 	new iRet;
 	ExecuteForward(g_Forwards[fwd_SpecPre], iRet, id);
 
