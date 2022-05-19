@@ -1,6 +1,6 @@
 #include <amxmodx>
+#include <fakemeta>
 #include <hamsandwich>
-#include <reapi>
 
 #include <kreedz_api>
 #include <kreedz_util>
@@ -18,6 +18,8 @@ new g_Options[OptionsEnum];
 
 new bool:g_isFogEnabled[MAX_PLAYERS + 1];
 new g_fogCounter[MAX_PLAYERS + 1];
+
+new g_entFlags[MAX_PLAYERS + 1];
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -58,12 +60,19 @@ public OnPlayerPreThink(id) {
 		return;
 	}
 
-	if (get_entvar(id, var_flags) & FL_ONGROUND) {
+	g_entFlags[id] = pev(id, pev_flags);
+
+	if (g_entFlags[id] & FL_ONGROUND) {
 		if (g_fogCounter[id] <= 10)
 			g_fogCounter[id]++;
 	}
 	else {
-		if (g_fogCounter[id] && g_fogCounter[id] < 10) {
+		if (isUserSurfing(id)) {
+			g_fogCounter[id] = 0;
+			return;
+		}
+
+		if (g_fogCounter[id] > 0 && g_fogCounter[id] < 10) {
 			set_dhudmessage(255, 255, 255, -1.0, 0.75, 0, 0.0, 0.5, 0.05, 0.05);
 			show_dhudmessage(id, "fog: %d", g_fogCounter[id]);
 		}
@@ -71,3 +80,23 @@ public OnPlayerPreThink(id) {
 		g_fogCounter[id] = 0;
 	}
 }
+
+stock bool:isUserSurfing(id) {
+	static Float:origin[3], Float:dest[3];
+	pev(id, pev_origin, origin);
+	
+	dest[0] = origin[0];
+	dest[1] = origin[1];
+	dest[2] = origin[2] - 1.0;
+
+	static Float:flFraction;
+
+	engfunc(EngFunc_TraceHull, origin, dest, 0, g_entFlags[id] & FL_DUCKING ? HULL_HEAD : HULL_HUMAN, id, 0);
+	get_tr2(0, TR_flFraction, flFraction);
+
+	if (flFraction >= 1.0) return false;
+	
+	get_tr2(0, TR_vecPlaneNormal, dest);
+
+	return dest[2] <= 0.7;
+} 
