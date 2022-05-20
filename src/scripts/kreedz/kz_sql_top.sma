@@ -307,6 +307,7 @@ ON user.id = rec.user_id;",
 		client_print_color(id, print_team_red, "^4[KZ] ^1Pro record: ^3No data^1.");
 	}
 
+	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 
@@ -316,7 +317,6 @@ ON user.id = rec.user_id;",
 	switch (QueryState) {
 		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
 			UTIL_LogToFile(MYSQL_LOG, "ERROR", "dummyHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
-			return PLUGIN_HANDLED;
 		}
 	}
 

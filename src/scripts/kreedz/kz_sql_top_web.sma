@@ -42,6 +42,10 @@ public kz_sql_initialized() {
 }
 
 public cmdTop(id) {
+	if (!is_user_connected(id)) {
+		return PLUGIN_HANDLED;
+	}
+
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "Top");
 	new iMenu = menu_create(szMsg, "TopMenu_Handler");
@@ -159,6 +163,7 @@ ON user.id = rec.user_id;",
 		client_print_color(id, print_team_red, "^4[KZ] ^1Pro record: ^3No data^1.");
 	}
 
+	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 
