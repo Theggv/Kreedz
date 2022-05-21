@@ -1,0 +1,9 @@
+[en]
+RECORDS_FMT = ^n   %s (%s)
+RECORDS_FMT_EXTENSION = ^n   [%s] %s (%s)
+RECORDS_FMT_NOT_AVAILABLE = ^n   N/A (**:**)
+
+[ru]
+RECORDS_FMT = ^n   %s (%s)
+RECORDS_FMT_EXTENSION = ^n   [%s] %s (%s)
+RECORDS_FMT_NOT_AVAILABLE = ^n   Н/Д (**:**)
