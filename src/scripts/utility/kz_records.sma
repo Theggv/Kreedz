@@ -2,6 +2,7 @@
 #include <easy_http>
 
 #include <kreedz_api>
+#include <kreedz_records>
 #include <kreedz_util>
 
 #define PLUGIN 	"[Kreedz] Records"
@@ -17,12 +18,6 @@ enum _:SourceStruct {
 };
 
 new Array:ga_Sources;
-
-enum _:RecordsStruct {
-	RecordsTitle[64],
-	RecordsList[512],
-};
-
 new Array:ga_Records;
 
 new g_szWorkDir[256];
@@ -77,6 +72,14 @@ public plugin_cfg( )
 	}
 	
 	return PLUGIN_CONTINUE;
+}
+
+public plugin_natives() {
+	register_native("kz_records_get_array", "native_get_array", 1);
+}
+
+public Array:native_get_array() {
+	return ga_Records;
 }
 
 public cmd_WorldRecord(id) {
@@ -258,8 +261,9 @@ public fnParseInfo(sourceIndex) {
 
 		if (!equal(szMap, g_szMapName)) continue;
 
-		new szFormattedTime[32];
-		UTIL_FormatTime(str_to_float(szTime), szFormattedTime, 31, true);
+		new szFormattedTime[32], Float:fTime;
+		fTime = str_to_float(szTime);
+		UTIL_FormatTime(fTime, szFormattedTime, 31, true);
 
 		if (equal(szExtension, "")) {
 			iLen += formatex(szRecords[iLen], charsmax(szRecords) - iLen, 
@@ -268,6 +272,10 @@ public fnParseInfo(sourceIndex) {
 			iLen += formatex(szRecords[iLen], charsmax(szRecords) - iLen, 
 				"^n   [%s] %s (%s) ", szExtension, szAuthor, szFormattedTime);
 		}
+
+		copy(recordsInfo[RecordsAuthor], charsmax(recordsInfo[RecordsAuthor]), szAuthor);
+		recordsInfo[RecordsTime] = fTime;
+		copy(recordsInfo[RecordsExtension], charsmax(recordsInfo[RecordsExtension]), szExtension);
 	}
 
 	if(equal(szRecords, "")) {
