@@ -26,8 +26,11 @@ new g_szMapName[64];
 public plugin_init( )
 {
 	register_plugin( PLUGIN, VERSION, AUTHOR );
+
 	kz_register_cmd("wr", "cmd_WorldRecord");
 	kz_register_cmd("ru", "cmd_WorldRecord");
+
+	register_dictionary("kz_records.txt");
 }
 
 public plugin_cfg( )
@@ -88,12 +91,32 @@ public cmd_WorldRecord(id) {
 	iLen = formatex(szText, charsmax(szText), "%s^n", g_szMapName);
 
 	new recordsInfo[RecordsStruct];
+	new szFormattedTime[32];
 
 	for (new i = 0; i < ArraySize(ga_Records); ++i) {
 		ArrayGetArray(ga_Records, i, recordsInfo);
 
-		iLen += formatex(szText[iLen], charsmax(szText) - iLen, "^n%s %s", 
-			recordsInfo[RecordsTitle], recordsInfo[RecordsList]);
+		iLen += formatex(szText[iLen], charsmax(szText) - iLen,
+			"^n%s", recordsInfo[RecordsTitle]);
+
+		if (!recordsInfo[RecordsTime]) {
+			iLen += formatex(szText[iLen], charsmax(szText) - iLen,
+				"%L", id, "RECORDS_FMT_NOT_AVAILABLE");
+			continue;
+		}
+
+		UTIL_FormatTime(recordsInfo[RecordsTime], szFormattedTime,
+			charsmax(szFormattedTime), true);
+
+		if (equal(recordsInfo[RecordsExtension], "")) {
+			iLen += formatex(szText[iLen], charsmax(szText) - iLen,
+				"%L", id, "RECORDS_FMT",
+				recordsInfo[RecordsAuthor], szFormattedTime);
+		} else {
+			iLen += formatex(szText[iLen], charsmax(szText) - iLen,
+				"%L", id, "RECORDS_FMT_EXTENSION",
+				recordsInfo[RecordsExtension], recordsInfo[RecordsAuthor], szFormattedTime);
+		}
 	}
 
 	set_hudmessage(255, 0, 255, 0.01, 0.2, _, _, 3.0, _, _, 4);
@@ -249,7 +272,6 @@ public fnParseInfo(sourceIndex) {
 	new recordsInfo[RecordsStruct];
 
 	formatex(recordsInfo[RecordsTitle], charsmax(recordsInfo[RecordsTitle]), "%s:", source[Title]);
-	new szRecords[512], iLen = 0;
 
 	while (!feof(hFile)) {
 		fgets(hFile, szData, charsmax(szData));
@@ -261,28 +283,11 @@ public fnParseInfo(sourceIndex) {
 
 		if (!equal(szMap, g_szMapName)) continue;
 
-		new szFormattedTime[32], Float:fTime;
-		fTime = str_to_float(szTime);
-		UTIL_FormatTime(fTime, szFormattedTime, 31, true);
-
-		if (equal(szExtension, "")) {
-			iLen += formatex(szRecords[iLen], charsmax(szRecords) - iLen, 
-				"^n   %s (%s) ", szAuthor, szFormattedTime);
-		} else {
-			iLen += formatex(szRecords[iLen], charsmax(szRecords) - iLen, 
-				"^n   [%s] %s (%s) ", szExtension, szAuthor, szFormattedTime);
-		}
-
 		copy(recordsInfo[RecordsAuthor], charsmax(recordsInfo[RecordsAuthor]), szAuthor);
-		recordsInfo[RecordsTime] = fTime;
+		recordsInfo[RecordsTime] = str_to_float(szTime);
 		copy(recordsInfo[RecordsExtension], charsmax(recordsInfo[RecordsExtension]), szExtension);
 	}
 
-	if(equal(szRecords, "")) {
-		szRecords = "^n   N/A (**:**)";
-	}
-
-	copy(recordsInfo[RecordsList], charsmax(recordsInfo[RecordsList]), szRecords);
 	ArrayPushArray(ga_Records, recordsInfo);
 }
 
