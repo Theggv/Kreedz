@@ -20,6 +20,8 @@
 #include <uq_jumpstats_stocks.inc>
 #include <celltrie>
 // #include <dhudmessage>
+#include <kreedz_api>
+#include <settings_api>
 
 #define VERSION "2.42"
 #pragma semicolon 1
@@ -144,6 +146,14 @@ new sql_Cvars[SQLCVARSNUM][] = { //cvars for db
 new Trie:JumpPlayers;
 
 new const KZ_CVARSDIR[] = "config.cfg";
+
+enum OptionsEnum {
+    optIntJumpStats,
+};
+
+new g_Options[OptionsEnum];
+new g_OptionFlags[MAX_PLAYERS + 1];
+
 
 public plugin_init()
 {
@@ -374,8 +384,6 @@ public plugin_init()
 	register_clcmd("say /uqbeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /beam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say beam",     "cmdljbeam",         ADMIN_ALL);
-	register_clcmd("say /nazibeam",     "cmdljbeam",         ADMIN_ALL);
-	register_clcmd("say nazibeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /ljbeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /speed",     "show_speed",         ADMIN_ALL);
 	register_clcmd("say speed",     "show_speed",         ADMIN_ALL);
@@ -467,7 +475,7 @@ public plugin_init()
 	get_localinfo("amxx_logs", logs, 63);
 	formatex(logs_path, 127, "%s\uq_jumpstats.txt", logs);
 	
-	
+	bindOptions();
 }
 
 public plugin_natives()
@@ -823,7 +831,7 @@ stock kz_make_cvarexec(const config[])
 	
 	fprintf(f, "// Admin command^n");
 	fprintf(f, "^n");
-	fprintf(f, "// amx_reset_uqtops ù reset all tops^n");
+	fprintf(f, "// amx_reset_uqtops ÔøΩ reset all tops^n");
 	fprintf(f, "^n");
 	
 	fprintf(f, "// Cvars^n");
@@ -8175,12 +8183,14 @@ public cmdColorChat(id)
 		gHasColorChat[id] = true;
 		
 		Color_Chat_Lang(id,GREEN,"%L",LANG_SERVER,"UQSTATS_COLORCHAT_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagHasColorChat);
 	}
 	else 
 	{
 		gHasColorChat[id] = false;
 		
 		Color_Chat_Lang(id,GREEN,"%L",LANG_SERVER,"UQSTATS_COLORCHAT_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagHasColorChat);
 	}
 	
 	return PLUGIN_CONTINUE;
@@ -8191,6 +8201,7 @@ public cmdljStats( id ) {
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_LJSTATS_D", prefix);
 		g_lj_stats[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagLjStats);
 		
 		if(showpre[id]==true)
 		{
@@ -8227,8 +8238,9 @@ public cmdljStats( id ) {
 		}
 		g_lj_stats[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_LJSTATS_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagLjStats);
 	}
-	
+
 }
 
 
@@ -8249,11 +8261,13 @@ public pre_stats(id)
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_PRESTATS_D", prefix);
 		kz_stats_pre[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagStatsPre);
 	}
 	else 
 	{
 		kz_stats_pre[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_PRESTATS_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagStatsPre);
 	}
 }
 public streif_stats(id)
@@ -8262,11 +8276,13 @@ public streif_stats(id)
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_STRAFESTATS_D", prefix);
 		streifstat[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagStrafeStats);
 	}
 	else 
 	{
 		streifstat[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_STRAFESTATS_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagStrafeStats);
 	}
 }
 public cmdljbeam(id)
@@ -8281,11 +8297,13 @@ public cmdljbeam(id)
 		{
 			Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_BEAMSTATS_D", prefix);
 			kz_beam[id]=false;
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagBeam);
 		}
 		else 
 		{
 			kz_beam[id]=true;
 			Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_BEAMSTATS_E", prefix);
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagBeam);
 		}
 	}
 
@@ -8297,11 +8315,13 @@ public show_pre(id)
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_SHOWPRE_D", prefix);
 		showpre[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowPre);
 	}
 	else 
 	{
 		showpre[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_SHOWPRE_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowPre);
 	}
 }
 public show_speed(id)
@@ -8346,12 +8366,14 @@ public show_speed(id)
 			{
 				Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_SPEED_E", prefix);
 				speedon[id]=true;
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowSpeed);
 				
 				set_task(0.1, "DoSpeed", id+212299, "", 0, "b", 0);
 			}
 			else 
 			{
 				speedon[id]=false;
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowSpeed);
 				
 				if( task_exists(id+212299, 0) )
 					remove_task(id+212299, 0);
@@ -8437,10 +8459,12 @@ public show_jheight(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_JHEIGH_E", prefix);
 		jheight_show[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagJumpHeight);
 	}
 	else 
 	{
 		jheight_show[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagJumpHeight);
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_JHEIGH_D", prefix);
 	}
 }
@@ -8450,11 +8474,13 @@ public show_jof(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_JOF_E", prefix);
 		showjofon[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagJumpOff);
 	}
 	else 
 	{
 		showjofon[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_JOF_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagJumpOff);
 	}
 }
 public show_early(id)
@@ -8463,11 +8489,13 @@ public show_early(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_BHOPWARN_E", prefix);
 		failearly[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagFailEarly);
 	}
 	else 
 	{
 		failearly[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_BHOPWARN_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagFailEarly);
 	}
 }
 public multi_bhop(id)
@@ -8476,11 +8504,13 @@ public multi_bhop(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_MULTIBHOP_E", prefix);
 		multibhoppre[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagMultiBhopPre);
 	}
 	else 
 	{
 		multibhoppre[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_MULTIBHOP_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagMultiBhopPre);
 	}
 }
 public duck_show(id)
@@ -8489,11 +8519,13 @@ public duck_show(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_DUCKSPRE_E", prefix);
 		showduck[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowDuck);
 	}
 	else 
 	{
 		showduck[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_DUCKSPRE_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowDuck);
 	}
 }
 public lj_show(id)
@@ -8502,11 +8534,13 @@ public lj_show(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_LJPRE_E", prefix);
 		ljpre[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagLjPre);
 	}
 	else 
 	{
 		ljpre[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_LJPRE_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagLjPre);
 	}
 }
 public enable_sounds(id)
@@ -8517,11 +8551,13 @@ public enable_sounds(id)
 		{
 			Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_SOUND_E", prefix);
 			enable_sound[id]=true;
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagEnableSounds);
 		}
 		else 
 		{
 			enable_sound[id]=false;
 			Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_SOUND_D", prefix);
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagEnableSounds);
 		}
 	}
 	else Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_SOUND_D1", prefix);
@@ -8532,11 +8568,13 @@ public ShowedgeFail(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_EDGEF_E", prefix);
 		Show_edge_Fail[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowEdgeFail);
 	}
 	else 
 	{
 		Show_edge_Fail[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_EDGEF_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowEdgeFail);
 	}
 }
 public Showedge(id)
@@ -8545,11 +8583,13 @@ public Showedge(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_EDGE_E", prefix);
 		Show_edge[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowEdge);
 	}
 	else 
 	{
 		Show_edge[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_EDGE_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowEdge);
 	}
 }
 public heightshow(id)
@@ -8579,11 +8619,13 @@ public ingame_st_stats(id)
 			{
 				Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_ISTRAFE_E", prefix);
 				ingame_strafe[id]=true;
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagIngameStrafes);
 			}
 			else 
 			{
 				ingame_strafe[id]=false;
 				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_ISTRAFE_D", prefix);
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagIngameStrafes);
 			}
 		}
 	}
@@ -9367,3 +9409,40 @@ public plugin_end()
 	}
 }
 
+/**
+*	------------------------------------------------------------------
+*	Options
+*	------------------------------------------------------------------
+*/
+
+bindOptions() {
+	g_Options[optIntJumpStats] = find_option_by_name("jump_stats");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optIntJumpStats]) {
+		g_OptionFlags[id] = newValue;
+
+		gHasColorChat[id] =	!!(newValue & flagHasColorChat);
+		g_lj_stats[id] = 	!!(newValue & flagLjStats);
+		speedon[id]= 		!!(newValue & flagShowSpeed);
+		showpre[id]=		!!(newValue & flagShowPre);
+		streifstat[id]=		!!(newValue & flagStrafeStats);
+		kz_beam[id]=		!!(newValue & flagBeam);
+		kz_stats_pre[id]=	!!(newValue & flagStatsPre);
+		failearly[id]=		!!(newValue & flagFailEarly);
+		multibhoppre[id]=	!!(newValue & flagMultiBhopPre);
+		showduck[id]=		!!(newValue & flagShowDuck);
+		ljpre[id]=			!!(newValue & flagLjPre);
+		Show_edge[id]=		!!(newValue & flagShowEdge);
+		Show_edge_Fail[id]=	!!(newValue & flagShowEdgeFail);
+		enable_sound[id]=	!!(newValue & flagEnableSounds);
+		ingame_strafe[id]=	!!(newValue & flagIngameStrafes);
+		showjofon[id]=		!!(newValue & flagJumpOff);
+		jheight_show[id]=	!!(newValue & flagJumpHeight);
+
+		if (speedon[id]) {
+			set_task(0.1, "DoSpeed", id+212299, "", 0, "b", 0);
+		}
+	}
+}

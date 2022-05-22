@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <hamsandwich>
 
+#include <kreedz_api>
 #include <kreedz_util>
 #include <settings_api>
 
@@ -23,6 +24,7 @@ enum OptionsEnum {
     optBoolShowMenu,
     optBoolAllowGoto,
     optIntMkeyBehavior,
+    optIntJumpStats,
 };
 
 new g_Options[OptionsEnum];
@@ -42,9 +44,15 @@ enum UserDataStruct {
     bool:ud_allowGoto,
 
     ud_mkeyBehavior,
+    ud_jumpStats,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
+
+new const DEFAULT_JUMP_STATS = 
+    flagHasColorChat | flagLjStats | flagShowPre | 
+    flagStrafeStats | flagFailEarly | flagLjPre | 
+    flagShowEdge | flagShowEdgeFail |flagEnableSounds;
 
 
 public plugin_init() {
@@ -120,6 +128,11 @@ public plugin_precache() {
     // 
     // default: 0
     g_Options[optIntMkeyBehavior] = register_players_option_cell("mkey_behavior", FIELD_TYPE_INT, 0);
+
+    // Jump stats flags:
+    // 
+    // default: bitsum of abdehklmn
+    g_Options[optIntJumpStats] = register_players_option_cell("jump_stats", FIELD_TYPE_INT, DEFAULT_JUMP_STATS);
 }
 
 public client_putinserver(id) {
@@ -136,6 +149,7 @@ public client_putinserver(id) {
     g_UserData[id][ud_allowGoto] = true;
 
     g_UserData[id][ud_mkeyBehavior] = 0;
+    g_UserData[id][ud_jumpStats] = DEFAULT_JUMP_STATS;
 
     remove_task(TASK_USER_INITIALIZED + id)
     set_task(5.0, "taskInitialized", TASK_USER_INITIALIZED + id);
@@ -183,6 +197,9 @@ public OnCellValueChanged(id, optionId, newValue) {
     }
     else if (optionId == g_Options[optIntMkeyBehavior]) {
         g_UserData[id][ud_mkeyBehavior] = newValue;
+    }
+    else if (optionId == g_Options[optIntJumpStats]) {
+        g_UserData[id][ud_jumpStats] = newValue;
     }
 }
 
