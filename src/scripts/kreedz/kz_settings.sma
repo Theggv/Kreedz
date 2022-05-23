@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <hamsandwich>
 
+#include <kreedz_api>
 #include <kreedz_util>
 #include <settings_api>
 
@@ -23,6 +24,8 @@ enum OptionsEnum {
     optBoolShowMenu,
     optBoolAllowGoto,
     optIntMkeyBehavior,
+    optIntJumpStats,
+    optBoolSpecList,
 };
 
 new g_Options[OptionsEnum];
@@ -40,11 +43,18 @@ enum UserDataStruct {
     bool:ud_fog,
     bool:ud_showMenu,
     bool:ud_allowGoto,
+    bool:ud_specList,
 
     ud_mkeyBehavior,
+    ud_jumpStats,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
+
+new const DEFAULT_JUMP_STATS = 
+    flagHasColorChat | flagLjStats | flagShowPre | 
+    flagStrafeStats | flagFailEarly | flagLjPre | 
+    flagShowEdge | flagShowEdgeFail |flagEnableSounds;
 
 
 public plugin_init() {
@@ -120,6 +130,16 @@ public plugin_precache() {
     // 
     // default: 0
     g_Options[optIntMkeyBehavior] = register_players_option_cell("mkey_behavior", FIELD_TYPE_INT, 0);
+
+    // Jump stats flags:
+    // 
+    // default: bitsum of abdehklmn
+    g_Options[optIntJumpStats] = register_players_option_cell("jump_stats", FIELD_TYPE_INT, DEFAULT_JUMP_STATS);
+
+    // Show spec list:
+    // 
+    // default: true
+    g_Options[optBoolSpecList] = register_players_option_cell("spec_list", FIELD_TYPE_BOOL, true);
 }
 
 public client_putinserver(id) {
@@ -134,8 +154,10 @@ public client_putinserver(id) {
     g_UserData[id][ud_fog] = false;
     g_UserData[id][ud_showMenu] = false;
     g_UserData[id][ud_allowGoto] = true;
+    g_UserData[id][ud_specList] = true;
 
     g_UserData[id][ud_mkeyBehavior] = 0;
+    g_UserData[id][ud_jumpStats] = DEFAULT_JUMP_STATS;
 
     remove_task(TASK_USER_INITIALIZED + id)
     set_task(5.0, "taskInitialized", TASK_USER_INITIALIZED + id);
@@ -184,6 +206,12 @@ public OnCellValueChanged(id, optionId, newValue) {
     else if (optionId == g_Options[optIntMkeyBehavior]) {
         g_UserData[id][ud_mkeyBehavior] = newValue;
     }
+    else if (optionId == g_Options[optIntJumpStats]) {
+        g_UserData[id][ud_jumpStats] = newValue;
+    }
+    else if (optionId == g_Options[optBoolSpecList]) {
+        g_UserData[id][ud_specList] = !!newValue;
+    }
 }
 
 public cmdSettings(id) {
@@ -220,43 +248,20 @@ stock settingsMenu(id, page = 0) {
     
     menu_additem(iMenu, szMsg, "2", 0);
 
-
-    switch (g_UserData[id][ud_fog]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Show FOG: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Show FOG: \ddisabled");
-    }
-
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Show FOG", g_UserData[id][ud_fog]);
     menu_additem(iMenu, szMsg, "5", 0);
-
-    switch (g_UserData[id][ud_allowGoto]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \yenabled^n");
-        case false: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \ddisabled^n");
-    }
     
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Allow teleport to you", g_UserData[id][ud_allowGoto]);
     menu_additem(iMenu, szMsg, "7", 0);
 
-
-    switch (g_UserData[id][ud_blockRadio]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Radio commands: \ddisabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Radio commands: \yenabled");
-    }
-    
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Radio commands", !g_UserData[id][ud_blockRadio], .nextLine = true);
     menu_additem(iMenu, szMsg, "3", 0);
 
-    switch (g_UserData[id][ud_stopSound]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Stop sound on connect: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Stop sound on connect: \ddisabled");
-    }
-    
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Stop sound on connect", g_UserData[id][ud_stopSound]);
     menu_additem(iMenu, szMsg, "4", 0);
 
-    switch (g_UserData[id][ud_showMenu]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Show menu on connect: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Show menu on connect: \ddisabled");
-    }
-    
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Show menu on connect", g_UserData[id][ud_showMenu]);
     menu_additem(iMenu, szMsg, "6", 0);
-
 
     formatex(szMsg, charsmax(szMsg), "Hook speed: \y%.0f \du/s", g_UserData[id][ud_hookSpeed]);
     menu_additem(iMenu, szMsg, "8", 0);
@@ -271,6 +276,9 @@ stock settingsMenu(id, page = 0) {
     }
     
     menu_additem(iMenu, szMsg, "10", 0);
+
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Spec list", g_UserData[id][ud_specList]);
+    menu_additem(iMenu, szMsg, "11", 0);
 
     menu_display(id, iMenu, page);
 
@@ -335,6 +343,11 @@ stock settingsMenu(id, page = 0) {
             g_UserData[id][ud_mkeyBehavior] = (g_UserData[id][ud_mkeyBehavior] + 1) % 2;
             
             set_option_cell(id, g_Options[optIntMkeyBehavior], g_UserData[id][ud_mkeyBehavior]);
+        }
+        case 11: {
+            g_UserData[id][ud_specList] = !g_UserData[id][ud_specList];
+            
+            set_option_cell(id, g_Options[optBoolSpecList], g_UserData[id][ud_specList]);
         }
     }
 
@@ -407,4 +420,23 @@ public cmdSetNoclipSpeed(id) {
     settingsMenu(id, 1);
 
     return PLUGIN_HANDLED;
+}
+
+/**
+*	------------------------------------------------------------------
+*	Utility
+*	------------------------------------------------------------------
+*/
+
+stock UTIL_PrepareBooleanMenuOption(
+    szMsg[], len, szTitle[], bool:flag, szTrue[] = "enabled", szFalse[] = "disabled", bool:nextLine = false
+    ) {
+    if (flag)
+        formatex(szMsg, len, "%s: \y%s", szTitle, szTrue);
+    else
+        formatex(szMsg, len, "%s: \d%s", szTitle, szFalse);
+
+    if (nextLine) {
+        add(szMsg, len, "^n");
+    }
 }

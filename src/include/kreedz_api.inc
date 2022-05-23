@@ -44,6 +44,26 @@ enum _:WeaponsEnum {
     WPN_SCOUT = 7,
 };
 
+enum _:JumpStatsOptionFlags {
+	flagHasColorChat = 	(1 << 0), 	// a
+	flagLjStats = 		(1 << 1), 	// b
+	flagShowSpeed =		(1 << 2), 	// c
+	flagShowPre = 		(1 << 3), 	// d
+	flagStrafeStats = 	(1 << 4), 	// e
+	flagBeam = 			(1 << 5), 	// f
+	flagStatsPre = 		(1 << 6), 	// g
+	flagFailEarly = 	(1 << 7), 	// h
+	flagMultiBhopPre = 	(1 << 8), 	// i 
+	flagShowDuck = 		(1 << 9), 	// j
+	flagLjPre = 		(1 << 10),	// k
+	flagShowEdge = 		(1 << 11),	// l
+	flagShowEdgeFail = 	(1 << 12),	// m
+	flagEnableSounds = 	(1 << 13),	// n
+	flagIngameStrafes = (1 << 14),	// o
+	flagJumpOff = 		(1 << 15),
+	flagJumpHeight = 	(1 << 16),
+};
+
 // 
 // Core section
 // 
