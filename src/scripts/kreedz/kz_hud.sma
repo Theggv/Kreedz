@@ -4,6 +4,7 @@
 
 #include <kreedz_api>
 #include <kreedz_util>
+#include <settings_api>
 
 #define PLUGIN 			"[KZ] Hud"
 #define VERSION 		__DATE__
@@ -27,6 +28,12 @@ enum _:UserDataStruct {
 
 new g_UserData[MAX_PLAYERS + 1][UserDataStruct];
 
+enum OptionsEnum {
+    optBoolSpecList,
+};
+
+new g_Options[OptionsEnum];
+
 //Status Info
 new g_iMsgStatusText;
 
@@ -45,6 +52,18 @@ public plugin_init() {
 	HudSyncObj = CreateHudSyncObj();
 
 	g_iMsgStatusText = get_user_msgid("StatusText");
+
+	bindOptions();
+}
+
+bindOptions() {
+	g_Options[optBoolSpecList] = find_option_by_name("spec_list");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optBoolSpecList]) {
+		g_UserData[id][ud_showSpecList] = _:newValue;
+	}
 }
 
 public client_putinserver(id) {
