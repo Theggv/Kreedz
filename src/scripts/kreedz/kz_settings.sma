@@ -237,43 +237,20 @@ stock settingsMenu(id, page = 0) {
     
     menu_additem(iMenu, szMsg, "2", 0);
 
-
-    switch (g_UserData[id][ud_fog]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Show FOG: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Show FOG: \ddisabled");
-    }
-
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Show FOG", g_UserData[id][ud_fog]);
     menu_additem(iMenu, szMsg, "5", 0);
-
-    switch (g_UserData[id][ud_allowGoto]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \yenabled^n");
-        case false: formatex(szMsg, charsmax(szMsg), "Allow teleport to you: \ddisabled^n");
-    }
     
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Allow teleport to you", g_UserData[id][ud_allowGoto]);
     menu_additem(iMenu, szMsg, "7", 0);
 
-
-    switch (g_UserData[id][ud_blockRadio]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Radio commands: \ddisabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Radio commands: \yenabled");
-    }
-    
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Radio commands", !g_UserData[id][ud_blockRadio], .nextLine = true);
     menu_additem(iMenu, szMsg, "3", 0);
 
-    switch (g_UserData[id][ud_stopSound]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Stop sound on connect: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Stop sound on connect: \ddisabled");
-    }
-    
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Stop sound on connect", g_UserData[id][ud_stopSound]);
     menu_additem(iMenu, szMsg, "4", 0);
 
-    switch (g_UserData[id][ud_showMenu]) {
-        case true: formatex(szMsg, charsmax(szMsg), "Show menu on connect: \yenabled");
-        case false: formatex(szMsg, charsmax(szMsg), "Show menu on connect: \ddisabled");
-    }
-    
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Show menu on connect", g_UserData[id][ud_showMenu]);
     menu_additem(iMenu, szMsg, "6", 0);
-
 
     formatex(szMsg, charsmax(szMsg), "Hook speed: \y%.0f \du/s", g_UserData[id][ud_hookSpeed]);
     menu_additem(iMenu, szMsg, "8", 0);
@@ -424,4 +401,23 @@ public cmdSetNoclipSpeed(id) {
     settingsMenu(id, 1);
 
     return PLUGIN_HANDLED;
+}
+
+/**
+*	------------------------------------------------------------------
+*	Utility
+*	------------------------------------------------------------------
+*/
+
+stock UTIL_PrepareBooleanMenuOption(
+    szMsg[], len, szTitle[], bool:flag, szTrue[] = "enabled", szFalse[] = "disabled", bool:nextLine = false
+    ) {
+    if (flag)
+        formatex(szMsg, len, "%s: \y%s", szTitle, szTrue);
+    else
+        formatex(szMsg, len, "%s: \d%s", szTitle, szFalse);
+
+    if (nextLine) {
+        add(szMsg, len, "^n");
+    }
 }
