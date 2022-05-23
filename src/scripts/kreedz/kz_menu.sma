@@ -29,8 +29,6 @@ public plugin_init() {
 	register_clcmd("jointeam", "cmdMkeyHandler");
 	register_clcmd("chooseteam", "cmdMkeyHandler");
 
-	register_dictionary("kz_mode.txt");
-
 	bindOptions();
 }
 
