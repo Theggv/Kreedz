@@ -25,6 +25,7 @@ enum OptionsEnum {
     optBoolAllowGoto,
     optIntMkeyBehavior,
     optIntJumpStats,
+    optBoolSpecList,
 };
 
 new g_Options[OptionsEnum];
@@ -42,6 +43,7 @@ enum UserDataStruct {
     bool:ud_fog,
     bool:ud_showMenu,
     bool:ud_allowGoto,
+    bool:ud_specList,
 
     ud_mkeyBehavior,
     ud_jumpStats,
@@ -133,6 +135,11 @@ public plugin_precache() {
     // 
     // default: bitsum of abdehklmn
     g_Options[optIntJumpStats] = register_players_option_cell("jump_stats", FIELD_TYPE_INT, DEFAULT_JUMP_STATS);
+
+    // Show spec list:
+    // 
+    // default: true
+    g_Options[optBoolSpecList] = register_players_option_cell("spec_list", FIELD_TYPE_BOOL, true);
 }
 
 public client_putinserver(id) {
@@ -147,6 +154,7 @@ public client_putinserver(id) {
     g_UserData[id][ud_fog] = false;
     g_UserData[id][ud_showMenu] = false;
     g_UserData[id][ud_allowGoto] = true;
+    g_UserData[id][ud_specList] = true;
 
     g_UserData[id][ud_mkeyBehavior] = 0;
     g_UserData[id][ud_jumpStats] = DEFAULT_JUMP_STATS;
@@ -200,6 +208,9 @@ public OnCellValueChanged(id, optionId, newValue) {
     }
     else if (optionId == g_Options[optIntJumpStats]) {
         g_UserData[id][ud_jumpStats] = newValue;
+    }
+    else if (optionId == g_Options[optBoolSpecList]) {
+        g_UserData[id][ud_specList] = !!newValue;
     }
 }
 
@@ -266,6 +277,9 @@ stock settingsMenu(id, page = 0) {
     
     menu_additem(iMenu, szMsg, "10", 0);
 
+    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Spec list", g_UserData[id][ud_specList]);
+    menu_additem(iMenu, szMsg, "11", 0);
+
     menu_display(id, iMenu, page);
 
     return PLUGIN_HANDLED;
@@ -329,6 +343,11 @@ stock settingsMenu(id, page = 0) {
             g_UserData[id][ud_mkeyBehavior] = (g_UserData[id][ud_mkeyBehavior] + 1) % 2;
             
             set_option_cell(id, g_Options[optIntMkeyBehavior], g_UserData[id][ud_mkeyBehavior]);
+        }
+        case 11: {
+            g_UserData[id][ud_specList] = !g_UserData[id][ud_specList];
+            
+            set_option_cell(id, g_Options[optBoolSpecList], g_UserData[id][ud_specList]);
         }
     }
 
