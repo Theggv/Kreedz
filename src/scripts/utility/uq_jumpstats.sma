@@ -123,7 +123,7 @@ new upbj_god_dist,upbj_leet_dist,upbj_holy_dist,upbj_pro_dist,upbj_good_dist;
 new upsbj_god_dist,upsbj_leet_dist,upsbj_holy_dist,upsbj_pro_dist,upsbj_good_dist;
 new real_god_dist,real_leet_dist,real_holy_dist,real_pro_dist,real_good_dist;
 new duckbhop_god_dist,duckbhop_leet_dist,duckbhop_holy_dist,duckbhop_pro_dist,duckbhop_good_dist;
-new web_sql,max_distance,min_distance_other,min_distance,uq_airaccel,leg_settings,uq_sounds;
+new web_sql,max_distance,min_distance_other,min_distance,leg_settings,uq_sounds;
 new uq_maxedge,uq_minedge,uq_min_pre,speed_r,speed_g,speed_b,Float:speed_x,Float:speed_y,h_speed,kz_top,kz_extras,kz_weapon,kz_block_top;
 new uq_team,prest_r,prest_g,prest_b,Float:prest_x,Float:prest_y,h_prest,h_stats,h_duck,h_streif;				
 new uq_noslow,uq_light,uq_screen,uq_info,uq_fps,kz_map_top,kz_wpn_block_top,stats_r,stats_b,stats_g,f_stats_r,f_stats_b,f_stats_g;
@@ -259,7 +259,7 @@ public plugin_init()
 	kz_top_rank_by        = register_cvar("kz_uq_top_by",        "1");		// How ranking will work? 0=name, 1=ip 2=steam
 	kz_legal_settings     = register_cvar("kz_uq_legal_settings",     "1");
 	kz_prefix 	       = register_cvar("kz_uq_prefix",       "unique-kz");
-	kz_airaccelerate     = register_cvar("kz_uq_airaccelerate",     "10");
+	bind_pcvar_num(register_cvar("kz_uq_airaccelerate", "10"), kz_airaccelerate);
 	
 	kz_stats_x        = register_cvar("kz_uq_stats_x",        "-1.0");		
 	kz_stats_y      = register_cvar("kz_uq_stats_y",      "0.70");
@@ -621,8 +621,7 @@ public plugin_cfg()
 	duckbhop_holy_dist=get_pcvar_num(kz_holy_duckbhop);
 	duckbhop_pro_dist=get_pcvar_num(kz_pro_duckbhop);
 	duckbhop_good_dist=get_pcvar_num(kz_good_duckbhop);
-	leg_settings=get_pcvar_num(kz_legal_settings);	
-	uq_airaccel=get_pcvar_num( kz_airaccelerate );
+	leg_settings=get_pcvar_num(kz_legal_settings);
 	min_distance=get_pcvar_num(kz_min_dcj);
 	min_distance_other=get_pcvar_num(kz_uq_min_other);
 	max_distance=get_pcvar_num(MAX_DISTANCE);
@@ -697,14 +696,14 @@ public plugin_cfg()
 		set_cvar_string("sv_cheats", "0");
 		set_cvar_string("sv_gravity", "800");
 		
-		if(uq_airaccel==0 || uq_airaccel==10)
+		if(kz_airaccelerate==0 || kz_airaccelerate==10)
 			set_cvar_string("sv_airaccelerate", "10");
-		else if(uq_airaccel==1 || uq_airaccel==100)
+		else if(kz_airaccelerate==1 || kz_airaccelerate==100)
 			set_cvar_string("sv_airaccelerate", "100");
 		else 
 		{
 			new str[10];
-			num_to_str(uq_airaccel,str,9);
+			num_to_str(kz_airaccelerate,str,9);
 			set_cvar_string("sv_airaccelerate", str);
 		}
 		
@@ -963,7 +962,7 @@ stock kz_make_cvarexec(const config[])
 	fprintf(f, "^n");
 	
 	fprintf(f, "// How to set up a server by value sv_airaccelerate (Varible=xx, but var=0 reserved for 10aa, var=1 for 100aa)^n");
-	fprintf(f, "kz_uq_airaccelerate %i^n",uq_airaccel);
+	fprintf(f, "kz_uq_airaccelerate %i^n",kz_airaccelerate);
 	fprintf(f, "^n");
 	
 	fprintf(f, "// On/Off Showing stats with noslowdown^n");
@@ -1306,12 +1305,12 @@ public server_frame()
 		if( get_pcvar_num(sv_gravity)!= 800 )
 			set_pcvar_num(sv_gravity, 800);
 		
-		if((uq_airaccel==0 || uq_airaccel==10) && get_pcvar_num(sv_airaccelerate) != 10 )
+		if((kz_airaccelerate==0 || kz_airaccelerate==10) && get_pcvar_num(sv_airaccelerate) != 10 )
 			set_pcvar_num(sv_airaccelerate, 10);
-		else if((uq_airaccel==1 || uq_airaccel==100) && get_pcvar_num(sv_airaccelerate) != 100 )
+		else if((kz_airaccelerate==1 || kz_airaccelerate==100) && get_pcvar_num(sv_airaccelerate) != 100 )
 			set_pcvar_num(sv_airaccelerate, 100);
-		else if(get_pcvar_num(sv_airaccelerate) != uq_airaccel && uq_airaccel!=0 && uq_airaccel!=1)
-			set_pcvar_num(sv_airaccelerate, uq_airaccel);
+		else if(get_pcvar_num(sv_airaccelerate) != kz_airaccelerate && kz_airaccelerate!=0 && kz_airaccelerate!=1)
+			set_pcvar_num(sv_airaccelerate, kz_airaccelerate);
 		
 		if( get_pcvar_num(sv_maxspeed) != 320 )
 			set_pcvar_num(sv_maxspeed, 320);
@@ -2245,27 +2244,27 @@ public fwdPreThink( id )
 					}
 				}
 				new airace,aircj;
-				if(uq_airaccel<=10 && uq_airaccel!=1)
+				if(kz_airaccelerate<=10 && kz_airaccelerate!=1)
 				{
-					if(uq_airaccel==0)
+					if(kz_airaccelerate==0)
 						airace=10;
 					else
-						airace=uq_airaccel;
+						airace=kz_airaccelerate;
 						
 					aircj=0;
 					formatex(airacel[id],32,"");
 				}
 				else
 				{
-					if(uq_airaccel==1)
+					if(kz_airaccelerate==1)
 					{
 						airace=100;
 						formatex(airacel[id],32,"(100aa)");
 					}
 					else
 					{
-						airace=uq_airaccel;
-						formatex(airacel[id],32,"(%daa)",uq_airaccel);
+						airace=kz_airaccelerate;
+						formatex(airacel[id],32,"(%daa)",kz_airaccelerate);
 					}
 					aircj=10;
 				}
@@ -8796,16 +8795,16 @@ public ResetHUD(id)
 	{
 		if(firstshow[id]==false)
 		{
-			if( uq_airaccel==1 || uq_airaccel==100)
+			if( kz_airaccelerate==1 || kz_airaccelerate==100)
 			{
 				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_AIRACCEL100", prefix);
 			}
-			else if( uq_airaccel==0 || uq_airaccel==10)
+			else if( kz_airaccelerate==0 || kz_airaccelerate==10)
 			{
 				Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_AIRACCEL10", prefix);
 			}
 			else 
-				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_AIRACCEL", prefix,uq_airaccel);		
+				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_AIRACCEL", prefix,kz_airaccelerate);		
 				
 			firstshow[id]=true;
 			
