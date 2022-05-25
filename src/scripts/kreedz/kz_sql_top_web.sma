@@ -86,7 +86,7 @@ public cmdProTop(id) {
 	new szMap[64], szUrl[256];
 	get_mapname(szMap, charsmax(szMap));
 
-	formatex(szUrl, charsmax(szUrl), "%s/records?type=pro&mapName=%s", 
+	formatex(szUrl, charsmax(szUrl), "%s?type=pro&mapName=%s", 
 		g_szRecordsFrontendUrl, szMap);
 	
 	show_motd(id, szUrl, szMap);
@@ -99,7 +99,7 @@ public cmdNubTop(id) {
 	new szMap[64], szUrl[256];
 	get_mapname(szMap, charsmax(szMap));
 
-	formatex(szUrl, charsmax(szUrl), "%s/records?type=nub&mapName=%s", 
+	formatex(szUrl, charsmax(szUrl), "%s?type=nub&mapName=%s", 
 		g_szRecordsFrontendUrl, szMap);
 	
 	show_motd(id, szUrl, szMap);
