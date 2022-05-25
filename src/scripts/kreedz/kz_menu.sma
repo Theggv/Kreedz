@@ -123,7 +123,7 @@ public MainMenu_Handler(id, menu, item) {
 		case 2: amxclient_cmd(id, "p");
 		case 3: amxclient_cmd(id, "start");
 		case 4: amxclient_cmd(id, "nc");
-		case 5: amxclient_cmd(id, "spec");
+		case 5: amxclient_cmd(id, "ct");
 		case 6: {
 			amxclient_cmd(id, "invis");
 			return PLUGIN_HANDLED;

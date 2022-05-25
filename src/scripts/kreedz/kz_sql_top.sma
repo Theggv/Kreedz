@@ -300,11 +300,11 @@ ON user.id = rec.user_id;",
 
 		UTIL_FormatTime(fTime, szTime, charsmax(szTime), true);
 
-		client_print_color(id, print_team_default, "^4[KZ] ^1Pro record: [^4%s^1] by ^3%s^1.", 
-			szTime, szName);
+		client_print_color(id, print_team_default, "%L", id,
+			"KZ_CHAT_REC_PRO", szTime, szName);
 	}
 	else {
-		client_print_color(id, print_team_red, "^4[KZ] ^1Pro record: ^3No data^1.");
+		client_print_color(id, print_team_red, "%L", id, "KZ_CHAT_REC_NO_DATA");
 	}
 
 	SQL_FreeHandle(hQuery);
