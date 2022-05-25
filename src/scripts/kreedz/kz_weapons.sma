@@ -53,8 +53,6 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "HookResetMaxSpeed", 1);
 
 	RegisterHam(Ham_Spawn, "player", "ham_Spawn_Post", 1);
-
-	register_dictionary("kz_mode.txt");
 }
 
 public plugin_precache() {
