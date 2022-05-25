@@ -50,6 +50,9 @@ public plugin_init() {
 	init_water();
 
 	bindOptions();
+
+	register_dictionary("kreedz_lang.txt");
+	register_dictionary("common.txt");
 }
 
 public client_disconnected(id) {
@@ -120,6 +123,9 @@ public cmd_Invis(id) {
 		(g_UserData[id][isHideWater] ? "INVISMENU_HIDE" : "INVISMENU_DRAW"));
 
 	menu_additem(iMenu, szMsg, "2", 0);
+
+	formatex(szMsg, charsmax(szMsg), "%L", id, "EXIT");
+	menu_setprop(iMenu, MPROP_EXITNAME, szMsg);
 
 	menu_display(id, iMenu, 0);
 

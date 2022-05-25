@@ -66,6 +66,9 @@ public plugin_init() {
 
     register_clcmd("set_hook_speed", "cmdSetHookSpeed");
     register_clcmd("set_noclip_speed", "cmdSetNoclipSpeed");
+
+    register_dictionary("kreedz_lang.txt");
+    register_dictionary("common.txt");
 }
 
 public plugin_precache() {
@@ -222,63 +225,59 @@ public cmdSettings(id) {
 
 stock settingsMenu(id, page = 0) {
     new szMsg[256];
-    formatex(szMsg, charsmax(szMsg), "\yKZ Settings");
+    formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_TITLE");
     
     new iMenu = menu_create(szMsg, "@settingsMenuHandler");
 
     switch (g_UserData[id][ud_anglesMode]) {
-        case 0: formatex(szMsg, charsmax(szMsg), "Save angles mode: \dnone");
-        case 1: formatex(szMsg, charsmax(szMsg), "Save angles mode: \ron teleport");
-        case 2: formatex(szMsg, charsmax(szMsg), "Save angles mode: \ron start");
+        case 0: formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_ANGLES_NONE");
+        case 1: formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_ANGLES_ONLY_TP");
+        case 2: formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_ANGLES_ONLY_START");
         default: {
-            formatex(szMsg, charsmax(szMsg), "Save angles mode: \ron teleport and start");
+            formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_ANGLES_START_AND_TP");
         }
     }
-    
-    menu_additem(iMenu, szMsg, "1", 0);
+    menu_additem(iMenu, szMsg);
 
     switch (g_UserData[id][ud_invisMode]) {
-        case 0: formatex(szMsg, charsmax(szMsg), "Invis: \ddisabled^n");
-        case 1: formatex(szMsg, charsmax(szMsg), "Invis: \rhide players^n");
-        case 2: formatex(szMsg, charsmax(szMsg), "Invis: \rhide water^n");
+        case 0: formatex(szMsg, charsmax(szMsg), "%L^n", id, "SETTINGSMENU_OPT_INVIS_DISABLE");
+        case 1: formatex(szMsg, charsmax(szMsg), "%L^n", id, "SETTINGSMENU_OPT_INVIS_PLAYERS");
+        case 2: formatex(szMsg, charsmax(szMsg), "%L^n", id, "SETTINGSMENU_OPT_INVIS_WATER");
         default: {
-            formatex(szMsg, charsmax(szMsg), "Invis: \rhide water and players^n");
+            formatex(szMsg, charsmax(szMsg), "%L^n", id, "SETTINGSMENU_OPT_INVIS_PL_AND_WATER");
         }
     }
-    
-    menu_additem(iMenu, szMsg, "2", 0);
+    menu_additem(iMenu, szMsg);
 
-    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Show FOG", g_UserData[id][ud_fog]);
-    menu_additem(iMenu, szMsg, "5", 0);
-    
-    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Allow teleport to you", g_UserData[id][ud_allowGoto]);
-    menu_additem(iMenu, szMsg, "7", 0);
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_SHOWMENU", g_UserData[id][ud_showMenu]);
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_STOPSOUND", g_UserData[id][ud_stopSound]);
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_SPECLIST", g_UserData[id][ud_specList], .nextLine = true);
 
-    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Radio commands", !g_UserData[id][ud_blockRadio], .nextLine = true);
-    menu_additem(iMenu, szMsg, "3", 0);
+    formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_HOOKSPEED", g_UserData[id][ud_hookSpeed]);
+    menu_additem(iMenu, szMsg);
 
-    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Stop sound on connect", g_UserData[id][ud_stopSound]);
-    menu_additem(iMenu, szMsg, "4", 0);
+    formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_NOCLIPSPEED", g_UserData[id][ud_noclipSpeed]);
+    menu_additem(iMenu, szMsg);
 
-    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Show menu on connect", g_UserData[id][ud_showMenu]);
-    menu_additem(iMenu, szMsg, "6", 0);
-
-    formatex(szMsg, charsmax(szMsg), "Hook speed: \y%.0f \du/s", g_UserData[id][ud_hookSpeed]);
-    menu_additem(iMenu, szMsg, "8", 0);
-
-    formatex(szMsg, charsmax(szMsg), "Noclip speed: \y%.0f \du/s^n", g_UserData[id][ud_noclipSpeed]);
-    menu_additem(iMenu, szMsg, "9", 0);
-    
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_FOG", g_UserData[id][ud_fog]);
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_GOTO", g_UserData[id][ud_allowGoto]);
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_RADIO", !g_UserData[id][ud_blockRadio]);
 
     switch (g_UserData[id][ud_mkeyBehavior]) {
-        case 0: formatex(szMsg, charsmax(szMsg), "M key behavior: \yopen menu");
-        case 1: formatex(szMsg, charsmax(szMsg), "M key behavior: \rgo to spec/ct");
+        case 0: formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_MKEY_OPEN_MENU");
+        case 1: formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_MKEY_SPEC_CT");
     }
     
-    menu_additem(iMenu, szMsg, "10", 0);
+    menu_additem(iMenu, szMsg);
 
-    UTIL_PrepareBooleanMenuOption(szMsg, charsmax(szMsg), "Spec list", g_UserData[id][ud_specList]);
-    menu_additem(iMenu, szMsg, "11", 0);
+    formatex(szMsg, charsmax(szMsg), "%L", id, "BACK");
+    menu_setprop(iMenu, MPROP_BACKNAME, szMsg);
+
+    formatex(szMsg, charsmax(szMsg), "%L", id, "MORE");
+    menu_setprop(iMenu, MPROP_NEXTNAME, szMsg);
+
+    formatex(szMsg, charsmax(szMsg), "%L", id, "EXIT");
+    menu_setprop(iMenu, MPROP_EXITNAME, szMsg);
 
     menu_display(id, iMenu, page);
 
@@ -293,61 +292,51 @@ stock settingsMenu(id, page = 0) {
     
     static szData[16], i_Access;
     menu_item_getinfo(menu, item, i_Access, szData, charsmax(szData));
-    new iItem = str_to_num(szData);
     
     menu_destroy(menu);
     
-    switch (iItem) {
-        case 1: {
+    switch (item) {
+        case 0: {
             g_UserData[id][ud_anglesMode] = (g_UserData[id][ud_anglesMode] + 1) % 4;
-
             set_option_cell(id, g_Options[optIntSaveAngles], g_UserData[id][ud_anglesMode]);
         }
-        case 2: {
+        case 1: {
             g_UserData[id][ud_invisMode] = (g_UserData[id][ud_invisMode] + 1) % 4;
-
             set_option_cell(id, g_Options[optIntInvisMode], g_UserData[id][ud_invisMode]);
         }
-        case 3: {
-            g_UserData[id][ud_blockRadio] = !g_UserData[id][ud_blockRadio];
-
-            set_option_cell(id, g_Options[optBoolBlockRadio], g_UserData[id][ud_blockRadio]);
-        }
-        case 4: {
-            g_UserData[id][ud_stopSound] = !g_UserData[id][ud_stopSound];
-
-            set_option_cell(id, g_Options[optBoolStopSound], g_UserData[id][ud_stopSound]);
-        }
-        case 5: {
-            g_UserData[id][ud_fog] = !g_UserData[id][ud_fog];
-
-            set_option_cell(id, g_Options[optBoolFog], g_UserData[id][ud_fog]);
-        }
-        case 6: {
+        case 2: {
             g_UserData[id][ud_showMenu] = !g_UserData[id][ud_showMenu];
-            
             set_option_cell(id, g_Options[optBoolShowMenu], g_UserData[id][ud_showMenu]);
         }
-        case 7: {
-            g_UserData[id][ud_allowGoto] = !g_UserData[id][ud_allowGoto];
-            
-            set_option_cell(id, g_Options[optBoolAllowGoto], g_UserData[id][ud_allowGoto]);
+        case 3: {
+            g_UserData[id][ud_stopSound] = !g_UserData[id][ud_stopSound];
+            set_option_cell(id, g_Options[optBoolStopSound], g_UserData[id][ud_stopSound]);
         }
-        case 8: {
+        case 4: {
+            g_UserData[id][ud_specList] = !g_UserData[id][ud_specList];
+            set_option_cell(id, g_Options[optBoolSpecList], g_UserData[id][ud_specList]);
+        }
+        case 5: {
 	        client_cmd(id, "messagemode ^"set_hook_speed^"");
         }
-        case 9: {
+        case 6: {
 	        client_cmd(id, "messagemode ^"set_noclip_speed^"");
+        }
+        case 7: {
+            g_UserData[id][ud_fog] = !g_UserData[id][ud_fog];
+            set_option_cell(id, g_Options[optBoolFog], g_UserData[id][ud_fog]);
+        }
+        case 8: {
+            g_UserData[id][ud_allowGoto] = !g_UserData[id][ud_allowGoto];
+            set_option_cell(id, g_Options[optBoolAllowGoto], g_UserData[id][ud_allowGoto]);
+        }
+        case 9: {
+            g_UserData[id][ud_blockRadio] = !g_UserData[id][ud_blockRadio];
+            set_option_cell(id, g_Options[optBoolBlockRadio], g_UserData[id][ud_blockRadio]);
         }
         case 10: {
             g_UserData[id][ud_mkeyBehavior] = (g_UserData[id][ud_mkeyBehavior] + 1) % 2;
-            
             set_option_cell(id, g_Options[optIntMkeyBehavior], g_UserData[id][ud_mkeyBehavior]);
-        }
-        case 11: {
-            g_UserData[id][ud_specList] = !g_UserData[id][ud_specList];
-            
-            set_option_cell(id, g_Options[optBoolSpecList], g_UserData[id][ud_specList]);
         }
     }
 
@@ -391,7 +380,7 @@ public cmdSetHookSpeed(id) {
             
     set_option_cell(id, g_Options[optFloatHookSpeed], _:g_UserData[id][ud_hookSpeed]);
 
-    settingsMenu(id, 1);
+    settingsMenu(id, 0);
 
     return PLUGIN_HANDLED;
 }
@@ -417,7 +406,7 @@ public cmdSetNoclipSpeed(id) {
             
     set_option_cell(id, g_Options[optFloatNoclipSpeed], _:g_UserData[id][ud_noclipSpeed]);
 
-    settingsMenu(id, 1);
+    settingsMenu(id, 0);
 
     return PLUGIN_HANDLED;
 }
@@ -428,15 +417,17 @@ public cmdSetNoclipSpeed(id) {
 *	------------------------------------------------------------------
 */
 
-stock UTIL_PrepareBooleanMenuOption(
-    szMsg[], len, szTitle[], bool:flag, szTrue[] = "enabled", szFalse[] = "disabled", bool:nextLine = false
+stock addBoolOption(
+    id, iMenu, szMsg[], len, szTitleML[], bool:flag, bool:nextLine = false
     ) {
     if (flag)
-        formatex(szMsg, len, "%s: \y%s", szTitle, szTrue);
+        formatex(szMsg, len, "%L: \y%L", id, szTitleML, id, "SETTINGSMENU_ENABLE");
     else
-        formatex(szMsg, len, "%s: \d%s", szTitle, szFalse);
+        formatex(szMsg, len, "%L: \d%L", id, szTitleML, id, "SETTINGSMENU_DISABLE");
 
     if (nextLine) {
         add(szMsg, len, "^n");
     }
+
+    menu_additem(iMenu, szMsg);
 }
