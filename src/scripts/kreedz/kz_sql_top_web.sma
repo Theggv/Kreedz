@@ -86,7 +86,7 @@ public cmdProTop(id) {
 	new szMap[64], szUrl[256];
 	get_mapname(szMap, charsmax(szMap));
 
-	formatex(szUrl, charsmax(szUrl), "%s/records?type=pro&mapName=%s", 
+	formatex(szUrl, charsmax(szUrl), "%s?type=pro&mapName=%s", 
 		g_szRecordsFrontendUrl, szMap);
 	
 	show_motd(id, szUrl, szMap);
@@ -99,7 +99,7 @@ public cmdNubTop(id) {
 	new szMap[64], szUrl[256];
 	get_mapname(szMap, charsmax(szMap));
 
-	formatex(szUrl, charsmax(szUrl), "%s/records?type=nub&mapName=%s", 
+	formatex(szUrl, charsmax(szUrl), "%s?type=nub&mapName=%s", 
 		g_szRecordsFrontendUrl, szMap);
 	
 	show_motd(id, szUrl, szMap);
@@ -156,11 +156,11 @@ ON user.id = rec.user_id;",
 
 		UTIL_FormatTime(fTime, szTime, charsmax(szTime), true);
 
-		client_print_color(id, print_team_default, "^4[KZ] ^1Pro record: [^4%s^1] by ^3%s^1.", 
-			szTime, szName);
+		client_print_color(id, print_team_default, "%L", id,
+			"KZ_CHAT_REC_PRO", szTime, szName);
 	}
 	else {
-		client_print_color(id, print_team_red, "^4[KZ] ^1Pro record: ^3No data^1.");
+		client_print_color(id, print_team_red, "%L", id, "KZ_CHAT_REC_NO_DATA");
 	}
 
 	SQL_FreeHandle(hQuery);
