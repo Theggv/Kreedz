@@ -121,6 +121,7 @@ DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 		setLoadedRun(id);
 	}
 
+	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 

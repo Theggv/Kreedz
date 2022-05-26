@@ -70,7 +70,8 @@ initForwards() {
 	g_Forwards[fwdInitialized] = 	CreateMultiForward("kz_sql_initialized", ET_IGNORE);
 	g_Forwards[fwdInfoReceived] = 	CreateMultiForward("kz_sql_data_recv", ET_IGNORE, FP_CELL);
 	g_Forwards[fwdNewProRecord] = 	CreateMultiForward("kz_top_new_pro_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
-	g_Forwards[fwdNewNubRecord] = 	CreateMultiForward("kz_top_new_nub_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
+	g_Forwards[fwdNewNubRecord] = 	
+		CreateMultiForward("kz_top_new_nub_rec", ET_IGNORE, FP_CELL, FP_FLOAT, FP_CELL, FP_CELL);
 }
 
 initCommands() {
@@ -699,13 +700,13 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 		
 		// Call forward
 		if (g_Candidates[id][run_weapon] == 6) {
-			new fwd = (g_Candidates[id][run_tpCount] == 0) ? 
-				g_Forwards[fwdNewProRecord] :
-				g_Forwards[fwdNewNubRecord];
-
 			new Float:time = (place == 1) ? g_Candidates[id][run_time] : 0.0;
 
-			ExecuteForward(fwd, _, id, time);
+			if (g_Candidates[id][run_tpCount] == 0)
+				ExecuteForward(g_Forwards[fwdNewProRecord], _, id, time);
+			else
+				ExecuteForward(g_Forwards[fwdNewNubRecord], _, id, time, 
+					g_Candidates[id][run_cpCount], g_Candidates[id][run_tpCount]);
 		}
 	}
 

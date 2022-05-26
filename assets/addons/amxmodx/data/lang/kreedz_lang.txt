@@ -15,6 +15,22 @@ KZ_CHAT_BEST_PRO = ^4[KZ] ^1Your best run is %s (0/0).
 KZ_CHAT_BEST_NUB = ^4[KZ] ^1Your best run is %s (%d/%d).
 KZ_CHAT_NO_RECORD = ^4[KZ] ^1You haven't runs on this map.
 
+KZ_CHAT_REC_PRO = ^4[KZ] ^1Pro record: [^4%s^1] by ^3%s^1.
+KZ_CHAT_REC_NO_DATA = ^4[KZ] ^1Pro record: ^3No data^1.
+
+MAINMENU_TITLE = Menu
+MAINMENU_CP = Checkpoint
+MAINMENU_TP = Teleport
+MAINMENU_PAUSE = Pause / unpause
+MAINMENU_START = Start
+MAINMENU_NOCLIP = Noclip
+MAINMENU_SPEC = Spec
+MAINMENU_INVIS = Invis
+MAINMENU_LJS = Ljsmenu
+MAINMENU_SETTINGS = Settings
+MAINMENU_MUTE = Mute
+MAINMENU_WEAPONS = Get weapons
+
 INVISMENU_TITLE = Invisibility
 INVISMENU_PLAYERS = Players
 INVISMENU_WATER = Water
@@ -23,18 +39,33 @@ INVISMENU_HIDE = \dHide
 
 SPECLIST_TITLE = Spectators (%d):
 
-LOADPOS_TITLE = Saved run found \w%s \d(%d/%d) \wWeapon: %s
-LOADPOS_LOAD = Load run
-LOADPOS_NEW = Start new
-
-SAVEPOS_TITLE = Save run \w%s \d(%d/%d)\w?
-SAVEPOS_SAVE = Save
-
 GOTOMENU_TITLE = Teleport to player:
 GOTOMENU_ALLOWED = \w%s
 GOTOMENU_FORBIDDEN = \d%s
 GOTO_TELEPORTED_TO_CHAT = ^4[KZ] ^1Teleported to ^3%s^1.
 GOTO_FORBIDDEN_CHAT = ^4[KZ] ^1You can't teleport to ^3%s^1.
+
+SETTINGSMENU_TITLE = \yKZ Settings
+SETTINGSMENU_OPT_ANGLES_NONE = Save angles mode: \dnone
+SETTINGSMENU_OPT_ANGLES_ONLY_TP = Save angles mode: \yon teleport
+SETTINGSMENU_OPT_ANGLES_ONLY_START = Save angles mode: \yon start
+SETTINGSMENU_OPT_ANGLES_START_AND_TP = Save angles mode: \ron teleport and start
+SETTINGSMENU_OPT_INVIS_DISABLE = Invis: \ddisabled
+SETTINGSMENU_OPT_INVIS_PLAYERS = Invis: \yhide players
+SETTINGSMENU_OPT_INVIS_WATER = Invis: \yhide water
+SETTINGSMENU_OPT_INVIS_PL_AND_WATER = Invis: \yhide water and players
+SETTINGSMENU_OPT_SHOWMENU = Show menu on connect
+SETTINGSMENU_OPT_STOPSOUND = Stop sound on connect
+SETTINGSMENU_OPT_SPECLIST = Show spec list
+SETTINGSMENU_OPT_HOOKSPEED = Hook speed: \y%.0f \du/s
+SETTINGSMENU_OPT_NOCLIPSPEED = Noclip speed: \y%.0f \du/s
+SETTINGSMENU_OPT_FOG = Show Frames on ground
+SETTINGSMENU_OPT_GOTO = Allow teleport to you
+SETTINGSMENU_OPT_RADIO = Radio commands
+SETTINGSMENU_OPT_MKEY_OPEN_MENU = M key behavior: \ropen menu
+SETTINGSMENU_OPT_MKEY_SPEC_CT = M key behavior: \ygo to spec/ct
+SETTINGSMENU_ENABLE = enabled
+SETTINGSMENU_DISABLE = disabled
 
 [ru]
 KZ_HUD_CANT_SAVE = Невозможно сохраниться в воздухе
@@ -53,6 +84,22 @@ KZ_CHAT_BEST_PRO = ^4[KZ] ^1Ваше лучшее прохождение - %s (0
 KZ_CHAT_BEST_NUB = ^4[KZ] ^1Ваше лучшее прохождение - %s (%d/%d).
 KZ_CHAT_NO_RECORD = ^4[KZ] ^1Вы еще не проходили эту карту.
 
+KZ_CHAT_REC_PRO = ^4[KZ] ^1Pro рекорд: [^4%s^1] ^3%s^1.
+KZ_CHAT_REC_NO_DATA = ^4[KZ] ^1Pro рекорд: ^3Нет данных^1.
+
+MAINMENU_TITLE = Меню
+MAINMENU_CP = Сохраниться
+MAINMENU_TP = Телепорт к сохранению
+MAINMENU_PAUSE = Пауза / снять паузу
+MAINMENU_START = Старт
+MAINMENU_NOCLIP = Без препятствий
+MAINMENU_SPEC = Наблюдение
+MAINMENU_INVIS = Невидимость
+MAINMENU_LJS = Меню прыжков
+MAINMENU_SETTINGS = Настройки
+MAINMENU_MUTE = Заглушить игрока
+MAINMENU_WEAPONS = Получить оружие
+
 INVISMENU_TITLE = Невидимость
 INVISMENU_PLAYERS = Игроки
 INVISMENU_WATER = Вода
@@ -61,9 +108,30 @@ INVISMENU_HIDE = \dСкрыть
 
 SPECLIST_TITLE = Наблюдатели (%d):
 
-LOADPOS_TITLE = Найдено сохранившееся прохождение \w%s \d(%d/%d) \wОружие: %s
-LOADPOS_LOAD = Загрузить прохождение
-LOADPOS_NEW = Начать заново
+GOTOMENU_TITLE = Телепортироваться к игроку:
+GOTOMENU_ALLOWED = \w%s
+GOTOMENU_FORBIDDEN = \d%s
+GOTO_TELEPORTED_TO_CHAT = ^4[KZ] ^1Вы телепортировались к ^3%s^1.
+GOTO_FORBIDDEN_CHAT = ^4[KZ] ^1Вы не можете телепортироваться к ^3%s^1.
 
-SAVEPOS_TITLE = Сохранить прохождение \w%s \d(%d/%d)\w?
-SAVEPOS_SAVE = Сохранить
+SETTINGSMENU_TITLE = \yНастройки
+SETTINGSMENU_OPT_ANGLES_NONE = Загружать углы: \dвыкл
+SETTINGSMENU_OPT_ANGLES_ONLY_TP = Загружать углы: \yтелепорт
+SETTINGSMENU_OPT_ANGLES_ONLY_START = Загружать углы: \yстарт
+SETTINGSMENU_OPT_ANGLES_START_AND_TP = Загружать углы: \rтелепорт+старт
+SETTINGSMENU_OPT_INVIS_DISABLE = Invis: \dвыкл
+SETTINGSMENU_OPT_INVIS_PLAYERS = Invis: \yскрывать игроков
+SETTINGSMENU_OPT_INVIS_WATER = Invis: \yскрывать воду
+SETTINGSMENU_OPT_INVIS_PL_AND_WATER = Invis: \yскрывать игроков и воду
+SETTINGSMENU_OPT_SHOWMENU = Меню при подключении
+SETTINGSMENU_OPT_STOPSOUND = Остановить звуки при подключении
+SETTINGSMENU_OPT_SPECLIST = Cписок наблюдателей
+SETTINGSMENU_OPT_HOOKSPEED = Скорость hook: \y%.0f \du/s
+SETTINGSMENU_OPT_NOCLIPSPEED = Скорость noclip: \y%.0f \du/s
+SETTINGSMENU_OPT_FOG = Показывать Frames on ground
+SETTINGSMENU_OPT_GOTO = Разрешить телепорты к Вам
+SETTINGSMENU_OPT_RADIO = Радио команды
+SETTINGSMENU_OPT_MKEY_OPEN_MENU = Кнопка М: \rоткрыть главное меню
+SETTINGSMENU_OPT_MKEY_SPEC_CT = Кнопка М: \yперейти в наблюдение
+SETTINGSMENU_ENABLE = вкл
+SETTINGSMENU_DISABLE = выкл

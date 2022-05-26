@@ -27,13 +27,18 @@
       {
         "name": "curl",
         "url": "https://github.com/Next21Team/AmxxCurl/releases/download/1.1.1/amx_includes.zip"
+      },
+      {
+        "name": "ezhttp",
+        "url": "https://github.com/Next21Team/AmxxEasyHttp/releases/download/1.1.0/amxx.zip"
       }
     ]
   },
   "include": [
     "./.compiler/include",
     "./.thirdparty/reapi/addons/amxmodx/scripting/include",
-    "./.thirdparty/curl/amx_includes"
+    "./.thirdparty/curl/amx_includes",
+    "./.thirdparty/ezhttp/amxx/scripting/include"
   ],
   "rules": {
     "flatCompilation": true

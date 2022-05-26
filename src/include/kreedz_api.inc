@@ -33,6 +33,37 @@ enum _: {
     CHANNEL_HUD = 2,
 };
 
+enum _:WeaponsEnum {
+	WPN_AWP = 0,
+    WPN_M249 = 1,
+    WPN_M4A1 = 2,
+    WPN_SG552 = 3,
+    WPN_FAMAS = 4,
+    WPN_P90 = 5,
+    WPN_USP = 6,
+    WPN_SCOUT = 7,
+};
+
+enum _:JumpStatsOptionFlags {
+	flagHasColorChat = 	(1 << 0), 	// a
+	flagLjStats = 		(1 << 1), 	// b
+	flagShowSpeed =		(1 << 2), 	// c
+	flagShowPre = 		(1 << 3), 	// d
+	flagStrafeStats = 	(1 << 4), 	// e
+	flagBeam = 			(1 << 5), 	// f
+	flagStatsPre = 		(1 << 6), 	// g
+	flagFailEarly = 	(1 << 7), 	// h
+	flagMultiBhopPre = 	(1 << 8), 	// i 
+	flagShowDuck = 		(1 << 9), 	// j
+	flagLjPre = 		(1 << 10),	// k
+	flagShowEdge = 		(1 << 11),	// l
+	flagShowEdgeFail = 	(1 << 12),	// m
+	flagEnableSounds = 	(1 << 13),	// n
+	flagIngameStrafes = (1 << 14),	// o
+	flagJumpOff = 		(1 << 15),
+	flagJumpHeight = 	(1 << 16),
+};
+
 // 
 // Core section
 // 

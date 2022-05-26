@@ -1,5 +1,11 @@
 # Kreedz mod
 
+## Requirements
+- AMX Mod X 1.9.0+
+- ReGameDLL
+- ReAPI
+- [AmxxEasyHttp](https://github.com/Next21Team/AmxxEasyHttp/releases)
+
 ## Features
 - Auto savepos on disconnect
 - Settings system with auto save

@@ -20,6 +20,8 @@
 #include <uq_jumpstats_stocks.inc>
 #include <celltrie>
 // #include <dhudmessage>
+#include <kreedz_api>
+#include <settings_api>
 
 #define VERSION "2.42"
 #pragma semicolon 1
@@ -121,7 +123,7 @@ new upbj_god_dist,upbj_leet_dist,upbj_holy_dist,upbj_pro_dist,upbj_good_dist;
 new upsbj_god_dist,upsbj_leet_dist,upsbj_holy_dist,upsbj_pro_dist,upsbj_good_dist;
 new real_god_dist,real_leet_dist,real_holy_dist,real_pro_dist,real_good_dist;
 new duckbhop_god_dist,duckbhop_leet_dist,duckbhop_holy_dist,duckbhop_pro_dist,duckbhop_good_dist;
-new web_sql,max_distance,min_distance_other,min_distance,uq_airaccel,leg_settings,uq_sounds;
+new web_sql,max_distance,min_distance_other,min_distance,leg_settings,uq_sounds;
 new uq_maxedge,uq_minedge,uq_min_pre,speed_r,speed_g,speed_b,Float:speed_x,Float:speed_y,h_speed,kz_top,kz_extras,kz_weapon,kz_block_top;
 new uq_team,prest_r,prest_g,prest_b,Float:prest_x,Float:prest_y,h_prest,h_stats,h_duck,h_streif;				
 new uq_noslow,uq_light,uq_screen,uq_info,uq_fps,kz_map_top,kz_wpn_block_top,stats_r,stats_b,stats_g,f_stats_r,f_stats_b,f_stats_g;
@@ -144,6 +146,14 @@ new sql_Cvars[SQLCVARSNUM][] = { //cvars for db
 new Trie:JumpPlayers;
 
 new const KZ_CVARSDIR[] = "config.cfg";
+
+enum OptionsEnum {
+    optIntJumpStats,
+};
+
+new g_Options[OptionsEnum];
+new g_OptionFlags[MAX_PLAYERS + 1];
+
 
 public plugin_init()
 {
@@ -249,7 +259,7 @@ public plugin_init()
 	kz_top_rank_by        = register_cvar("kz_uq_top_by",        "1");		// How ranking will work? 0=name, 1=ip 2=steam
 	kz_legal_settings     = register_cvar("kz_uq_legal_settings",     "1");
 	kz_prefix 	       = register_cvar("kz_uq_prefix",       "unique-kz");
-	kz_airaccelerate     = register_cvar("kz_uq_airaccelerate",     "10");
+	bind_pcvar_num(register_cvar("kz_uq_airaccelerate", "10"), kz_airaccelerate);
 	
 	kz_stats_x        = register_cvar("kz_uq_stats_x",        "-1.0");		
 	kz_stats_y      = register_cvar("kz_uq_stats_y",      "0.70");
@@ -374,8 +384,6 @@ public plugin_init()
 	register_clcmd("say /uqbeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /beam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say beam",     "cmdljbeam",         ADMIN_ALL);
-	register_clcmd("say /nazibeam",     "cmdljbeam",         ADMIN_ALL);
-	register_clcmd("say nazibeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /ljbeam",     "cmdljbeam",         ADMIN_ALL);
 	register_clcmd("say /speed",     "show_speed",         ADMIN_ALL);
 	register_clcmd("say speed",     "show_speed",         ADMIN_ALL);
@@ -467,7 +475,7 @@ public plugin_init()
 	get_localinfo("amxx_logs", logs, 63);
 	formatex(logs_path, 127, "%s\uq_jumpstats.txt", logs);
 	
-	
+	bindOptions();
 }
 
 public plugin_natives()
@@ -613,8 +621,7 @@ public plugin_cfg()
 	duckbhop_holy_dist=get_pcvar_num(kz_holy_duckbhop);
 	duckbhop_pro_dist=get_pcvar_num(kz_pro_duckbhop);
 	duckbhop_good_dist=get_pcvar_num(kz_good_duckbhop);
-	leg_settings=get_pcvar_num(kz_legal_settings);	
-	uq_airaccel=get_pcvar_num( kz_airaccelerate );
+	leg_settings=get_pcvar_num(kz_legal_settings);
 	min_distance=get_pcvar_num(kz_min_dcj);
 	min_distance_other=get_pcvar_num(kz_uq_min_other);
 	max_distance=get_pcvar_num(MAX_DISTANCE);
@@ -689,14 +696,14 @@ public plugin_cfg()
 		set_cvar_string("sv_cheats", "0");
 		set_cvar_string("sv_gravity", "800");
 		
-		if(uq_airaccel==0 || uq_airaccel==10)
+		if(kz_airaccelerate==0 || kz_airaccelerate==10)
 			set_cvar_string("sv_airaccelerate", "10");
-		else if(uq_airaccel==1 || uq_airaccel==100)
+		else if(kz_airaccelerate==1 || kz_airaccelerate==100)
 			set_cvar_string("sv_airaccelerate", "100");
 		else 
 		{
 			new str[10];
-			num_to_str(uq_airaccel,str,9);
+			num_to_str(kz_airaccelerate,str,9);
 			set_cvar_string("sv_airaccelerate", str);
 		}
 		
@@ -823,7 +830,7 @@ stock kz_make_cvarexec(const config[])
 	
 	fprintf(f, "// Admin command^n");
 	fprintf(f, "^n");
-	fprintf(f, "// amx_reset_uqtops ù reset all tops^n");
+	fprintf(f, "// amx_reset_uqtops ÔøΩ reset all tops^n");
 	fprintf(f, "^n");
 	
 	fprintf(f, "// Cvars^n");
@@ -955,7 +962,7 @@ stock kz_make_cvarexec(const config[])
 	fprintf(f, "^n");
 	
 	fprintf(f, "// How to set up a server by value sv_airaccelerate (Varible=xx, but var=0 reserved for 10aa, var=1 for 100aa)^n");
-	fprintf(f, "kz_uq_airaccelerate %i^n",uq_airaccel);
+	fprintf(f, "kz_uq_airaccelerate %i^n",kz_airaccelerate);
 	fprintf(f, "^n");
 	
 	fprintf(f, "// On/Off Showing stats with noslowdown^n");
@@ -1298,12 +1305,12 @@ public server_frame()
 		if( get_pcvar_num(sv_gravity)!= 800 )
 			set_pcvar_num(sv_gravity, 800);
 		
-		if((uq_airaccel==0 || uq_airaccel==10) && get_pcvar_num(sv_airaccelerate) != 10 )
+		if((kz_airaccelerate==0 || kz_airaccelerate==10) && get_pcvar_num(sv_airaccelerate) != 10 )
 			set_pcvar_num(sv_airaccelerate, 10);
-		else if((uq_airaccel==1 || uq_airaccel==100) && get_pcvar_num(sv_airaccelerate) != 100 )
+		else if((kz_airaccelerate==1 || kz_airaccelerate==100) && get_pcvar_num(sv_airaccelerate) != 100 )
 			set_pcvar_num(sv_airaccelerate, 100);
-		else if(get_pcvar_num(sv_airaccelerate) != uq_airaccel && uq_airaccel!=0 && uq_airaccel!=1)
-			set_pcvar_num(sv_airaccelerate, uq_airaccel);
+		else if(get_pcvar_num(sv_airaccelerate) != kz_airaccelerate && kz_airaccelerate!=0 && kz_airaccelerate!=1)
+			set_pcvar_num(sv_airaccelerate, kz_airaccelerate);
 		
 		if( get_pcvar_num(sv_maxspeed) != 320 )
 			set_pcvar_num(sv_maxspeed, 320);
@@ -2237,27 +2244,27 @@ public fwdPreThink( id )
 					}
 				}
 				new airace,aircj;
-				if(uq_airaccel<=10 && uq_airaccel!=1)
+				if(kz_airaccelerate<=10 && kz_airaccelerate!=1)
 				{
-					if(uq_airaccel==0)
+					if(kz_airaccelerate==0)
 						airace=10;
 					else
-						airace=uq_airaccel;
+						airace=kz_airaccelerate;
 						
 					aircj=0;
 					formatex(airacel[id],32,"");
 				}
 				else
 				{
-					if(uq_airaccel==1)
+					if(kz_airaccelerate==1)
 					{
 						airace=100;
 						formatex(airacel[id],32,"(100aa)");
 					}
 					else
 					{
-						airace=uq_airaccel;
-						formatex(airacel[id],32,"(%daa)",uq_airaccel);
+						airace=kz_airaccelerate;
+						formatex(airacel[id],32,"(%daa)",kz_airaccelerate);
 					}
 					aircj=10;
 				}
@@ -8175,12 +8182,14 @@ public cmdColorChat(id)
 		gHasColorChat[id] = true;
 		
 		Color_Chat_Lang(id,GREEN,"%L",LANG_SERVER,"UQSTATS_COLORCHAT_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagHasColorChat);
 	}
 	else 
 	{
 		gHasColorChat[id] = false;
 		
 		Color_Chat_Lang(id,GREEN,"%L",LANG_SERVER,"UQSTATS_COLORCHAT_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagHasColorChat);
 	}
 	
 	return PLUGIN_CONTINUE;
@@ -8191,6 +8200,7 @@ public cmdljStats( id ) {
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_LJSTATS_D", prefix);
 		g_lj_stats[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagLjStats);
 		
 		if(showpre[id]==true)
 		{
@@ -8227,8 +8237,9 @@ public cmdljStats( id ) {
 		}
 		g_lj_stats[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_LJSTATS_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagLjStats);
 	}
-	
+
 }
 
 
@@ -8249,11 +8260,13 @@ public pre_stats(id)
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_PRESTATS_D", prefix);
 		kz_stats_pre[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagStatsPre);
 	}
 	else 
 	{
 		kz_stats_pre[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_PRESTATS_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagStatsPre);
 	}
 }
 public streif_stats(id)
@@ -8262,11 +8275,13 @@ public streif_stats(id)
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_STRAFESTATS_D", prefix);
 		streifstat[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagStrafeStats);
 	}
 	else 
 	{
 		streifstat[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_STRAFESTATS_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagStrafeStats);
 	}
 }
 public cmdljbeam(id)
@@ -8281,11 +8296,13 @@ public cmdljbeam(id)
 		{
 			Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_BEAMSTATS_D", prefix);
 			kz_beam[id]=false;
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagBeam);
 		}
 		else 
 		{
 			kz_beam[id]=true;
 			Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_BEAMSTATS_E", prefix);
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagBeam);
 		}
 	}
 
@@ -8297,11 +8314,13 @@ public show_pre(id)
 	{
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_SHOWPRE_D", prefix);
 		showpre[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowPre);
 	}
 	else 
 	{
 		showpre[id]=true;
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_SHOWPRE_E", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowPre);
 	}
 }
 public show_speed(id)
@@ -8346,12 +8365,14 @@ public show_speed(id)
 			{
 				Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_SPEED_E", prefix);
 				speedon[id]=true;
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowSpeed);
 				
 				set_task(0.1, "DoSpeed", id+212299, "", 0, "b", 0);
 			}
 			else 
 			{
 				speedon[id]=false;
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowSpeed);
 				
 				if( task_exists(id+212299, 0) )
 					remove_task(id+212299, 0);
@@ -8437,10 +8458,12 @@ public show_jheight(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_JHEIGH_E", prefix);
 		jheight_show[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagJumpHeight);
 	}
 	else 
 	{
 		jheight_show[id]=false;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagJumpHeight);
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_JHEIGH_D", prefix);
 	}
 }
@@ -8450,11 +8473,13 @@ public show_jof(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_JOF_E", prefix);
 		showjofon[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagJumpOff);
 	}
 	else 
 	{
 		showjofon[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_JOF_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagJumpOff);
 	}
 }
 public show_early(id)
@@ -8463,11 +8488,13 @@ public show_early(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_BHOPWARN_E", prefix);
 		failearly[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagFailEarly);
 	}
 	else 
 	{
 		failearly[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_BHOPWARN_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagFailEarly);
 	}
 }
 public multi_bhop(id)
@@ -8476,11 +8503,13 @@ public multi_bhop(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_MULTIBHOP_E", prefix);
 		multibhoppre[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagMultiBhopPre);
 	}
 	else 
 	{
 		multibhoppre[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_MULTIBHOP_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagMultiBhopPre);
 	}
 }
 public duck_show(id)
@@ -8489,11 +8518,13 @@ public duck_show(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_DUCKSPRE_E", prefix);
 		showduck[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowDuck);
 	}
 	else 
 	{
 		showduck[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_DUCKSPRE_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowDuck);
 	}
 }
 public lj_show(id)
@@ -8502,11 +8533,13 @@ public lj_show(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_LJPRE_E", prefix);
 		ljpre[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagLjPre);
 	}
 	else 
 	{
 		ljpre[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_LJPRE_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagLjPre);
 	}
 }
 public enable_sounds(id)
@@ -8517,11 +8550,13 @@ public enable_sounds(id)
 		{
 			Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_SOUND_E", prefix);
 			enable_sound[id]=true;
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagEnableSounds);
 		}
 		else 
 		{
 			enable_sound[id]=false;
 			Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_SOUND_D", prefix);
+			set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagEnableSounds);
 		}
 	}
 	else Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_SOUND_D1", prefix);
@@ -8532,11 +8567,13 @@ public ShowedgeFail(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_EDGEF_E", prefix);
 		Show_edge_Fail[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowEdgeFail);
 	}
 	else 
 	{
 		Show_edge_Fail[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_EDGEF_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowEdgeFail);
 	}
 }
 public Showedge(id)
@@ -8545,11 +8582,13 @@ public Showedge(id)
 	{
 		Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_EDGE_E", prefix);
 		Show_edge[id]=true;
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagShowEdge);
 	}
 	else 
 	{
 		Show_edge[id]=false;
 		Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_EDGE_D", prefix);
+		set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagShowEdge);
 	}
 }
 public heightshow(id)
@@ -8579,11 +8618,13 @@ public ingame_st_stats(id)
 			{
 				Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_ISTRAFE_E", prefix);
 				ingame_strafe[id]=true;
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] | flagIngameStrafes);
 			}
 			else 
 			{
 				ingame_strafe[id]=false;
 				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_ISTRAFE_D", prefix);
+				set_option_cell(id, g_Options[optIntJumpStats], g_OptionFlags[id] & ~flagIngameStrafes);
 			}
 		}
 	}
@@ -8754,16 +8795,16 @@ public ResetHUD(id)
 	{
 		if(firstshow[id]==false)
 		{
-			if( uq_airaccel==1 || uq_airaccel==100)
+			if( kz_airaccelerate==1 || kz_airaccelerate==100)
 			{
 				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_AIRACCEL100", prefix);
 			}
-			else if( uq_airaccel==0 || uq_airaccel==10)
+			else if( kz_airaccelerate==0 || kz_airaccelerate==10)
 			{
 				Color_Chat_Lang(id,BLUE,"%L",LANG_SERVER,"UQSTATS_AIRACCEL10", prefix);
 			}
 			else 
-				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_AIRACCEL", prefix,uq_airaccel);		
+				Color_Chat_Lang(id,RED,"%L",LANG_SERVER,"UQSTATS_AIRACCEL", prefix,kz_airaccelerate);		
 				
 			firstshow[id]=true;
 			
@@ -9367,3 +9408,40 @@ public plugin_end()
 	}
 }
 
+/**
+*	------------------------------------------------------------------
+*	Options
+*	------------------------------------------------------------------
+*/
+
+bindOptions() {
+	g_Options[optIntJumpStats] = find_option_by_name("jump_stats");
+}
+
+public OnCellValueChanged(id, optionId, newValue) {
+	if (optionId == g_Options[optIntJumpStats]) {
+		g_OptionFlags[id] = newValue;
+
+		gHasColorChat[id] =	!!(newValue & flagHasColorChat);
+		g_lj_stats[id] = 	!!(newValue & flagLjStats);
+		speedon[id]= 		!!(newValue & flagShowSpeed);
+		showpre[id]=		!!(newValue & flagShowPre);
+		streifstat[id]=		!!(newValue & flagStrafeStats);
+		kz_beam[id]=		!!(newValue & flagBeam);
+		kz_stats_pre[id]=	!!(newValue & flagStatsPre);
+		failearly[id]=		!!(newValue & flagFailEarly);
+		multibhoppre[id]=	!!(newValue & flagMultiBhopPre);
+		showduck[id]=		!!(newValue & flagShowDuck);
+		ljpre[id]=			!!(newValue & flagLjPre);
+		Show_edge[id]=		!!(newValue & flagShowEdge);
+		Show_edge_Fail[id]=	!!(newValue & flagShowEdgeFail);
+		enable_sound[id]=	!!(newValue & flagEnableSounds);
+		ingame_strafe[id]=	!!(newValue & flagIngameStrafes);
+		showjofon[id]=		!!(newValue & flagJumpOff);
+		jheight_show[id]=	!!(newValue & flagJumpHeight);
+
+		if (speedon[id]) {
+			set_task(0.1, "DoSpeed", id+212299, "", 0, "b", 0);
+		}
+	}
+}
