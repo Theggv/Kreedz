@@ -55,7 +55,7 @@ public client_putinserver(id) {
 
 public cmdMkeyHandler(id) {
 	switch (g_UserData[id][ud_mkeyBehavior]) {
-		case 1: amxclient_cmd(id, "spec");
+		case 1: amxclient_cmd(id, "ct");
 		default: {
 			cmdMainMenu(id);
 		}
@@ -94,10 +94,13 @@ public cmdMainMenu(id) {
 	formatex(szMsg, charsmax(szMsg), "%L", id, "MAINMENU_LJS");
 	menu_additem(iMenu, szMsg);
 
-	formatex(szMsg, charsmax(szMsg), "%L", id, "MAINMENU_SETTINGS");
+	formatex(szMsg, charsmax(szMsg), "%L^n", id, "MAINMENU_SETTINGS");
 	menu_additem(iMenu, szMsg);
 
 	formatex(szMsg, charsmax(szMsg), "%L", id, "MAINMENU_MUTE");
+	menu_additem(iMenu, szMsg);
+
+	formatex(szMsg, charsmax(szMsg), "%L", id, "MAINMENU_WEAPONS");
 	menu_additem(iMenu, szMsg);
 
 	formatex(szMsg, charsmax(szMsg), "%L", id, "BACK");
@@ -138,6 +141,10 @@ public MainMenu_Handler(id, menu, item) {
 		}
 		case 9: {
 			amxclient_cmd(id, "mute");
+			return PLUGIN_HANDLED;
+		}
+		case 10: {
+			amxclient_cmd(id, "weapons");
 			return PLUGIN_HANDLED;
 		}
 		default: return PLUGIN_HANDLED;

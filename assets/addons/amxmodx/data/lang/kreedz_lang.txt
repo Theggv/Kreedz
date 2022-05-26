@@ -29,6 +29,7 @@ MAINMENU_INVIS = Invis
 MAINMENU_LJS = Ljsmenu
 MAINMENU_SETTINGS = Settings
 MAINMENU_MUTE = Mute
+MAINMENU_WEAPONS = Get weapons
 
 INVISMENU_TITLE = Invisibility
 INVISMENU_PLAYERS = Players
@@ -97,6 +98,7 @@ MAINMENU_INVIS = Невидимость
 MAINMENU_LJS = Меню прыжков
 MAINMENU_SETTINGS = Настройки
 MAINMENU_MUTE = Заглушить игрока
+MAINMENU_WEAPONS = Получить оружие
 
 INVISMENU_TITLE = Невидимость
 INVISMENU_PLAYERS = Игроки
