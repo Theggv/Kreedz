@@ -233,13 +233,17 @@ public plugin_end() {
 
 
 public plugin_natives() {
-	register_native("kz_sql_get_user_uid", "native_get_user_uid", 1);
-	register_native("kz_sql_get_map_uid", "native_get_map_uid", 1);
-	register_native("kz_sql_get_tuple", "native_get_tuple", 1);
-	register_native("db_update_user_info", "native_db_update_user_info", 1);
+	register_native("kz_sql_get_user_uid", "native_get_user_uid");
+	register_native("kz_sql_get_map_uid", "native_get_map_uid");
+	register_native("kz_sql_get_tuple", "native_get_tuple");
+	register_native("db_update_user_info", "native_db_update_user_info");
 }
 
-public native_get_user_uid(id) {
+public native_get_user_uid() {
+	enum { arg_id = 1 };
+
+	new id = get_param(arg_id);
+
 	return g_UserData[id];
 }
 
@@ -247,7 +251,11 @@ public native_get_map_uid() {
 	return g_MapId;
 }
 
-public native_db_update_user_info(id) {
+public native_db_update_user_info() {
+	enum { arg_id = 1 };
+
+	new id = get_param(arg_id);
+
 	client_putinserver(id);
 }
 
@@ -699,7 +707,7 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 
 		
 		// Call forward
-		if (g_Candidates[id][run_weapon] == 6) {
+		if (g_Candidates[id][run_weapon] == WPN_USP) {
 			new Float:time = (place == 1) ? g_Candidates[id][run_time] : 0.0;
 
 			if (g_Candidates[id][run_tpCount] == 0)
