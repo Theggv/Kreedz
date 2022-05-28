@@ -188,8 +188,8 @@ SELECT * FROM `kz_maps` WHERE `mapname` = '%s';\
 initProRecords() {
 	new szQuery[512];
 	formatex(szQuery, charsmax(szQuery), "SELECT \
-(SELECT COUNT(*) FROM `kz_records` WHERE `map_id` = %d AND `aa` = 0 AND `weapon` = 6),\
-(SELECT COUNT(*) FROM `kz_records` WHERE `map_id` = %d AND `aa` = 1 AND `weapon` = 6);",
+(SELECT COUNT(*) FROM `kz_records` WHERE `map_id` = %d AND `aa` = 0 AND `weapon` = 6 AND `is_pro_record` = 1),\
+(SELECT COUNT(*) FROM `kz_records` WHERE `map_id` = %d AND `aa` = 1 AND `weapon` = 6 AND `is_pro_record` = 1);",
 		g_MapId, g_MapId);
 
 	SQL_ThreadQuery(SQL_Tuple, "@initProRecordsHandler", szQuery);
@@ -498,8 +498,8 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 	}
 
 	if (SQL_NumResults(hQuery) > 0) {
-		g_HasMapProRecord[AIR_ACCELERATE_10] = SQL_ReadResult(hQuery, 0) > 0;
-		g_HasMapProRecord[AIR_ACCELERATE_100] = SQL_ReadResult(hQuery, 1) > 0;
+		g_HasMapProRecord[AIR_ACCELERATE_10] = (SQL_ReadResult(hQuery, 0) > 0);
+		g_HasMapProRecord[AIR_ACCELERATE_100] = (SQL_ReadResult(hQuery, 1) > 0);
 	}
 
 	ExecuteForward(g_Forwards[fwdInitialized], _);
