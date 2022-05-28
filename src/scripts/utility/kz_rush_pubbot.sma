@@ -14,6 +14,9 @@
 #define VERSION "1.3"
 #define AUTHOR	"Kpoluk"
 
+// comment this to disable recording for nub runs
+// #define ENABLE_NUB_BOT
+
 #define FLAG_GROUND 	(1 << 7)
 #define FLAG_JUMP 		(1 << 6)
 #define FLAG_DUCK 		(1 << 5)
@@ -133,15 +136,26 @@ public kz_timer_start_post(id) {
 }
 
 public kz_timer_pause_post(id) {
-	if(kz_get_timer_state(id) == TIMER_PAUSED)
+	if (kz_get_timer_state(id) == TIMER_PAUSED)
 		fwPubPaused(id);
-	else if(kz_get_timer_state(id) == TIMER_ENABLED)
+	else if (kz_get_timer_state(id) == TIMER_ENABLED)
 		fwPubUnpaused(id);
 }
 
 public kz_top_new_pro_rec(id, Float:fTime) {
-	fwPubFinished(id, fTime);
+	fwPubFinished(id, fTime, 0, 0);
 }
+
+#if defined ENABLE_NUB_BOT
+public kz_top_new_nub_rec(id, Float:fTime, checkpointsCount, teleportsCount) {
+	if (kz_has_map_pro_rec(AIR_ACCELERATE_10)) {
+		fwPubFinished(id, 0.0, 0, 0);
+		return;
+	}
+	
+	fwPubFinished(id, fTime, checkpointsCount, teleportsCount);
+}
+#endif
 
 public kz_timer_stop_post(id) {
 	fwPubRejected(id);
@@ -155,15 +169,22 @@ public kz_starttp_pre(id) {
 }
 
 public kz_tp_post(id) {
-	if (kz_get_timer_state(id) == TIMER_ENABLED)
+	if (kz_get_timer_state(id) == TIMER_ENABLED) {
+#if defined ENABLE_NUB_BOT
+		if (kz_has_map_pro_rec(AIR_ACCELERATE_10)) {
+			fwPubRejected(id);
+		}
+#else
 		fwPubRejected(id);
+#endif
+	}
 
 	return KZ_CONTINUE;
 }
 
 public kz_noclip_pre(id)
 {
-	if(kz_get_timer_state(id) == TIMER_ENABLED)
+	if (kz_get_timer_state(id) == TIMER_ENABLED)
 		fwPubPaused(id);
 
 	return KZ_CONTINUE;
@@ -171,7 +192,7 @@ public kz_noclip_pre(id)
 
 public kz_hook_pre(id)
 {
-	if(kz_get_timer_state(id) == TIMER_ENABLED)
+	if (kz_get_timer_state(id) == TIMER_ENABLED)
 		fwPubPaused(id);
 
 	return KZ_CONTINUE;
@@ -179,7 +200,7 @@ public kz_hook_pre(id)
 
 public kz_spectator_pre(id)
 {
-	if(kz_get_timer_state(id) == TIMER_ENABLED)
+	if (kz_get_timer_state(id) == TIMER_ENABLED)
 		fwPubPaused(id);
 
 	return KZ_CONTINUE;
@@ -351,7 +372,7 @@ public fwPubUnpaused(id) // when user unpaused timer and didn't use gochecks
 	g_hFile[id] = fopen(g_szNavName[id], "ab");
 }
 
-public fwPubFinished(id, Float:flTime) // when user finished the map without gochecks; flTime should be zero if this is not top1
+public fwPubFinished(id, Float:flTime, cpCount, tpCount) // when user finished the map; flTime should be zero if this is not top1
 {
 	// close file
 	if(g_hFile[id])
@@ -401,6 +422,10 @@ public fwPubFinished(id, Float:flTime) // when user finished the map without goc
 	replace_all(name, charsmax(name), "*", "");	
 	replace_all(name, charsmax(name), "<", "");	
 	replace_all(name, charsmax(name), ">", "");
+
+	if (tpCount > 0) {
+		format(name, charsmax(name), "[%dcp %dgc] %s", cpCount, tpCount, name);
+	}
 
 	new szTime[20];
 	stringTimer(flTime, szTime, charsmax(szTime), 2, false);
@@ -654,9 +679,9 @@ public parseFilename()
 
 	// add szFixedTime and szRoute
 	if(equali(szRoute, ""))
-		format(g_szBotName, charsmax(g_szBotName), "%s [%s]", g_szBotName, szFixedTime);
+		format(g_szBotName, charsmax(g_szBotName), "[%s] %s", szFixedTime, g_szBotName);
 	else
-		format(g_szBotName, charsmax(g_szBotName), "%s [%s] %s", g_szBotName, szFixedTime, szRoute);
+		format(g_szBotName, charsmax(g_szBotName), "[%s] %s %s", szFixedTime, g_szBotName, szRoute);
 }
 
 public simpleName()
