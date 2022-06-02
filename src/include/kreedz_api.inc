@@ -123,6 +123,15 @@ native kz_set_last_cp(id, value[PosStruct]);
 native Float:kz_get_actual_time(id);
 native kz_set_start_time(id, Float:value);
 
+/**
+ *	Checks is player has start position
+ *	
+ *	@param id
+ *
+ * 	@return bool
+ */
+native bool:kz_has_start_pos(id);
+
 //
 // Hook & noclip section
 // 

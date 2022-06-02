@@ -42,6 +42,7 @@ CUPS_CHAT_MATCH_END = ^4[KZ] ^1Match was ended.
 CUPS_CHAT_WON = ^4[KZ] ^4%s ^1won the cup with time ^4%s^1.
 CUPS_CHAT_FINISHED = ^4[KZ] ^4%s ^1finished the cup with time ^4%s ^1[+^3%s^1].
 CUPS_CHAT_AUTOEND = ^4[KZ] ^1The cup will automatically end after ^4%d ^1seconds.
+CUPS_CHAT_NO_START_POS = ^4[KZ] ^1Please press start button to set start position.
 
 CUPS_STATUS_INACTIVE = Inactive
 CUPS_STATUS_PENDING =  Pending

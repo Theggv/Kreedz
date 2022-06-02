@@ -604,7 +604,7 @@ public LobbyMenu_Handler(id, menu, item)
 				if (g_Cups[iLobby][cup_State] != State_Started)
 				{
 					// Start match logic
-					if (get_num_players_in_lobby(iLobby) > 1)
+					if (CanStartLobby(iLobby))
 					{
 						PreStartLobby(iLobby);
 						return PLUGIN_HANDLED;
@@ -650,7 +650,7 @@ public LobbyMenu_Handler(id, menu, item)
 					cmd_Leave(id);
 				else
 				{
-					if (	!is_lobby_full(iLobby) &&
+					if (!is_lobby_full(iLobby) &&
 						(!g_Cups[iLobby][cup_IsLocked] || is_invite_valid(id, iLobby)))
 					{
 						cmd_Join(id, iLobby);
@@ -868,8 +868,11 @@ public Invites_Handler(id, menu, item)
 
 public cmd_CupStart(id)
 {
-	if (g_Cups[id][cup_State] == State_Waiting)
-		PreStartLobby(id);
+	if (g_Cups[id][cup_State] == State_Waiting) {
+		if (CanStartLobby(id)) {
+			PreStartLobby(id);
+		}
+	}
 
 	return PLUGIN_HANDLED;
 }
@@ -1142,11 +1145,23 @@ public cmd_Leave(id)
 	return PLUGIN_HANDLED;
 }
 
+bool:CanStartLobby(host) {
+	if (!is_user_connected(host)) 
+		return false;
+
+	if (get_num_players_in_lobby(host) < 2)
+		return false;
+	
+	if (!kz_has_start_pos(host)) {
+		client_print_color(host, print_team_default, "%L", host, "CUPS_CHAT_NO_START_POS");
+		return false;
+	}
+
+	return true;
+}
+
 PreStartLobby(iLobby)
 {
-	if (get_num_players_in_lobby(iLobby) < 2)
-		return;
-
 	if (get_member(iLobby, m_iTeam) == CS_TEAM_SPECTATOR)
 		amxclient_cmd(iLobby, "spec");
 

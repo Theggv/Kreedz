@@ -254,6 +254,8 @@ public plugin_natives()
 
 	register_native("kz_get_actual_time", 	"native_get_actual_time");
 	register_native("kz_set_start_time", 	"native_set_start_time");
+
+	register_native("kz_has_start_pos", 	"native_has_start_pos");
 }
 
 public native_start_timer() {
@@ -386,6 +388,12 @@ public native_set_start_time() {
 	new Float:value = get_param_f(2);
 
 	g_UserData[id][ud_StartTime] = value;
+}
+
+public native_has_start_pos() {
+	new id = get_param(1);
+
+	return g_UserData[id][ud_IsStartSaved];
 }
 
 public native_set_pause() {
