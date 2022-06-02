@@ -39,6 +39,7 @@ new Handle:SQL_Tuple;
 new Handle:SQL_Connection;
 
 new g_MapId;
+new bool:g_HasMapProRecord[AirAccelerateEnum];
 
 enum _:UserRecordStruct {
 	bool:ud_hasRecord,
@@ -184,6 +185,16 @@ SELECT * FROM `kz_maps` WHERE `mapname` = '%s';\
 	SQL_ThreadQuery(SQL_Tuple, "@initMapHandler", szQuery);
 }
 
+initProRecords() {
+	new szQuery[512];
+	formatex(szQuery, charsmax(szQuery), "SELECT \
+(SELECT COUNT(*) FROM `kz_records` WHERE `map_id` = %d AND `aa` = 0 AND `weapon` = 6 AND `is_pro_record` = 1),\
+(SELECT COUNT(*) FROM `kz_records` WHERE `map_id` = %d AND `aa` = 1 AND `weapon` = 6 AND `is_pro_record` = 1);",
+		g_MapId, g_MapId);
+
+	SQL_ThreadQuery(SQL_Tuple, "@initProRecordsHandler", szQuery);
+}
+
 loadConfig(szFileName[]) {
 	if (!file_exists(szFileName)) return;
 	
@@ -233,13 +244,18 @@ public plugin_end() {
 
 
 public plugin_natives() {
-	register_native("kz_sql_get_user_uid", "native_get_user_uid", 1);
-	register_native("kz_sql_get_map_uid", "native_get_map_uid", 1);
-	register_native("kz_sql_get_tuple", "native_get_tuple", 1);
-	register_native("db_update_user_info", "native_db_update_user_info", 1);
+	register_native("kz_sql_get_user_uid", "native_get_user_uid");
+	register_native("kz_sql_get_map_uid", "native_get_map_uid");
+	register_native("kz_sql_get_tuple", "native_get_tuple");
+	register_native("db_update_user_info", "native_db_update_user_info");
+	register_native("kz_has_map_pro_rec", "native_has_map_pro_rec");
 }
 
-public native_get_user_uid(id) {
+public native_get_user_uid() {
+	enum { arg_id = 1 };
+
+	new id = get_param(arg_id);
+
 	return g_UserData[id];
 }
 
@@ -247,12 +263,24 @@ public native_get_map_uid() {
 	return g_MapId;
 }
 
-public native_db_update_user_info(id) {
+public native_db_update_user_info() {
+	enum { arg_id = 1 };
+
+	new id = get_param(arg_id);
+
 	client_putinserver(id);
 }
 
 public Handle:native_get_tuple() {
 	return SQL_Tuple;
+}
+
+public native_has_map_pro_rec() {
+	enum { arg_aa = 1 };
+
+	new aa = get_param(arg_aa);
+	
+	return g_HasMapProRecord[aa];
 }
 
 /**
@@ -422,9 +450,6 @@ public taskShowBestScore(taskId) {
 
 	checkIsMigrationNeeded();
 	initMap();
-
-	new iRet;
-	ExecuteForward(g_Forwards[fwdInitialized], iRet);
 	
 	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
@@ -455,7 +480,29 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 	}
 	else {
 		g_MapId = SQL_ReadResult(hQuery, 0);
+		initProRecords();
 	}
+
+	SQL_FreeHandle(hQuery);
+	return PLUGIN_HANDLED;
+}
+
+@initProRecordsHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "initMapHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+			SQL_FreeHandle(hQuery);
+			
+			return PLUGIN_HANDLED;
+		}
+	}
+
+	if (SQL_NumResults(hQuery) > 0) {
+		g_HasMapProRecord[AIR_ACCELERATE_10] = (SQL_ReadResult(hQuery, 0) > 0);
+		g_HasMapProRecord[AIR_ACCELERATE_100] = (SQL_ReadResult(hQuery, 1) > 0);
+	}
+
+	ExecuteForward(g_Forwards[fwdInitialized], _);
 
 	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
@@ -699,11 +746,13 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 
 		
 		// Call forward
-		if (g_Candidates[id][run_weapon] == 6) {
+		if (g_Candidates[id][run_weapon] == WPN_USP) {
 			new Float:time = (place == 1) ? g_Candidates[id][run_time] : 0.0;
 
-			if (g_Candidates[id][run_tpCount] == 0)
+			if (g_Candidates[id][run_tpCount] == 0) {
+				g_HasMapProRecord[AIR_ACCELERATE_10] = true;
 				ExecuteForward(g_Forwards[fwdNewProRecord], _, id, time);
+			}
 			else
 				ExecuteForward(g_Forwards[fwdNewNubRecord], _, id, time, 
 					g_Candidates[id][run_cpCount], g_Candidates[id][run_tpCount]);
