@@ -33,6 +33,11 @@ enum _: {
     CHANNEL_HUD = 2,
 };
 
+enum _:AirAccelerateEnum {
+	AIR_ACCELERATE_10 = 0,
+	AIR_ACCELERATE_100 = 1,
+};
+
 enum _:WeaponsEnum {
 	WPN_AWP = 0,
     WPN_M249 = 1,
@@ -163,3 +168,16 @@ native kz_set_min_rank(id, value);
 native kz_get_weapon_name(iRank, szWeapon[], iLen);
 
 native kz_get_usp(id);
+
+// 
+// Records section
+// 
+
+/**
+ *	Checks is map has pro record
+ *
+ *	@param aa check AirAccelerateEnum constants
+ *
+ *	@return true if record exists, false otherwise
+ */
+native bool:kz_has_map_pro_rec(aa = AIR_ACCELERATE_10);
