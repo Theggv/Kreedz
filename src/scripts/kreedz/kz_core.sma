@@ -233,6 +233,7 @@ public plugin_natives()
 {
 	register_native("kz_get_timer_state", 	"native_get_timer_state");
 	register_native("kz_start_timer", 		"native_start_timer");
+	register_native("kz_end_timer", 		"native_end_timer");
 	register_native("kz_set_pause", 		"native_set_pause");
 
 	register_native("kz_tp_last_pos", 		"native_tp_last_pos");
@@ -262,6 +263,12 @@ public native_start_timer() {
 	new id = get_param(1);
 
 	run_start(id);
+}
+
+public native_end_timer() {
+	new id = get_param(1);
+	
+	run_finish(id);
 }
 
 public native_get_cp_num() {

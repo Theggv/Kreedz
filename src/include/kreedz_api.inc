@@ -105,6 +105,7 @@ forward kz_starttp_post(id);
 native TimerState:kz_get_timer_state(id);
 
 native kz_start_timer(id);
+native kz_end_timer(id);
 
 native kz_set_pause(id);
 
