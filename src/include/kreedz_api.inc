@@ -150,6 +150,9 @@ forward kz_hook_pre(id);
 
 forward kz_hook_post(id);
 
+native kz_in_hook(id);
+native kz_in_noclip(id);
+
 //
 // Spec section
 // 
