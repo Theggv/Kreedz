@@ -1,7 +1,7 @@
 #include <amxmodx>
 #include <cstrike>
 #include <fun>
-#include <fakemeta>
+#include <fakemeta_util>
 #include <hamsandwich>
 #include <reapi>
 
