@@ -185,8 +185,11 @@ public cmd_Block(id)
 
 public ham_Touch_Pre(iEnt, id)
 {
-	if(is_entity(iEnt))
+	if(is_entity(iEnt)) {
 		remove_entity(iEnt);
+		return HAM_SUPERCEDE;
+	}
+	return HAM_IGNORED;
 }
 
 public ham_TakeDamage_Pre(id, iInflictor, iAttacker, Float:fDamage, damagebits)
