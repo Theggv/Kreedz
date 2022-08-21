@@ -101,7 +101,8 @@ public init_RemoveEnts()
 
 	while((iEnt = rg_find_ent_by_class(iEnt, "func_door")) != 0)
 	{
-		if(entity_get_float(iEnt, EV_FL_dmg) < 0)
+		new Float:fDmg = get_entvar(iEnt, var_dmg);
+		if(fDmg < 0)
 		{
 			get_entvar(iEnt, var_targetname, szTempStr, charsmax(szTempStr));
 
@@ -116,6 +117,9 @@ public init_RemoveEnts()
 			g_hasInfinityHP = true;
 
 			remove_entity(iEnt);
+		}
+		else if(fDmg > 0) {
+			set_entvar(iEnt, var_dmg, 0.0);
 		}
 	}
 
