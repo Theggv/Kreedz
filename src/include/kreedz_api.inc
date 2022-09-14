@@ -105,6 +105,7 @@ forward kz_starttp_post(id);
 native TimerState:kz_get_timer_state(id);
 
 native kz_start_timer(id);
+native kz_end_timer(id);
 
 native kz_set_pause(id);
 
@@ -148,6 +149,9 @@ forward kz_noclip_post(id);
 forward kz_hook_pre(id);
 
 forward kz_hook_post(id);
+
+native kz_in_hook(id);
+native kz_in_noclip(id);
 
 //
 // Spec section

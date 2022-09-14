@@ -63,6 +63,26 @@ public plugin_init() {
 	bindOptions();
 }
 
+public plugin_natives() {
+	register_native("kz_in_hook", "native_in_hook");
+	register_native("kz_in_noclip", "native_in_noclip");
+}
+
+public native_in_hook() {
+	new id = get_param(1);
+	if(id < 1 || id > MAX_PLAYERS) return false;
+
+	return g_UserData[id][ud_hookEnabled];
+}
+
+public native_in_noclip() {
+	new id = get_param(1);
+	if(id < 1 || id > MAX_PLAYERS) return false;
+
+	return g_UserData[id][ud_noclipEnabled];
+}
+
+
 initForwards() {
 	g_Forwards[fwd_NoclipPre] = CreateMultiForward("kz_noclip_pre", ET_CONTINUE, FP_CELL);
 	g_Forwards[fwd_NoclipPost] = CreateMultiForward("kz_noclip_post", ET_IGNORE, FP_CELL);
