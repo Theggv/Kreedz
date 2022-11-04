@@ -15,7 +15,7 @@
 #define AUTHOR	"Kpoluk"
 
 // comment this to disable recording for nub runs
-// #define ENABLE_NUB_BOT
+#define ENABLE_NUB_BOT
 
 #define FLAG_GROUND 	(1 << 7)
 #define FLAG_JUMP 		(1 << 6)
