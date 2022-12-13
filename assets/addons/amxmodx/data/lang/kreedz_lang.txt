@@ -67,6 +67,11 @@ SETTINGSMENU_OPT_MKEY_SPEC_CT = M key behavior: \ygo to spec/ct
 SETTINGSMENU_ENABLE = enabled
 SETTINGSMENU_DISABLE = disabled
 
+STARTPOSMENU_TITLE = \ySave start position:
+STARTPOSMENU_SAVE = Save current position
+KZ_CHAT_SET_START_POS_FAIL = ^4[KZ] ^1You must be alive for this action.
+KZ_CHAT_SET_START_POS_SAVED = ^4[KZ] ^1New start position is set.
+
 [ru]
 KZ_HUD_CANT_SAVE = Невозможно сохраниться в воздухе
 KZ_HUD_CANT_TELEPORT = У вас нет сохранений
@@ -135,3 +140,8 @@ SETTINGSMENU_OPT_MKEY_OPEN_MENU = Кнопка М: \rоткрыть главно
 SETTINGSMENU_OPT_MKEY_SPEC_CT = Кнопка М: \yперейти в наблюдение
 SETTINGSMENU_ENABLE = вкл
 SETTINGSMENU_DISABLE = выкл
+
+STARTPOSMENU_TITLE = \yСохранить стартовую позицию:
+STARTPOSMENU_SAVE = Сохранить текущую позицию
+KZ_CHAT_SET_START_POS_FAIL = ^4[KZ] ^1Вы должны быть живы для этого действия.
+KZ_CHAT_SET_START_POS_SAVED = ^4[KZ] ^1Новая стартовая позиция задана.

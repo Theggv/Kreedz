@@ -29,6 +29,7 @@ new g_ConnInfo[ConnectionStruct];
 enum _:eForwards {
 	fwdInitialized,
 	fwdInfoReceived,
+	fwdStartPositionLoaded,
 	fwdNewProRecord,
 	fwdNewNubRecord,
 };
@@ -70,6 +71,8 @@ public plugin_init() {
 initForwards() {
 	g_Forwards[fwdInitialized] = 	CreateMultiForward("kz_sql_initialized", ET_IGNORE);
 	g_Forwards[fwdInfoReceived] = 	CreateMultiForward("kz_sql_data_recv", ET_IGNORE, FP_CELL);
+	g_Forwards[fwdStartPositionLoaded] = 
+		CreateMultiForward("kz_sql_start_pos_loaded", ET_IGNORE, FP_CELL, FP_ARRAY, FP_ARRAY);
 	g_Forwards[fwdNewProRecord] = 	CreateMultiForward("kz_top_new_pro_rec", ET_IGNORE, FP_CELL, FP_FLOAT);
 	g_Forwards[fwdNewNubRecord] = 	
 		CreateMultiForward("kz_top_new_nub_rec", ET_IGNORE, FP_CELL, FP_FLOAT, FP_CELL, FP_CELL);
@@ -168,6 +171,23 @@ CREATE TABLE IF NOT EXISTS `kz_savedruns` (\
 		ON DELETE CASCADE \
 		ON UPDATE CASCADE \
 	) DEFAULT CHARSET utf8;\
+\
+CREATE TABLE IF NOT EXISTS `kz_start_pos` (\
+	`user_id` int(11) NOT NULL,\
+	`map_id` int(11) NOT NULL,\
+	`pos_x` int(11) NOT NULL DEFAULT 0,\
+	`pos_y` int(11) NOT NULL DEFAULT 0,\
+	`pos_z` int(11) NOT NULL DEFAULT 0,\
+	`angle_x` int(11) NOT NULL DEFAULT 0,\
+	`angle_y` int(11) NOT NULL DEFAULT 0,\
+	PRIMARY KEY (user_id, map_id),\
+	FOREIGN KEY (user_id) REFERENCES kz_uid(id)\
+		ON DELETE CASCADE \
+		ON UPDATE CASCADE,\
+	FOREIGN KEY (map_id) REFERENCES kz_maps(id)\
+		ON DELETE CASCADE \
+		ON UPDATE CASCADE \
+	) DEFAULT CHARSET utf8;\
 		");
 
 	SQL_ThreadQuery(SQL_Tuple, "@initTablesHandler", szQuery);
@@ -249,6 +269,7 @@ public plugin_natives() {
 	register_native("kz_sql_get_tuple", "native_get_tuple");
 	register_native("db_update_user_info", "native_db_update_user_info");
 	register_native("kz_has_map_pro_rec", "native_has_map_pro_rec");
+	register_native("kz_sql_save_start_pos", "native_save_start_pos");
 }
 
 public native_get_user_uid() {
@@ -281,6 +302,18 @@ public native_has_map_pro_rec() {
 	new aa = get_param(arg_aa);
 	
 	return g_HasMapProRecord[aa];
+}
+
+public native_save_start_pos() {
+	enum { arg_id = 1, arg_origin, arg_angle };
+
+	new id = get_param(arg_id);
+	
+	new Float:vOrigin[3], Float:vAngle[3];
+	get_array_f(arg_origin, vOrigin, sizeof vOrigin);
+	get_array_f(arg_angle, vAngle, sizeof vAngle);
+
+	saveStartPosition(id, vOrigin, vAngle);
 }
 
 /**
@@ -361,6 +394,8 @@ public kz_sql_data_recv(id) {
 	new mapId = kz_sql_get_map_uid();
 	new userId = kz_sql_get_user_uid(id);
 
+	// Load start position
+	loadStartPosition(id);
 
 	// Load personal records
 	for (new isProRecord = 0; isProRecord <= 1; ++isProRecord) {
@@ -373,6 +408,38 @@ AND `weapon` = 6 AND `aa` = 0 AND `is_pro_record` = %d;",
 		szData[1] = isProRecord;
 		SQL_ThreadQuery(SQL_Tuple, "@getPersonalRecordHandler", szQuery, szData, sizeof szData);
 	}
+}
+
+loadStartPosition(id) {
+	new szQuery[256], szData[1];
+
+	new mapId = kz_sql_get_map_uid();
+	new userId = kz_sql_get_user_uid(id);
+
+	formatex(szQuery, charsmax(szQuery), "\
+SELECT `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y` \
+FROM `kz_start_pos` WHERE `user_id` = %d AND `map_id` = %d;",
+		userId, mapId);
+	
+	szData[0] = id;
+	SQL_ThreadQuery(SQL_Tuple, "@loadStartPositionHandler", szQuery, szData, sizeof szData);
+}
+
+saveStartPosition(id, Float:vOrigin[3], Float:vAngle[3]) {
+	new szQuery[256];
+
+	new mapId = kz_sql_get_map_uid();
+	new userId = kz_sql_get_user_uid(id);
+
+	formatex(szQuery, charsmax(szQuery), "\
+REPLACE INTO `kz_start_pos` \
+(`user_id`, `map_id`, `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y`) \
+VALUES (%d, %d, %d, %d, %d, %d, %d);",
+		userId, mapId, 
+		vOrigin[0], vOrigin[1], vOrigin[2],
+		vAngle[0], vAngle[1]);
+	
+	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 }
 
 insertOrUpdateRecord(id) {
@@ -681,6 +748,39 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 
 	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
+}
+
+@loadStartPositionHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	switch (QueryState) {
+		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
+			UTIL_LogToFile(MYSQL_LOG, "ERROR", "loadStartPositionHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
+			SQL_FreeHandle(hQuery);
+			
+			return;
+		}
+	}
+
+	new id = szData[0];
+
+	if (SQL_NumResults(hQuery) <= 0) {
+		SQL_FreeHandle(hQuery);
+		return;
+	}
+
+	new Float:vOrigin[3], Float:vAngle[3];
+
+	vOrigin[0] = Float:SQL_ReadResult(hQuery, 0);
+	vOrigin[1] = Float:SQL_ReadResult(hQuery, 1);
+	vOrigin[2] = Float:SQL_ReadResult(hQuery, 2);
+
+	vAngle[0] = Float:SQL_ReadResult(hQuery, 3);
+	vAngle[1] = Float:SQL_ReadResult(hQuery, 4);
+
+	ExecuteForward(g_Forwards[fwdStartPositionLoaded], _, id,
+		PrepareArray(_:vOrigin, sizeof vOrigin),
+		PrepareArray(_:vAngle, sizeof vAngle));
+
+	SQL_FreeHandle(hQuery);
 }
 
 @getAchievementHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
