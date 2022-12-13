@@ -322,13 +322,10 @@ public cmdShowPersonalBest(id) {
 public client_putinserver(id) {
 	if (is_user_bot(id)) return;
 	
-	new szQuery[512], szAuth[37], szData[5];
+	new szQuery[512], szAuth[37], szData[1];
 	
 	// get user steam id
 	get_user_authid(id, szAuth, charsmax(szAuth));
-	
-	// id to string
-	num_to_str(id, szData, charsmax(szData));
 	
 	// format query
 	formatex(szQuery, charsmax(szQuery), "\
@@ -336,7 +333,8 @@ SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';",
 		szAuth);
 	
 	// async query to get user info
-	SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, charsmax(szData));
+	szData[0] = id;
+	SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, sizeof szData);
 }
 
 public client_disconnected(id) {
@@ -358,25 +356,27 @@ public kz_timer_finish_post(id, runInfo[RunStruct]) {
 }
 
 public kz_sql_data_recv(id) {
-	new szQuery[256], szData[32];
+	new szQuery[256], szData[2];
 
 	new mapId = kz_sql_get_map_uid();
 	new userId = kz_sql_get_user_uid(id);
 
 
+	// Load personal records
 	for (new isProRecord = 0; isProRecord <= 1; ++isProRecord) {
 		formatex(szQuery, charsmax(szQuery), "\
 SELECT `time`, `cp`, `tp`, `weapon`, `aa` FROM `kz_records` WHERE `user_id` = %d AND `map_id` = %d \
 AND `weapon` = 6 AND `aa` = 0 AND `is_pro_record` = %d;",
 			userId, mapId, isProRecord);
 
-		formatex(szData, charsmax(szData), "%d %d", id, isProRecord);
-		SQL_ThreadQuery(SQL_Tuple, "@getPersonalRecordHandler", szQuery, szData, charsmax(szData));
+		szData[0] = id;
+		szData[1] = isProRecord;
+		SQL_ThreadQuery(SQL_Tuple, "@getPersonalRecordHandler", szQuery, szData, sizeof szData);
 	}
 }
 
 insertOrUpdateRecord(id) {
-	new szQuery[256];
+	new szQuery[256], szData[1];
 
 	new userId = kz_sql_get_user_uid(id);
 	new mapId = kz_sql_get_map_uid();
@@ -387,10 +387,8 @@ AND `weapon` = %d AND `aa` = %d AND `is_pro_record` = %d;",
 		userId, mapId, g_Candidates[id][run_weapon], 
 		g_Candidates[id][run_airaccelerate], (g_Candidates[id][run_tpCount] == 0));
 
-	new szData[32];
-	formatex(szData, charsmax(szData), "%d", id);
-
-	SQL_ThreadQuery(SQL_Tuple, "@insertOrUpdateRecHandler", szQuery, szData, charsmax(szData));
+	szData[0] = id;
+	SQL_ThreadQuery(SQL_Tuple, "@insertOrUpdateRecHandler", szQuery, szData, sizeof szData);
 }
 
 printTimeDifference(id, Float:oldTime, Float:newTime) {
@@ -419,9 +417,9 @@ WHERE `map_id` = %d AND `weapon` = %d AND `aa` = %d AND `is_pro_record` = %d AND
 		mapId, g_Candidates[id][run_weapon], g_Candidates[id][run_airaccelerate], 
 		(g_Candidates[id][run_tpCount] == 0), g_Candidates[id][run_time]);
 
-	new szData[32];
-	formatex(szData, charsmax(szData), "%d", id);
-	SQL_ThreadQuery(SQL_Tuple, "@getAchievementHandler", szQuery, szData, charsmax(szData));
+	new szData[1];
+	szData[0] = id;
+	SQL_ThreadQuery(SQL_Tuple, "@getAchievementHandler", szQuery, szData, sizeof szData);
 }
 
 public taskShowBestScore(taskId) {
@@ -518,8 +516,7 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 		}
 	}
 	
-	// get user id from data
-	new id = str_to_num(szData);
+	new id = szData[0];
 	new szQuery[512], szAuth[37];
 
 	new szName[MAX_NAME_LENGTH];
@@ -575,7 +572,7 @@ UPDATE `kz_uid` SET `last_name` = '%s' WHERE `id` = %d;\
 		}
 	}
 
-	new id = str_to_num(szData);
+	new id = szData[0];
 
 	new szQuery[512];
 
@@ -648,11 +645,8 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 		}
 	}
 
-	new szId[16], szIsPro[16];
-	parse(szData, szId, 15, szIsPro, 15);
-
-	new id = str_to_num(szId);
-	new bool:isProRecord = bool:str_to_num(szIsPro);
+	new id = szData[0];
+	new bool:isProRecord = bool:szData[1];
 
 	if (SQL_NumResults(hQuery) > 0) {
 		if (isProRecord) {
@@ -699,7 +693,7 @@ INSERT INTO `kz_records` (`user_id`, `map_id`, `time`, `cp`, `tp`, `weapon`, `aa
 		}
 	}
 
-	new id = str_to_num(szData);
+	new id = szData[0];
 
 	if (SQL_NumResults(hQuery) > 0) {
 		new place = SQL_ReadResult(hQuery, 0);
