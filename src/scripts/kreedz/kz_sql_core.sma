@@ -270,6 +270,7 @@ public plugin_natives() {
 	register_native("db_update_user_info", "native_db_update_user_info");
 	register_native("kz_has_map_pro_rec", "native_has_map_pro_rec");
 	register_native("kz_sql_save_start_pos", "native_save_start_pos");
+	register_native("kz_sql_reset_start_pos", "native_reset_start_pos");
 }
 
 public native_get_user_uid() {
@@ -314,6 +315,14 @@ public native_save_start_pos() {
 	get_array_f(arg_angle, vAngle, sizeof vAngle);
 
 	saveStartPosition(id, vOrigin, vAngle);
+}
+
+public native_reset_start_pos() {
+	enum { arg_id = 1 };
+	
+	new id = get_param(arg_id);
+
+	resetStartPosition(id);
 }
 
 /**
@@ -438,6 +447,20 @@ VALUES (%d, %d, %d, %d, %d, %d, %d);",
 		userId, mapId, 
 		vOrigin[0], vOrigin[1], vOrigin[2],
 		vAngle[0], vAngle[1]);
+	
+	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
+}
+
+resetStartPosition(id) {
+	new szQuery[256];
+
+	new mapId = kz_sql_get_map_uid();
+	new userId = kz_sql_get_user_uid(id);
+
+	formatex(szQuery, charsmax(szQuery), "\
+DELETE FROM `kz_start_pos` \
+WHERE `user_id` = %d AND `map_id` = %d;",
+		userId, mapId);
 	
 	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 }

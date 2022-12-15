@@ -23,3 +23,5 @@ native kz_sql_get_map_uid();
 native Handle:kz_sql_get_tuple();
 
 native kz_sql_save_start_pos(id, Float:vOrigin[3], Float:vAngle[3]);
+
+native kz_sql_reset_start_pos(id);

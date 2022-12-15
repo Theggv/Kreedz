@@ -702,6 +702,9 @@ public cmd_StartPos(id) {
 	formatex(szMsg, charsmax(szMsg), "%L", id, "STARTPOSMENU_SAVE");
 	menu_additem(menu, szMsg);
 
+	formatex(szMsg, charsmax(szMsg), "%L", id, "STARTPOSMENU_RESET");
+	menu_additem(menu, szMsg);
+
 	menu_display(id, menu);
 
 	return PLUGIN_HANDLED;
@@ -745,6 +748,12 @@ public cmd_ShowVersion(id) {
 			kz_sql_save_start_pos(id, vOrigin, vAngle);
 
 			client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_SET_START_POS_SAVED");
+		}
+		case 1: {
+			g_UserData[id][ud_IsStartSaved] = false;
+			kz_sql_reset_start_pos(id);
+
+			client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_SET_START_POS_RESETED");
 		}
 		default: return PLUGIN_HANDLED;
 	}
