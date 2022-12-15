@@ -7,6 +7,7 @@
 #include <reapi>
 
 #include <kreedz_api>
+#include <kreedz_sql>
 #include <kreedz_util>
 #include <settings_api>
 
@@ -175,6 +176,8 @@ initCommands() {
 	kz_register_cmd("restart", 		"cmd_Start");
 	kz_register_cmd("stop",		 	"cmd_Stop");
 	kz_register_cmd("reset", 		"cmd_Stop");
+	kz_register_cmd("startpos", 	"cmd_StartPos");
+	kz_register_cmd("savestart", 	"cmd_StartPos");
 
 	kz_register_cmd("sunglasses", 	"cmd_Sunglasses");
 
@@ -688,6 +691,25 @@ public cmd_Sunglasses(id) {
 	return PLUGIN_HANDLED; 
 }
 
+public cmd_StartPos(id) {
+	if (pev_valid(id) != 2) return PLUGIN_HANDLED;
+
+	new szMsg[256];
+
+	formatex(szMsg, charsmax(szMsg), "%L", id, "STARTPOSMENU_TITLE");
+	new menu = menu_create(szMsg, "@startPosMenuHandler");
+
+	formatex(szMsg, charsmax(szMsg), "%L", id, "STARTPOSMENU_SAVE");
+	menu_additem(menu, szMsg);
+
+	formatex(szMsg, charsmax(szMsg), "%L", id, "STARTPOSMENU_RESET");
+	menu_additem(menu, szMsg);
+
+	menu_display(id, menu);
+
+	return PLUGIN_HANDLED;
+}
+
 public cmd_DetectHook(id) {
 	if (is_user_alive(id) && g_UserData[id][ud_TimerState] == TIMER_ENABLED)
 		kz_set_pause(id);
@@ -708,6 +730,38 @@ public cmd_ShowVersion(id) {
 }
 
 
+@startPosMenuHandler(id, menu, item) {
+	menu_destroy(menu);
+
+	switch (item) {
+		case 0: {
+			if (!is_user_alive(id)) {
+				client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_SET_START_POS_FAIL");
+				return PLUGIN_HANDLED;
+			}
+
+			new Float:vOrigin[3], Float:vAngle[3];
+			get_entvar(id, var_origin, vOrigin);
+			get_entvar(id, var_v_angle, vAngle);
+
+			setStartPosition(id, vOrigin, vAngle);
+			kz_sql_save_start_pos(id, vOrigin, vAngle);
+
+			client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_SET_START_POS_SAVED");
+		}
+		case 1: {
+			g_UserData[id][ud_IsStartSaved] = false;
+			kz_sql_reset_start_pos(id);
+
+			client_print_color(id, print_team_default, "%L", id, "KZ_CHAT_SET_START_POS_RESETED");
+		}
+		default: return PLUGIN_HANDLED;
+	}
+
+	cmd_StartPos(id);
+
+	return PLUGIN_HANDLED;
+}
 
 /**
  *	------------------------------------------------------------------
@@ -737,6 +791,8 @@ public client_putinserver(id) {
 		g_UserData[id][ud_LastVel] = Float:{0.0, 0.0, 0.0};
 		g_UserData[id][ud_IsStartSaved] = false;
 
+		// Set default angles mode before settings are loaded
+		g_UserData[id][ud_AnglesMode] = 3;
 		g_UserData[id][ud_Sunglasses] = false;
 	}
 }
@@ -746,6 +802,14 @@ public client_disconnected(id) {
 		g_UserData[id][ud_TimerState] = TIMER_PAUSED;
 		g_UserData[id][ud_PauseTime] = get_gametime();
 	}
+}
+
+public kz_sql_start_pos_loaded(id, Float:vOrigin[3], Float:vAngle[3]) {
+	setStartPosition(id, vOrigin, vAngle);
+
+	if (g_UserData[id][ud_TimerState] != TIMER_DISABLED) return;
+
+	set_task(0.6, "cmd_Start", id);
 }
 
 public ham_Use(iEnt, id) {
@@ -873,15 +937,15 @@ run_start(id) {
 	g_UserData[id][ud_AvailableStucks] = 0;
 	g_UserData[id][ud_TeleNum] = 0;
 
-	static Float:vPos[3], Float:vAngle[3];
+	if (!kz_has_start_pos(id)) {
+		static Float:vPos[3], Float:vAngle[3];
 
-	get_entvar(id, var_origin, vPos);
-	get_entvar(id, var_v_angle, vAngle);
+		get_entvar(id, var_origin, vPos);
+		get_entvar(id, var_v_angle, vAngle);
 
-	g_UserData[id][ud_IsStartSaved] = true;
-
-	g_UserData[id][ud_StartPos][cp_Pos] = vPos;
-	g_UserData[id][ud_StartPos][cp_Angle] = vAngle;
+		setStartPosition(id, vPos, vAngle);
+		kz_sql_save_start_pos(id, vPos, vAngle);
+	}
 
 	cmd_Fade(id);
 
@@ -1004,3 +1068,9 @@ public cmd_Fade(id) {
 	}
 }
 
+setStartPosition(id, Float:vOrigin[3], Float:vAngle[3]) {
+	g_UserData[id][ud_IsStartSaved] = true;
+
+	g_UserData[id][ud_StartPos][cp_Pos] = vOrigin;
+	g_UserData[id][ud_StartPos][cp_Angle] = vAngle;
+}

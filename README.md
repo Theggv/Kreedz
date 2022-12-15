@@ -26,6 +26,7 @@
 | `nc` \| `noclip` | Enable / disable noclip |
 | `weapons` | Get all weapons |
 | `spec` \| `ct` | Move to spectators / cts |
+| `startpos` \| `savestart` | Save start position |
 
 ### Top
 | Command  | Description |
