@@ -71,8 +71,8 @@ STARTPOSMENU_TITLE = \ySave start position:
 STARTPOSMENU_SAVE = Save current position
 STARTPOSMENU_RESET = Reset start position
 KZ_CHAT_SET_START_POS_FAIL = ^4[KZ] ^1You must be alive for this action.
-KZ_CHAT_SET_START_POS_SAVED = ^4[KZ] ^1New start position is set.
-KZ_CHAT_SET_START_POS_RESETED = ^4[KZ] ^1Start position is reseted.
+KZ_CHAT_SET_START_POS_SAVED = ^4[KZ] ^1New start position set.
+KZ_CHAT_SET_START_POS_RESETED = ^4[KZ] ^1Start position has reset.
 
 [ru]
 KZ_HUD_CANT_SAVE = Невозможно сохраниться в воздухе
