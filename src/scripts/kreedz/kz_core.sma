@@ -609,6 +609,10 @@ public cmd_Start(id) {
 	if (iRet == KZ_SUPERCEDE) return PLUGIN_HANDLED;
 
 	if (g_UserData[id][ud_IsStartSaved]) {
+		if (kz_get_timer_state(id) == TIMER_ENABLED) {
+			kz_set_pause(id);
+		}
+
 		set_entvar(id, var_origin, g_UserData[id][ud_StartPos][cp_Pos]);
 
 		if (g_UserData[id][ud_AnglesMode] & (1 << 1)) {
