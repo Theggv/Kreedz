@@ -182,7 +182,6 @@ initCommands() {
 	kz_register_cmd("sunglasses", 	"cmd_Sunglasses");
 
 	register_clcmd("kz_version", 	"cmd_ShowVersion");
-	// register_clcmd("say /vars", "cmd_vars");
 }
 
 initTries() {
@@ -214,16 +213,6 @@ public OnCellValueChanged(id, optionId, newValue) {
 	if (optionId == g_Options[optIntSaveAngles]) {
 		g_UserData[id][ud_AnglesMode] = newValue;
 	}
-}
-
-public cmd_vars(id) {
-	client_print(id, print_console, "%d %d %d %d", 
-		get_entvar(id, var_iuser1), get_entvar(id, var_iuser2),
-		get_entvar(id, var_iuser3), get_entvar(id, var_iuser4));
-
-	client_print(id, print_console, "%.1f %.1f %.1f %.1f", 
-		get_entvar(id, var_fuser1), get_entvar(id, var_fuser2),
-		get_entvar(id, var_fuser3), get_entvar(id, var_fuser4));
 }
 
 /**
