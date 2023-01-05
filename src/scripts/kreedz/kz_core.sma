@@ -185,6 +185,7 @@ initCommands() {
 	kz_register_cmd("reset", 		"cmd_Stop");
 	kz_register_cmd("startpos", 	"cmd_StartPos");
 	kz_register_cmd("savestart", 	"cmd_StartPos");
+	kz_register_cmd("setstart", 	"cmd_StartPos");
 
 	kz_register_cmd("sunglasses", 	"cmd_Sunglasses");
 
