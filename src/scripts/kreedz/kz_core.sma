@@ -21,8 +21,9 @@
  *	------------------------------------------------------------------
  */
 
-#define MAX_CACHE			20
-#define TIMER_UPDATE		1.0
+#define MAX_CACHE						20
+#define TIMER_UPDATE					1.0
+#define MIN_TIME_BETWEEN_USE_CALLS		0.1
 
 enum _:CheckpointStruct {
 	Float:cp_Pos[3],
@@ -95,6 +96,11 @@ enum OptionsEnum {
 
 new g_Options[OptionsEnum];
 
+enum CvarsEnum {
+	cvarBlockStartSpam,
+};
+
+new g_Cvars[CvarsEnum];
 
 new Float:g_Checks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
 new Float:g_PauseChecks[MAX_PLAYERS + 1][MAX_CACHE][CheckpointStruct];
@@ -122,6 +128,7 @@ public plugin_init() {
 	initTries();
 	initForwards();
 	initCommands();
+	initCvars();
 
 	bindOptions();
 
@@ -178,11 +185,18 @@ initCommands() {
 	kz_register_cmd("reset", 		"cmd_Stop");
 	kz_register_cmd("startpos", 	"cmd_StartPos");
 	kz_register_cmd("savestart", 	"cmd_StartPos");
+	kz_register_cmd("setstart", 	"cmd_StartPos");
 
 	kz_register_cmd("sunglasses", 	"cmd_Sunglasses");
 
 	register_clcmd("kz_version", 	"cmd_ShowVersion");
-	// register_clcmd("say /vars", "cmd_vars");
+}
+
+initCvars() {
+	// 	Start button can only be activated every 0.1s (prevent +use spam)
+	// 	0 - disabled
+	// 	1 - enabled (default)
+	bind_pcvar_num(create_cvar("kz_disable_scroll_start", "1"), g_Cvars[cvarBlockStartSpam]);
 }
 
 initTries() {
@@ -214,16 +228,6 @@ public OnCellValueChanged(id, optionId, newValue) {
 	if (optionId == g_Options[optIntSaveAngles]) {
 		g_UserData[id][ud_AnglesMode] = newValue;
 	}
-}
-
-public cmd_vars(id) {
-	client_print(id, print_console, "%d %d %d %d", 
-		get_entvar(id, var_iuser1), get_entvar(id, var_iuser2),
-		get_entvar(id, var_iuser3), get_entvar(id, var_iuser4));
-
-	client_print(id, print_console, "%.1f %.1f %.1f %.1f", 
-		get_entvar(id, var_fuser1), get_entvar(id, var_fuser2),
-		get_entvar(id, var_fuser3), get_entvar(id, var_fuser4));
 }
 
 /**
@@ -609,6 +613,10 @@ public cmd_Start(id) {
 	if (iRet == KZ_SUPERCEDE) return PLUGIN_HANDLED;
 
 	if (g_UserData[id][ud_IsStartSaved]) {
+		if (kz_get_timer_state(id) == TIMER_ENABLED) {
+			kz_set_pause(id);
+		}
+
 		set_entvar(id, var_origin, g_UserData[id][ud_StartPos][cp_Pos]);
 
 		if (g_UserData[id][ud_AnglesMode] & (1 << 1)) {
@@ -924,6 +932,8 @@ HudDelBit(id, bit) {
 }
 
 run_start(id) {
+	if (shouldBlockStartButton(id)) return;
+
 	new iRet;
 	ExecuteForward(g_Forwards[fwd_TimerStartPre], iRet, id);
 
@@ -1003,6 +1013,20 @@ run_finish(id) {
 
 	UpdateHud(id);
 	ExecuteForward(g_Forwards[fwd_TimerFinishPost], _, id, PrepareArray(runInfo, RunStruct));
+}
+
+public bool:shouldBlockStartButton(id) {
+	if (!g_Cvars[cvarBlockStartSpam]) return false;
+
+	static Float:lastCall[MAX_PLAYERS + 1];
+
+	if (get_gametime() - lastCall[id] < MIN_TIME_BETWEEN_USE_CALLS) {
+		return true;
+	}
+
+	lastCall[id] = get_gametime();
+
+	return false;
 }
 
 public timer_handler() {

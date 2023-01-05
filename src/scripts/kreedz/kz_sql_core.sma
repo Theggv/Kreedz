@@ -616,35 +616,30 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 	
 	// no results -> player connected for first time
 	if (SQL_NumResults(hQuery) <= 0) {
-		// format query
+		// create user info for new player
 		formatex(szQuery, charsmax(szQuery), "\
 INSERT INTO `kz_uid` (`steam_id`, `last_name`) VALUES ('%s', '%s');\
 			", szAuth, szName);
 		
-		// async query to get user info again
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 		
+		// get user info again
 		formatex(szQuery, charsmax(szQuery), "\
 SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
 			", szAuth);
 		
-		// async query to get user info
 		SQL_ThreadQuery(SQL_Tuple, "@getUserInfoHandler", szQuery, szData, iLen);
 	}
 	// has result -> parse user data
 	else {
-		// get unique id
 		g_UserData[id] = SQL_ReadResult(hQuery, 0);
+		ExecuteForward(g_Forwards[fwdInfoReceived], _, id);
 		
-		new iRet;
-		ExecuteForward(g_Forwards[fwdInfoReceived], iRet, id);
-		
-		// format query
+		// update user info
 		formatex(szQuery, charsmax(szQuery), "\
 UPDATE `kz_uid` SET `last_name` = '%s' WHERE `id` = %d;\
 			", szName, g_UserData[id]);
 		
-		// async query to get user info again
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 	}
 	
