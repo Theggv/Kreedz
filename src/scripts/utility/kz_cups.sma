@@ -28,9 +28,15 @@ enum (+=500)
 
 enum CupState
 {
+	// No lobby
 	State_Inactive,
+	// Lobby created, no other players
 	State_Pending,
+	// Lobby created, ready to start
 	State_Waiting,
+	// Players are frozen, timer from 10 to 0
+	State_Timer,
+	// Lobby started
 	State_Started,
 }
 
@@ -892,7 +898,7 @@ bool:has_active_cup(id)
 {
 	for (new i; i <= MAX_PLAYERS; ++i)
 	{
-		if ( g_Cups[i][cup_State] == State_Started &&
+		if (g_Cups[i][cup_State] == State_Started &&
 			g_Cups[i][cup_Players][id] && !g_Cups[i][cup_Time][id])
 			return true;
 	}
@@ -1043,7 +1049,7 @@ get_num_valid_lobbies()
 
 	for (new i; i <= MAX_PLAYERS; ++i)
 	{
-		if (	g_Cups[i][cup_State] != State_Inactive &&
+		if (g_Cups[i][cup_State] != State_Inactive &&
 			g_Cups[i][cup_State] != State_Pending)
 			numLobbies++;
 	}
@@ -1157,7 +1163,7 @@ PreStartLobby(iLobby)
 		}
 	}
 
-	g_Cups[iLobby][cup_State] = State_Started;
+	g_Cups[iLobby][cup_State] = State_Timer;
 
 	StartTimer(iLobby);
 }
@@ -1184,7 +1190,7 @@ public Task_StartTimer(iLobby)
 {
 	iLobby -= TASK_START;
 
-	if (g_Cups[iLobby][cup_State] != State_Started)
+	if (g_Cups[iLobby][cup_State] != State_Timer)
 	{
 		for (new id; id <= MAX_PLAYERS; ++id)
 		{
@@ -1213,12 +1219,14 @@ public Task_StartTimer(iLobby)
 
 				RemoveEffects(id);
 				kz_start_timer(id);
-				// ne prokatit, peredelat'
-				// set_entvar(id, var_origin, vOrigin); 
 
-				remove_task(iLobby + 15000);
+				remove_task(TASK_START + iLobby);
 			}
 		}
+	}
+
+	if (g_Timer[iLobby] <= 0) {
+		g_Cups[iLobby][cup_State] = State_Started;
 	}
 
 	g_Timer[iLobby]--;
