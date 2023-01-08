@@ -3,6 +3,12 @@
 #include <kreedz_util>
 #include <settings_api>
 
+#define USE_MAP_MANAGER_INTERGRATION
+
+#if defined USE_MAP_MANAGER_INTERGRATION
+	#include <map_manager>
+#endif
+
 #define PLUGIN 	 	"[Kreedz] Menu"
 #define VERSION 	__DATE__
 #define AUTHOR	 	"ggv"
@@ -155,3 +161,22 @@ public MainMenu_Handler(id, menu, item) {
 	return PLUGIN_HANDLED;
 }
 
+#if defined USE_MAP_MANAGER_INTERGRATION
+
+public mapm_vote_canceled() {
+	openMenuAfterVote();
+}
+
+public mapm_vote_finished() {
+	openMenuAfterVote();
+}
+
+openMenuAfterVote() {
+	for (new id = 1; id <= MAX_PLAYERS; ++id) {
+		if (!is_user_alive(id) || is_user_bot(id)) continue;
+
+		amxclient_cmd(id, "menu");
+	}
+}
+
+#endif

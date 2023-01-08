@@ -63,13 +63,13 @@ public kz_sql_data_recv(id) {
 SELECT * FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 		kz_sql_get_user_uid(id), kz_sql_get_map_uid());
 
-	new szData[5];
-	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@loadRunHandler", szQuery, szData, charsmax(szData));
+	new szData[1];
+	szData[0] = id;
+	SQL_ThreadQuery(SQL_Tuple, "@loadRunHandler", szQuery, szData, sizeof szData);
 }
 
-public deleteSavedRun(id) {
-	if (!g_UserData[id][ud_hasSavedRun]) return;
+stock deleteSavedRun(id, ignoreChecks = false) {
+	if (!g_UserData[id][ud_hasSavedRun] && !ignoreChecks) return;
 
 	g_UserData[id][ud_hasSavedRun] = false;
 
@@ -78,10 +78,7 @@ public deleteSavedRun(id) {
 DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 		kz_sql_get_user_uid(id), kz_sql_get_map_uid());
 
-	new szData[16];
-	formatex(szData, charsmax(szData), "%d", id);
-
-	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery, szData, charsmax(szData));
+	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 }
 
 @loadRunHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
@@ -95,7 +92,7 @@ DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
 	}
 
 	if (SQL_NumResults(hQuery) > 0) {
-		new id = str_to_num(szData);
+		new id = szData[0];
 
 		g_UserData[id][ud_SavedTime] = Float:SQL_ReadResult(hQuery, 2);
 		g_UserData[id][ud_SavedChecksNum] = SQL_ReadResult(hQuery, 4);
@@ -164,14 +161,9 @@ savePos(id) {
 	kz_get_last_cp(id, iLastCp);
 	kz_get_last_vel(id, iLastVel);
 
+	deleteSavedRun(id, true);
+
 	new szQuery[512];
-	formatex(szQuery, charsmax(szQuery), "\
-DELETE FROM `kz_savedruns` WHERE `uid` = %d AND `mapid` = %d;",
-		kz_sql_get_user_uid(id), kz_sql_get_map_uid()
-		);
-
-	SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
-
 	formatex(szQuery, charsmax(szQuery), "\
 INSERT INTO `kz_savedruns` \
 	(`uid`, `mapid`, `time`, `cp`, `tp`, \
@@ -195,28 +187,25 @@ INSERT INTO `kz_savedruns` \
 		);
 
 
-	new szData[16];
-	num_to_str(id, szData, charsmax(szData));
-	SQL_ThreadQuery(SQL_Tuple, "@savePosHandler", szQuery, szData, charsmax(szData));
+	new szData[1];
+	szData[0] = id;
+	SQL_ThreadQuery(SQL_Tuple, "@savePosHandler", szQuery, szData, sizeof szData);
 }
 
 @savePosHandler(QueryState, Handle:hQuery, szError[], iError, szData[], iLen, Float:fQueryTime) {
+	SQL_FreeHandle(hQuery);
+
 	switch (QueryState) {
 		case TQUERY_CONNECT_FAILED, TQUERY_QUERY_FAILED: {
 			UTIL_LogToFile(MYSQL_LOG, "ERROR", "savePosHandler", "[%d] %s (%.2f sec)", iError, szError, fQueryTime);
-			SQL_FreeHandle(hQuery);
 			
 			return PLUGIN_HANDLED;
 		}
 	}
 
-	new id = str_to_num(szData);
-
+	new id = szData[0];
 	g_UserData[id][ud_hasSavedRun] = true;
 
-	client_print_color(id, print_team_default, "^4[KZ] ^1Your run was successfully saved.");
-
-	SQL_FreeHandle(hQuery);
 	return PLUGIN_HANDLED;
 }
 

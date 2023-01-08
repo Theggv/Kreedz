@@ -66,7 +66,7 @@ new bool:slidim[33],Float:slidedist[33],edgefriction,mp_footsteps,sv_cheats,sv_a
 new kz_min_dcj,kz_stats_x,kz_stats_y,Float:stats_x,Float:stats_y,taskslide[33],taskslide1[33],bool:failslide[33];
 new Float:failslidez[33],kz_strafe_x,kz_strafe_y,Float:strafe_x,Float:strafe_y,Float:laddist[33],kz_duck_x;
 new kz_duck_y,Float:duck_x,Float:duck_y,bool:bhopaem[33],bool:nextbhop[33],kz_stats_red,kz_stats_green, kz_stats_blue, kz_failstats_red,kz_failstats_green;
-new kz_failstats_blue, kz_sounds, kz_airaccelerate,kz_uq_url,kz_prefix,kz_legal_settings;
+new kz_failstats_blue, kz_sounds, kz_airaccelerate,kz_uq_url,kz_prefix;
 
 new kz_good_lj,kz_pro_lj,kz_holy_lj,kz_leet_lj,kz_god_lj,kz_good_bj,kz_pro_bj,kz_holy_bj,kz_leet_bj,kz_god_bj;
 new kz_good_cj,kz_pro_cj,kz_holy_cj,kz_leet_cj,kz_god_cj,kz_good_wj,kz_pro_wj,kz_holy_wj,kz_leet_wj,kz_god_wj;
@@ -257,7 +257,8 @@ public plugin_init()
 	
 	kz_sounds 	     = register_cvar("kz_uq_sounds",           "1");
 	kz_top_rank_by        = register_cvar("kz_uq_top_by",        "1");		// How ranking will work? 0=name, 1=ip 2=steam
-	kz_legal_settings     = register_cvar("kz_uq_legal_settings",     "1");
+	bind_pcvar_num(register_cvar("kz_uq_legal_settings", "1"), leg_settings);
+
 	kz_prefix 	       = register_cvar("kz_uq_prefix",       "unique-kz");
 	bind_pcvar_num(register_cvar("kz_uq_airaccelerate", "10"), kz_airaccelerate);
 	
@@ -621,7 +622,6 @@ public plugin_cfg()
 	duckbhop_holy_dist=get_pcvar_num(kz_holy_duckbhop);
 	duckbhop_pro_dist=get_pcvar_num(kz_pro_duckbhop);
 	duckbhop_good_dist=get_pcvar_num(kz_good_duckbhop);
-	leg_settings=get_pcvar_num(kz_legal_settings);
 	min_distance=get_pcvar_num(kz_min_dcj);
 	min_distance_other=get_pcvar_num(kz_uq_min_other);
 	max_distance=get_pcvar_num(MAX_DISTANCE);
