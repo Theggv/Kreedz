@@ -158,6 +158,10 @@ public cmd_Noclip(id) {
 	return PLUGIN_HANDLED;
 }
 
+public kz_timer_start_pre(id) {
+	set_user_noclip(id, 0);
+}
+
 public cmd_Hook_Enable(id) {
 	if(!is_user_alive(id))
 		return PLUGIN_HANDLED;
