@@ -200,6 +200,11 @@ ForceWrite:
 	}
 }
 
+public kz_timer_start_post(id) {
+	if (!is_user_alive(id)) return;
+	pev(id, pev_origin, g_flJumpOrigin[id]);
+}
+
 public ClCmd_FullUpdate( id )
 {
 	if( g_bSafeInform )
