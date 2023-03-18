@@ -83,6 +83,7 @@ new g_iAdminDoor[PLAYERS_ARRAY_SIZE];
 new szConfigFile[64];
 
 new Trie:g_iBlocksClass;
+new bool:g_bKZApiEnabled = true;
 
 new g_iMaxPlayers, g_iMaxEnts;
 #define IsPlayer(%1)	( 1 <= %1 <= g_iMaxPlayers )
@@ -125,6 +126,21 @@ public plugin_init()
 	server_print("[MPBHOP] %d bhop blocks detected", iCount);
 
 	SetTriggerMultiple();
+}
+
+public plugin_natives()
+{
+	set_native_filter("native_filter");
+}
+
+public native_filter(const name[], index, found)
+{
+	if(contain(name, "kz_") != -1 && !found) {
+		g_bKZApiEnabled = false;
+		return PLUGIN_HANDLED;
+	}
+
+	return PLUGIN_CONTINUE;
 }
 
 public plugin_cfg()
@@ -420,7 +436,7 @@ public CBasePlayer_PreThink(id)
 					flVecOrigin[2] += 18.0;
 					if( !trace_hull(flVecOrigin, HULL_HUMAN, id, IGNORE_MONSTERS) )
 					{
-						if (kz_get_timer_state(id) != TIMER_PAUSED ||
+						if ((g_bKZApiEnabled && kz_get_timer_state(id) != TIMER_PAUSED) ||
 							g_flJumpOrigin[id][0] == 0) {
 							flVecOrigin[2] -= 18.0;
 							xs_vec_copy(flVecOrigin, g_flJumpOrigin[id]);
@@ -435,7 +451,7 @@ public CBasePlayer_PreThink(id)
 				}
 				else
 				{
-					if (kz_get_timer_state(id) != TIMER_PAUSED ||
+					if ((g_bKZApiEnabled && kz_get_timer_state(id) != TIMER_PAUSED) ||
 						g_flJumpOrigin[id][0] == 0) {
 						pev(id, pev_origin, g_flJumpOrigin[id]);
 						SetIdBits(g_bOnGround, id);
