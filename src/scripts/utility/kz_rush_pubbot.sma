@@ -14,9 +14,6 @@
 #define VERSION "1.3"
 #define AUTHOR	"Kpoluk"
 
-// comment this to disable recording for nub runs
-// #define ENABLE_NUB_BOT
-
 #define FLAG_GROUND 	(1 << 7)
 #define FLAG_JUMP 		(1 << 6)
 #define FLAG_DUCK 		(1 << 5)
@@ -61,6 +58,12 @@ new g_iByte;
 new g_hFile[33];
 new g_szNavName[33][128];
 new g_hNavFile;
+
+enum CvarsEnum {
+	cvarEnableNubBot,
+};
+
+new g_Cvars[CvarsEnum];
 
 
 public plugin_precache()
@@ -119,6 +122,8 @@ public plugin_init()
 	retrieveName();
 	parseNav();
 
+	initCvars();
+
 	// register_saycmd("started", "fwPubStarted");
 	// register_saycmd("rejected", "fwPubRejected");
 	// register_saycmd("paused", "fwPubPaused");
@@ -146,16 +151,17 @@ public kz_top_new_pro_rec(id, Float:fTime) {
 	fwPubFinished(id, fTime, 0, 0);
 }
 
-#if defined ENABLE_NUB_BOT
 public kz_top_new_nub_rec(id, Float:fTime, checkpointsCount, teleportsCount) {
+	if (!g_Cvars[cvarEnableNubBot])
+		return;
+
 	if (kz_has_map_pro_rec(AIR_ACCELERATE_10)) {
 		fwPubFinished(id, 0.0, 0, 0);
 		return;
 	}
-	
+
 	fwPubFinished(id, fTime, checkpointsCount, teleportsCount);
 }
-#endif
 
 public kz_timer_stop_post(id) {
 	fwPubRejected(id);
@@ -170,13 +176,13 @@ public kz_starttp_pre(id) {
 
 public kz_tp_post(id) {
 	if (kz_get_timer_state(id) == TIMER_ENABLED) {
-#if defined ENABLE_NUB_BOT
-		if (kz_has_map_pro_rec(AIR_ACCELERATE_10)) {
-			fwPubRejected(id);
+		if (g_Cvars[cvarEnableNubBot]) {
+			if (kz_has_map_pro_rec(AIR_ACCELERATE_10)) {
+				fwPubRejected(id);
+			}
 		}
-#else
-		fwPubRejected(id);
-#endif
+		else
+			fwPubRejected(id);
 	}
 
 	return KZ_CONTINUE;
@@ -958,6 +964,13 @@ public playbackSound(id)
 	}
 	
 	return;
+}
+
+initCvars() {
+	// 	Enable recording for nub runs
+	// 	0 - disabled (default)
+	// 	1 - enabled
+	bind_pcvar_num(create_cvar("kz_enable_nub_bot", "0"), g_Cvars[cvarEnableNubBot]);
 }
 
 public plugin_end()
