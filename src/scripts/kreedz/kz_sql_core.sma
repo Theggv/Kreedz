@@ -613,13 +613,20 @@ INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');\
 
 	get_user_name(id, szName, charsmax(szName));
 	get_user_authid(id, szAuth, charsmax(szAuth));
+
+	new szNameEscaped[MAX_NAME_LENGTH * 2];
+	copy(szNameEscaped, charsmax(szNameEscaped), szName);
+
+	replace_all(szNameEscaped, charsmax(szNameEscaped), "^"", "\^"");
+	replace_all(szNameEscaped, charsmax(szNameEscaped), "`", "\`")
+	replace_all(szNameEscaped, charsmax(szNameEscaped), "'", "\'")
 	
 	// no results -> player connected for first time
 	if (SQL_NumResults(hQuery) <= 0) {
 		// create user info for new player
 		formatex(szQuery, charsmax(szQuery), "\
 INSERT INTO `kz_uid` (`steam_id`, `last_name`) VALUES ('%s', '%s');\
-			", szAuth, szName);
+			", szAuth, szNameEscaped);
 		
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 		
@@ -638,7 +645,7 @@ SELECT * FROM `kz_uid` WHERE `steam_id` = '%s';\
 		// update user info
 		formatex(szQuery, charsmax(szQuery), "\
 UPDATE `kz_uid` SET `last_name` = '%s' WHERE `id` = %d;\
-			", szName, g_UserData[id]);
+			", szNameEscaped, g_UserData[id]);
 		
 		SQL_ThreadQuery(SQL_Tuple, "@dummyHandler", szQuery);
 	}

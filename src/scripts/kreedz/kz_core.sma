@@ -24,6 +24,7 @@
 #define MAX_CACHE						20
 #define TIMER_UPDATE					1.0
 #define MIN_TIME_BETWEEN_USE_CALLS		0.1
+#define HOOK_PROTECTION					2.0
 
 enum _:CheckpointStruct {
 	Float:cp_Pos[3],
@@ -828,12 +829,6 @@ public ham_Use(iEnt, id) {
 
 	// Start button detected
 	if (TrieKeyExists(g_tStarts, szTarget)) {
-		if (g_UserData[id][ud_isHookEnable] || 
-			g_UserData[id][ud_HookProtection] > get_gametime() - 1.5 ||
-			get_user_noclip(id)) {
-			return HAM_IGNORED;
-		}
-
 		run_start(id);
 	}
 
@@ -932,6 +927,9 @@ HudDelBit(id, bit) {
 }
 
 run_start(id) {
+	if (g_UserData[id][ud_isHookEnable]) return;
+	if (g_UserData[id][ud_HookProtection] > get_gametime() - HOOK_PROTECTION) return;
+	if (get_user_noclip(id)) return;
 	if (shouldBlockStartButton(id)) return;
 
 	new iRet;
