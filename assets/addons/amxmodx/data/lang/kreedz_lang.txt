@@ -149,3 +149,79 @@ STARTPOSMENU_RESET = Сбросить стартовую позицию
 KZ_CHAT_SET_START_POS_FAIL = ^4[KZ] ^1Вы должны быть живы для этого действия.
 KZ_CHAT_SET_START_POS_SAVED = ^4[KZ] ^1Новая стартовая позиция задана.
 KZ_CHAT_SET_START_POS_RESETED = ^4[KZ] ^1Стартовая позиция была сброшена.
+
+[cn]
+KZ_HUD_CANT_SAVE = 禁止空中存点
+KZ_HUD_CANT_TELEPORT = 无存点信息
+
+KZ_CHAT_FINISHED = ^4[KZ] ^1%s 到达终点. 用时: %02d:%02d.%02d (%d/%d). 武器: %s
+
+KZ_CHAT_NO_PRO_RECORDS = ^4[KZ] ^1当前地图暂无裸跳记录
+KZ_CHAT_NO_NUB_RECORDS = ^4[KZ] ^1当前地图暂无存点记录
+KZ_CHAT_NO_WEAPON_RECORDS = ^4[KZ] ^1当前前地图暂无: %s 记录
+
+KZ_CHAT_BEAT_RECORD = ^4[KZ] ^1[-^4%s^1]
+KZ_CHAT_LOSE_RECORD = ^4[KZ] ^1[+^3%s^1]
+
+KZ_CHAT_BEST_PRO = ^4[KZ] ^1当前个人裸跳记录为 %s (0/0)
+KZ_CHAT_BEST_NUB = ^4[KZ] ^1当前个人存点记录为 %s (%d/%d)
+KZ_CHAT_NO_RECORD = ^4[KZ] ^1当前地图暂无个人记录
+
+KZ_CHAT_REC_PRO = ^4[KZ] ^1Pro record: [^4%s^1] by ^3%s^1
+KZ_CHAT_REC_NO_DATA = ^4[KZ] ^1Pro record: ^3No data^1
+
+MAINMENU_TITLE = 菜单
+MAINMENU_CP = 存点
+MAINMENU_TP = 读点
+MAINMENU_PAUSE = 暂停 / 取消暂停
+MAINMENU_START = 返回起点
+MAINMENU_NOCLIP = 鬼魂模式
+MAINMENU_SPEC = 观察模式
+MAINMENU_INVIS = 模型隐藏
+MAINMENU_LJS = 长跳菜单
+MAINMENU_SETTINGS = 其他设置
+MAINMENU_MUTE = Mute
+MAINMENU_WEAPONS = 获取武器
+
+INVISMENU_TITLE = 模型隐藏
+INVISMENU_PLAYERS = 玩家
+INVISMENU_WATER = 水质
+INVISMENU_DRAW = \r显示
+INVISMENU_HIDE = \d隐藏
+
+SPECLIST_TITLE = Spectators (%d):
+
+GOTOMENU_TITLE = 传送菜单:
+GOTOMENU_ALLOWED = \w%s
+GOTOMENU_FORBIDDEN = \d%s
+GOTO_TELEPORTED_TO_CHAT = ^4[KZ] ^1已传送至 ^3%s^1.
+GOTO_FORBIDDEN_CHAT = ^4[KZ] ^1无法传送到 ^3%s^1.
+
+SETTINGSMENU_TITLE = \yKZ 设置
+SETTINGSMENU_OPT_ANGLES_NONE = 保存模型角度: \d禁用
+SETTINGSMENU_OPT_ANGLES_ONLY_TP = 保存模型角度: \y存点
+SETTINGSMENU_OPT_ANGLES_ONLY_START = 保存模型角度: \y起点
+SETTINGSMENU_OPT_ANGLES_START_AND_TP = 保存模型角度: \r存点 + 起点
+SETTINGSMENU_OPT_INVIS_DISABLE = 模型隐藏: \d禁用
+SETTINGSMENU_OPT_INVIS_PLAYERS = 模型隐藏: \y隐藏玩家模型
+SETTINGSMENU_OPT_INVIS_WATER = 模型隐藏: \y隐藏水质模型
+SETTINGSMENU_OPT_INVIS_PL_AND_WATER = 模型隐藏: \y隐藏 玩家 + 水质 模型
+SETTINGSMENU_OPT_SHOWMENU = 进入服务器默认开启菜单
+SETTINGSMENU_OPT_STOPSOUND = 进入服务器默认关闭地图声音
+SETTINGSMENU_OPT_SPECLIST = 显示观察者列表
+SETTINGSMENU_OPT_HOOKSPEED = Hook 速度: \y%.0f \du/s
+SETTINGSMENU_OPT_NOCLIPSPEED = 鬼魂模式 速度: \y%.0f \du/s
+SETTINGSMENU_OPT_FOG = 显示地面实体物
+SETTINGSMENU_OPT_GOTO = 允许他人传送到你
+SETTINGSMENU_OPT_RADIO = 无线电命令
+SETTINGSMENU_OPT_MKEY_OPEN_MENU = M 键操作: \r开启菜单
+SETTINGSMENU_OPT_MKEY_SPEC_CT = M 键操作: \y spec/ct
+SETTINGSMENU_ENABLE = 启用
+SETTINGSMENU_DISABLE = 禁用
+
+STARTPOSMENU_TITLE = \y起点位置:
+STARTPOSMENU_SAVE = 保存当前位置
+STARTPOSMENU_RESET = 重置起点位置
+KZ_CHAT_SET_START_POS_FAIL = ^4[KZ] ^1你必须活着才能执行该操作.
+KZ_CHAT_SET_START_POS_SAVED = ^4[KZ] ^1新的起点已设置.
+KZ_CHAT_SET_START_POS_RESETED = ^4[KZ] ^1起点位置已重置.
