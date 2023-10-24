@@ -252,7 +252,7 @@ public OnStartSound(
 			// 	continue;
 			// }
 
-			rh_emit_sound2(entity, i, channel, sample, float(volume), attenuation, fFlags, pitch);
+			rh_emit_sound2(entity, i, channel, sample, volume / 255.0, attenuation, fFlags, pitch);
 		}
 		
 		return HC_SUPERCEDE;
