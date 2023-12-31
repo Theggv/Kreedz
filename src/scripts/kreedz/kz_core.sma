@@ -440,6 +440,7 @@ public native_tp_last_pos() {
 	set_entvar(id, var_view_ofs, Float:{0.0, 0.0, 12.0});
 	set_entvar(id, var_flags, get_entvar(id, var_flags) | FL_DUCKING);
 	set_entvar(id, var_fuser2, 0.0);
+	set_entvar(id, var_friction, 1.0);
 
 	if (g_UserData[id][ud_TimerState] == TIMER_PAUSED)
 		cmd_Fade(id);
@@ -569,6 +570,7 @@ public cmd_Gocheck(id) {
 	set_entvar(id, var_view_ofs, Float:{0.0, 0.0, 12.0});
 	set_entvar(id, var_flags, get_entvar(id, var_flags) | FL_DUCKING);
 	set_entvar(id, var_fuser2, 0.0);
+	set_entvar(id, var_friction, 1.0);
 
 	ExecuteForward(g_Forwards[fwd_TeleportPost], _, id);
 
@@ -630,6 +632,7 @@ public cmd_Start(id) {
 		set_entvar(id, var_view_ofs, Float:{0.0, 0.0, 12.0});
 		set_entvar(id, var_flags, get_entvar(id, var_flags) | FL_DUCKING);
 		set_entvar(id, var_fuser2, 0.0);
+		set_entvar(id, var_friction, 1.0);
 	} else {
 		ExecuteHamB(Ham_CS_RoundRespawn, id);
 	}
