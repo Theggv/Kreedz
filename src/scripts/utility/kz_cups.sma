@@ -1183,6 +1183,7 @@ public RemoveEffects(id)
 		set_entvar(id, var_flags, get_entvar(id, var_flags) | FL_DUCKING);
 		set_entvar(id, var_fuser2, 0.0);
 		set_entvar(id, var_flags, get_entvar(id, var_flags) & ~FL_FROZEN);
+		set_entvar(id, var_friction, 1.0);
 	}
 }
 
