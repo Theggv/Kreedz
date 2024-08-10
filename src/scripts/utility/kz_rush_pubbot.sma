@@ -11,8 +11,17 @@
 #pragma semicolon 1
 
 #define PLUGIN	"KZ Rush PubBot"
-#define VERSION "1.3"
+#define VERSION "1.7"
 #define AUTHOR	"Kpoluk"
+
+// uncomment this define, if you want your bot to execute +use 
+//#define BOT_USE
+
+// by default bot has no prefix, but you can use "[REC] " for example
+#define BOT_PREFIX ""
+
+#define DELAY_FRAMES 100
+new g_iDelayCounter;
 
 #define FLAG_GROUND 	(1 << 7)
 #define FLAG_JUMP 		(1 << 6)
@@ -51,6 +60,9 @@ new g_iPlrSound;
 new g_iStepLeft;
 new bool:g_bOldJump;
 
+new Float:g_flInitTime[33];
+new g_iFramesAfterInit[33];
+
 new Float:g_fOrigin[3];
 new Float:g_fAngle[3];
 new g_iByte;
@@ -58,6 +70,10 @@ new g_iByte;
 new g_hFile[33];
 new g_szNavName[33][128];
 new g_hNavFile;
+
+new Float:g_flOrigin[33][3];
+new Float:g_flAngle[33][3];
+new g_iNavButtons[33];
 
 enum CvarsEnum {
 	cvarEnableNubBot,
@@ -90,6 +106,7 @@ public plugin_init()
 	if(!dir_exists(g_szBotDir))
 		mkdir(g_szBotDir);
 
+	RegisterHam(Ham_Spawn, "player", "hamPlayerSpawn", true);
 	RegisterHam(Ham_TakeDamage, "player", "hamPlayerTakeDamage", false);
 	register_forward(FM_PlayerPreThink, "fmPlayerPreThink");
 	register_forward(FM_CheckVisibility, "fmCheckVisibility");
@@ -135,6 +152,7 @@ public plugin_init()
 
 	register_menucmd(register_menuid("PubBotMenu", 0), 1023, "handlePubBotMenu");
 }
+
 
 public kz_timer_start_post(id) {
 	fwPubStarted(id);
@@ -216,7 +234,8 @@ public cmdPubBotMenu(id)
 {
 	if(!(get_user_flags(id) & ADMIN_VOTE))
 	{
-		return PLUGIN_HANDLED;	
+		client_print_color(id, print_team_red, "^4[KZ] ^1You have no rights to manage the pubbot");
+		return PLUGIN_HANDLED;
 	}
 
 	new szMenu[300];
@@ -319,6 +338,8 @@ public client_putinserver(id)
 	replace_all(szAuthID, charsmax(szAuthID), ":", "_"); // : is not allowed in Windows names
 
 	formatex(g_szNavName[id], charsmax(g_szNavName[]), "%s/%s.nav", g_szBotDir, szAuthID);
+
+	g_iFramesAfterInit[id] = 0;
 }
 
 public client_disconnected(id)
@@ -340,6 +361,8 @@ public fwPubStarted(id) // when user started the timer
 	}
 	
 	g_hFile[id] = fopen(g_szNavName[id], "wb");
+
+	g_iFramesAfterInit[id] = 0;
 }
 
 public fwPubRejected(id) // when gocheck done or user disconnects without savepos
@@ -376,6 +399,8 @@ public fwPubUnpaused(id) // when user unpaused timer and didn't use gochecks
 	}
 
 	g_hFile[id] = fopen(g_szNavName[id], "ab");
+
+	g_iFramesAfterInit[id] = 0;
 }
 
 public fwPubFinished(id, Float:flTime, cpCount, tpCount) // when user finished the map; flTime should be zero if this is not top1
@@ -479,40 +504,45 @@ public fmPlayerPreThink(id)
 
 	if(is_user_alive(id) && g_hFile[id])
 	{
-		new Float:flOrigin[3];
-		new Float:flAngle[3];
+		if(g_iFramesAfterInit[id] == 0)
+			g_flInitTime[id] = get_gametime();
 
-		pev(id, pev_origin, flOrigin);
-		pev(id, pev_v_angle, flAngle);
+		if(get_gametime() - g_flInitTime[id] < g_iFramesAfterInit[id] * 0.01 - 0.0005)
+			return PLUGIN_HANDLED;
+
+		g_iFramesAfterInit[id]++;
+
+		pev(id, pev_origin, g_flOrigin[id]);
+		pev(id, pev_v_angle, g_flAngle[id]);
 		new iButton = pev(id, pev_button);
 		
-		fwrite(g_hFile[id], _:flOrigin[0], BLOCK_INT);
-		fwrite(g_hFile[id], _:flOrigin[1], BLOCK_INT);
-		fwrite(g_hFile[id], _:flOrigin[2], BLOCK_INT);
+		fwrite(g_hFile[id], _:g_flOrigin[id][0], BLOCK_INT);
+		fwrite(g_hFile[id], _:g_flOrigin[id][1], BLOCK_INT);
+		fwrite(g_hFile[id], _:g_flOrigin[id][2], BLOCK_INT);
 
-		fwrite(g_hFile[id], _:flAngle[0], BLOCK_INT);
-		fwrite(g_hFile[id], _:flAngle[1], BLOCK_INT);
-		fwrite(g_hFile[id], _:flAngle[2], BLOCK_INT);
+		fwrite(g_hFile[id], _:g_flAngle[id][0], BLOCK_INT);
+		fwrite(g_hFile[id], _:g_flAngle[id][1], BLOCK_INT);
+		fwrite(g_hFile[id], _:g_flAngle[id][2], BLOCK_INT);
 
-		new navbuttons = 0;
+		g_iNavButtons[id] = 0;
 		if(pev(id, pev_flags) & FL_ONGROUND)
-			navbuttons |= FLAG_GROUND;
+			g_iNavButtons[id] |= FLAG_GROUND;
 		if(iButton & IN_JUMP)
-			navbuttons |= FLAG_JUMP;
+			g_iNavButtons[id] |= FLAG_JUMP;
 		if(iButton & IN_DUCK)
-			navbuttons |= FLAG_DUCK;
-		if(iButton & IN_USE)
-			navbuttons |= FLAG_USE;
+			g_iNavButtons[id] |= FLAG_DUCK;
+		// if(iButton & IN_USE)
+		// 	g_iNavButtons[id] |= FLAG_USE;
 		if(iButton & IN_FORWARD)
-			navbuttons |= FLAG_FORWARD;
+			g_iNavButtons[id] |= FLAG_FORWARD;
 		if(iButton & IN_BACK)
-			navbuttons |= FLAG_BACK;
+			g_iNavButtons[id] |= FLAG_BACK;
 		if(iButton & IN_MOVELEFT)
-			navbuttons |= FLAG_MOVELEFT;
+			g_iNavButtons[id] |= FLAG_MOVELEFT;
 		if(iButton & IN_MOVERIGHT)
-			navbuttons |= FLAG_MOVERIGHT;
+			g_iNavButtons[id] |= FLAG_MOVERIGHT;
 
-		fwrite(g_hFile[id], navbuttons, BLOCK_BYTE);
+		fwrite(g_hFile[id], g_iNavButtons[id], BLOCK_BYTE);
 	}
 
 	return PLUGIN_HANDLED;
@@ -708,6 +738,12 @@ public fmCheckVisibility(id, pset)
 	return FMRES_IGNORED; 
 }
 
+public hamPlayerSpawn(id)
+{
+	if(id == g_iBotID)
+		fm_give_item(id, "weapon_knife");
+}
+
 public hamPlayerTakeDamage(victim, weapon, attacker, Float:damage, damagebits)
 {
 	if(victim == g_iBotID)
@@ -769,12 +805,9 @@ public createBot()
 
 	set_pev(g_iBotID, pev_spawnflags, pev(g_iBotID, pev_spawnflags) | FL_FAKECLIENT);
 	set_pev(g_iBotID, pev_flags, pev(g_iBotID, pev_flags) | FL_FAKECLIENT);
-	set_pev(g_iBotID, pev_rendermode, kRenderTransTexture);
-	set_pev(g_iBotID, pev_renderamt, 150.0);
 
 	cs_set_user_team(g_iBotID, CS_TEAM_CT);
 	fm_cs_user_spawn(g_iBotID);
-	fm_give_item(g_iBotID, "weapon_knife");
 	fm_set_user_godmode(g_iBotID, 1);
 
 	set_pev(g_iBotID, pev_framerate, 1.0);
@@ -782,6 +815,7 @@ public createBot()
 	set_pev(g_iBotEnt, pev_nextthink, get_gametime() + 0.01);
 
 	g_iFrameCounter = 0;
+	g_iDelayCounter = 0;
 }
 
 public fwdBotThink(iEnt)
@@ -809,9 +843,9 @@ public botThink(id)
 
 	g_iByte = ArrayGetCell(g_aBytes, g_iFrameCounter);
 
-	new bool:bGround = (g_iByte & FLAG_GROUND)? true : false;
-	new bool:bJump = (g_iByte & FLAG_JUMP)? true : false;
-	new bool:bDuck = (g_iByte & FLAG_DUCK)? true : false;
+	new bool:bGround = bool:(g_iByte & FLAG_GROUND);
+	new bool:bJump = bool:(g_iByte & FLAG_JUMP);
+	new bool:bDuck = bool:(g_iByte & FLAG_DUCK);
 
 	new Float:oldX = g_fOrigin[0];
 	new Float:oldY = g_fOrigin[1];
@@ -851,8 +885,29 @@ public botThink(id)
 	if(g_iByte & FLAG_MOVERIGHT)
 		iButton |= IN_MOVERIGHT;
 
+#if defined BOT_USE
+	static iUseCount;
+
+	if((g_iFrameCounter == 0 && g_iDelayCounter == DELAY_FRAMES - 1) || (g_iFrameCounter == g_iFinishFrame - 1 && g_iDelayCounter == 0))
+	{
+		iButton |= IN_USE;
+		iUseCount = 2;
+	}
+
+	if(iUseCount)
+	{
+		static Float:msecval;
+		global_get(glb_frametime, msecval);
+		new msec = floatround(msecval * 1000.0);
+		engfunc(EngFunc_RunPlayerMove, id, g_fAngle, 0.0, 0.0, 0.0, iButton, 0, msec);
+		iUseCount--;
+	}
+	else
+		set_pev(id, pev_button, iButton);
+#else
 	set_pev(id, pev_button, iButton);
-	
+#endif
+
 	set_pev(id, pev_sequence, 19);
 
 	new bool:bDucking = bDuck;
@@ -932,13 +987,37 @@ public botThink(id)
 
 	g_bOldJump = bJump;
 
-	if(g_bBotSpeeded)
-		g_iFrameCounter += 2;
-	else
-		g_iFrameCounter++;
+	if(g_iDelayCounter == 0 && (g_iFrameCounter == 0 || g_iFrameCounter == g_iFinishFrame - 1))
+	{
+		g_iDelayCounter++;
+	}
 
-	if(g_iFrameCounter >= g_iFinishFrame)
-		g_iFrameCounter = 0;
+	if(g_iDelayCounter)
+	{
+		g_iDelayCounter++;
+		if(g_iDelayCounter >= DELAY_FRAMES)
+		{
+			g_iDelayCounter = 0;
+
+			if(g_bBotSpeeded)
+				g_iFrameCounter += 2;
+			else
+				g_iFrameCounter++;
+
+			if(g_iFrameCounter >= g_iFinishFrame)
+				g_iFrameCounter = 0;
+		}
+	}
+	else
+	{
+		if(g_bBotSpeeded)
+			g_iFrameCounter += 2;
+		else
+			g_iFrameCounter++;
+
+		if(g_iFrameCounter >= g_iFinishFrame)
+			g_iFrameCounter = 0;
+	}
 
 	return;
 }
@@ -971,6 +1050,26 @@ initCvars() {
 	// 	0 - disabled (default)
 	// 	1 - enabled
 	bind_pcvar_num(create_cvar("kz_enable_nub_bot", "0"), g_Cvars[cvarEnableNubBot]);
+}
+
+public fmAddToFullPack(es_handle, e, ent, host, hostflags, player, pSet)
+{
+	if(player)
+	{
+		if(g_iBotID == 0 || g_iBotID == host)
+			return FMRES_IGNORED;
+			
+		if(g_iBotID == ent)
+		{
+			if(ArraySize(g_aBytes) == 0)
+				return FMRES_IGNORED;
+
+			set_es(es_handle, ES_Angles, g_fAngle);
+			set_es(es_handle, ES_Origin, g_fOrigin);	
+		}
+	}
+
+	return FMRES_IGNORED;
 }
 
 public plugin_end()
@@ -1017,21 +1116,4 @@ stock stringTimer(const Float:flRealTime, szOutPut[], const iSizeOutPut, iMilliS
 		iMilliSeconds = floatround((flTime - (iMinutes * 60 + iSeconds)) * 1000, floatround_floor);
 		format(szOutPut, iSizeOutPut, "%s.%03d", szOutPut, iMilliSeconds);
 	}
-}
-
-stock Float:floatTimer(const szInPut[])
-{
-	new Float:flTime = 0.0;
-	
-	if(szInPut[2] == ':' && szInPut[5] == '.')
-	{
-		flTime+= ((szInPut[0] - 48) * 600.0) + ((szInPut[1] - 48) * 60.0);
-		flTime+= ((szInPut[3] - 48) * 10.0) + (szInPut[4] - 48);
-		flTime+= ((szInPut[6] - 48) / 10.0) + ((szInPut[7] - 48) / 100.0);
-	}
-	else
-	{
-		flTime = str_to_float(szInPut);
-	}
-	return flTime;
 }
