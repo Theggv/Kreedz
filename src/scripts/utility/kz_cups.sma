@@ -235,6 +235,9 @@ public cmd_Version(id)
 
 public cmd_MainMenu(id)
 {
+	if (!is_user_connected(id))
+		return PLUGIN_HANDLED;
+
 	new szMsg[512];
 	formatex(szMsg, charsmax(szMsg), "%L", id, "CUPS_MAIN_TITLE");
 	
@@ -361,6 +364,9 @@ public LobbyList_Handler(id, menu, item)
 
 public cmd_Lobby(id, iLobby)
 {
+	if (!is_user_connected(id))
+		return PLUGIN_HANDLED;
+
 	g_CurrentLobby[id] = iLobby;
 	new bool:isHost = (id == iLobby);
 
