@@ -71,6 +71,8 @@ public cmdMkeyHandler(id) {
 }
 
 public cmdMainMenu(id) {
+	if (!is_user_connected(id)) return PLUGIN_HANDLED;
+
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "%L", id, "MAINMENU_TITLE");
 
