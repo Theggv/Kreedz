@@ -5,6 +5,7 @@
 #define _kreedz_util_included
 
 #include <reapi>
+#include <general_util>
 
 stock kz_register_cmd(szCmd[], szHandler[]) {
 	new szFormatedCmd[64];
@@ -26,13 +27,6 @@ stock kz_register_cmd(szCmd[], szHandler[]) {
 
 	formatex(szFormatedCmd, 63, "/%s", szCmd);
 	register_clcmd(szFormatedCmd, szHandler);
-}
-
-stock UTIL_LogToFile(const szPath[], const szLevel[], const szFunction[], const szMessage[], any:...) {
-	new szMsg[512];
-	vformat(szMsg, charsmax(szMsg), szMessage, 5);
-	
-	log_to_file(szPath, "[%s][%s] %s", szLevel, szFunction, szMsg);
 }
 
 stock UTIL_TimeToSec(Float:fTime, &iMin, &iSec, &iMS) {
