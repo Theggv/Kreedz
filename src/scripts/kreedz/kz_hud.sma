@@ -212,15 +212,18 @@ FormatCheckpointsHud(id, szMsg[], iLen) {
 	new numChecks = kz_get_cp_num(id);
 	new numTeleports = kz_get_tp_num(id);
 
+	new szWeaponName[32];
+	kz_get_weapon_name(kz_get_min_rank(id), szWeaponName, charsmax(szWeaponName));
+
 	switch (kz_get_timer_state(id)) {
 		case TIMER_DISABLED: {
 			formatex(szMsg, iLen, "^t^n^n");
 		}
 		case TIMER_ENABLED: {
-			formatex(szMsg, iLen, "[%d cp %d gc]^n^n", numChecks, numTeleports);
+			formatex(szMsg, iLen, "[%d cp %d gc] | %s^n^n", numChecks, numTeleports, szWeaponName);
 		}
 		case TIMER_PAUSED: {
-			formatex(szMsg, iLen, "[%d cp %d gc] | PAUSED^n^n", numChecks, numTeleports);
+			formatex(szMsg, iLen, "[%d cp %d gc] | %s | PAUSED^n^n", numChecks, numTeleports, szWeaponName);
 		}
 	}
 }

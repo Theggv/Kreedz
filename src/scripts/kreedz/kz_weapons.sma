@@ -23,7 +23,7 @@
 
 enum _:UserData {
 	ud_MinRank,
-	ud_TemporaryRank,
+	bool:ud_ResetMaxSpeedHookDisabled,
 };
 
 new g_UserData[MAX_PLAYERS + 1][UserData];
@@ -47,8 +47,6 @@ public plugin_init() {
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_famas", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_p90", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_scout", "ham_Other_Shoot", 1);
-
-	RegisterHam(Ham_Player_Jump, "player", "ham_Jump_Post", 1);
 
 	RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "HookResetMaxSpeed", 1);
 
@@ -90,7 +88,7 @@ public native_set_min_rank(pluginId, argc) {
 	new value = get_param(arg_value);
 
 	g_UserData[id][ud_MinRank] = value;
-	g_UserData[id][ud_TemporaryRank] = value;
+	g_UserData[id][ud_ResetMaxSpeedHookDisabled] = false;
 
 	if (is_user_alive(id)) {
 		ham_Spawn_Post(id);
@@ -169,25 +167,35 @@ public client_connect(id) {
 
 public kz_timer_start_post(id) {
 	g_UserData[id][ud_MinRank] = get_min_rank(id);
-	g_UserData[id][ud_TemporaryRank] = g_UserData[id][ud_MinRank];
+	g_UserData[id][ud_ResetMaxSpeedHookDisabled] = false;
 }
 
 public kz_timer_pause_post(id) {
-	if (kz_get_timer_state(id) != TIMER_ENABLED) 
+	new TimerState:timerState = kz_get_timer_state(id);
+
+	if (timerState == TIMER_PAUSED)
+		g_UserData[id][ud_ResetMaxSpeedHookDisabled] = true;
+
+	if (timerState != TIMER_ENABLED)
 		return;
 	
-	// Update weapon after pause
-	HookResetMaxSpeed(id);
+	new iRank = get_min_rank(id);
+
+	if (iRank >= g_UserData[id][ud_MinRank]) {
+		g_UserData[id][ud_MinRank] = iRank;
+	}
+
+	g_UserData[id][ud_ResetMaxSpeedHookDisabled] = false;
 }
 
 public HookResetMaxSpeed(id) {
-	if (kz_get_timer_state(id) != TIMER_ENABLED) 
+	if (g_UserData[id][ud_ResetMaxSpeedHookDisabled] || kz_get_timer_state(id) != TIMER_ENABLED) 
 		return HC_CONTINUE;
 
 	new iRank = get_min_rank(id);
 
-	if (iRank > g_UserData[id][ud_MinRank])
-		g_UserData[id][ud_TemporaryRank] = iRank;
+	if (iRank > g_UserData[id][ud_MinRank]) 
+		kz_set_pause(id);
 
 	return HC_CONTINUE;
 }
@@ -200,13 +208,13 @@ public ham_Spawn_Post(id) {
 		amxclient_cmd(id, "weapons");
 
 		switch (g_UserData[id][ud_MinRank]) {
-			case 0: amxclient_cmd(id, "weapon_awp");
-			case 1: amxclient_cmd(id, "weapon_m249");
-			case 2: amxclient_cmd(id, "weapon_m4a1");
-			case 3: amxclient_cmd(id, "weapon_sg552");
-			case 4: amxclient_cmd(id, "weapon_famas");
-			case 5: amxclient_cmd(id, "weapon_p90");
-			case 7: amxclient_cmd(id, "weapon_scout"); 
+			case WPN_AWP: amxclient_cmd(id, "weapon_awp");
+			case WPN_M249: amxclient_cmd(id, "weapon_m249");
+			case WPN_M4A1: amxclient_cmd(id, "weapon_m4a1");
+			case WPN_SG552: amxclient_cmd(id, "weapon_sg552");
+			case WPN_FAMAS: amxclient_cmd(id, "weapon_famas");
+			case WPN_P90: amxclient_cmd(id, "weapon_p90");
+			case WPN_SCOUT: amxclient_cmd(id, "weapon_scout"); 
 		}
 	}
 }
@@ -227,17 +235,6 @@ public ham_Other_Shoot(iEnt) {
 	return HAM_IGNORED;
 }
 
-public ham_Jump_Post(id) {
-	if (!is_user_alive(id) ||
-		kz_get_timer_state(id) != TIMER_ENABLED) 
-		return HAM_IGNORED;
-
-	if (g_UserData[id][ud_TemporaryRank] > g_UserData[id][ud_MinRank]) {
-		g_UserData[id][ud_MinRank] = g_UserData[id][ud_TemporaryRank];
-	}
-
-	return HAM_IGNORED;
-}
 
 /**
 *	------------------------------------------------------------------

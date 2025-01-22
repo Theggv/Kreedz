@@ -50,6 +50,7 @@ enum _:UserDataStruct {
 	// Pause data
 	Float:ud_PauseTime,
 	Float:ud_LastPos[3],
+	Float:ud_LastAngle[3],
 	Float:ud_LastVel[3],
 
 	// Start position data
@@ -436,6 +437,16 @@ public native_tp_last_pos() {
 
 	set_entvar(id, var_origin, g_UserData[id][ud_LastPos]);
 
+	if ((g_UserData[id][ud_AnglesMode] & (1 << 0)) && 
+		(g_UserData[id][ud_LastAngle][0] || 
+		g_UserData[id][ud_LastAngle][1] || 
+		g_UserData[id][ud_LastAngle][2])
+		) {
+		set_entvar(id, var_angles, g_UserData[id][ud_LastAngle]);
+		set_entvar(id, var_v_angle, g_UserData[id][ud_LastAngle]);
+		set_entvar(id, var_fixangle, 1);
+	}
+
 	set_entvar(id, var_velocity, Float:{0.0, 0.0, 0.0});
 	set_entvar(id, var_view_ofs, Float:{0.0, 0.0, 12.0});
 	set_entvar(id, var_flags, get_entvar(id, var_flags) | FL_DUCKING);
@@ -790,6 +801,7 @@ public client_putinserver(id) {
 
 		g_UserData[id][ud_TimerState] = TIMER_DISABLED;
 		g_UserData[id][ud_LastPos] = Float:{0.0, 0.0, 0.0};
+		g_UserData[id][ud_LastAngle] = Float:{0.0, 0.0, 0.0};
 
 		g_UserData[id][ud_HookProtection] = 0.0;
 		g_UserData[id][ud_isHookEnable] = false;
@@ -890,6 +902,7 @@ public ham_PostThink(id) {
 		return HAM_IGNORED;
 
 	get_entvar(id, var_origin, g_UserData[id][ud_LastPos]);
+	get_entvar(id, var_v_angle, g_UserData[id][ud_LastAngle]);
 
 	return HAM_IGNORED;
 }
