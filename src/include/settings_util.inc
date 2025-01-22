@@ -4,6 +4,8 @@
 
 #define _settings_util_included
 
+#include <general_util>
+
 stock UTIL_DebugMessage(const szMsg[], any:...) {
 // disable warning
 #pragma unused szMsg
@@ -17,12 +19,3 @@ stock UTIL_DebugMessage(const szMsg[], any:...) {
 	server_print(szFormatted);
 #endif
 }
-
-#if !defined UTIL_LogToFile
-stock UTIL_LogToFile(const szPath[], const szLevel[], const szFunction[], const szMessage[], any:...) {
-	new szMsg[512];
-	vformat(szMsg, charsmax(szMsg), szMessage, 5);
-	
-	log_to_file(szPath, "[%s][%s] %s", szLevel, szFunction, szMsg);
-}
-#endif

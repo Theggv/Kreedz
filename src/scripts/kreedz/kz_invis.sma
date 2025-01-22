@@ -107,6 +107,8 @@ public OnCellValueChanged(id, optionId, newValue) {
 // 
 
 public cmd_Invis(id) {
+	if (!is_user_connected(id)) return PLUGIN_HANDLED;
+	
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "\y%L", id, "INVISMENU_TITLE");
 	

@@ -46,6 +46,8 @@ public kz_sql_initialized() {
 
 
 public cmdTop(id) {
+	if (!is_user_connected(id)) return PLUGIN_HANDLED;
+
 	new szMsg[256];
 	formatex(szMsg, charsmax(szMsg), "Top");
 	new iMenu = menu_create(szMsg, "@topMenuHandler");
@@ -125,6 +127,8 @@ ON user.id = record.user_id ORDER BY `time`;",
 }
 
 public weaponTopMenu(id, bool:isProTop) {
+	if (!is_user_connected(id)) return;
+
 	new szMsg[256];
 
 	if (isProTop)
