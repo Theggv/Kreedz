@@ -40,13 +40,22 @@ public plugin_init() {
 
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_m4a1", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_usp", "ham_Other_Shoot", 1);
-
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_awp", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_m249", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_sg552", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_famas", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_p90", "ham_Other_Shoot", 1);
 	RegisterHam(Ham_Weapon_PrimaryAttack, "weapon_scout", "ham_Other_Shoot", 1);
+
+	RegisterHam(Ham_Item_CanHolster, "weapon_knife", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_m4a1", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_usp", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_awp", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_m249", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_sg552", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_famas", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_p90", "ham_Other_CanHolster");
+	RegisterHam(Ham_Item_CanHolster, "weapon_scout", "ham_Other_CanHolster");
 
 	RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "HookResetMaxSpeed", 1);
 
@@ -232,6 +241,23 @@ public ham_Other_Shoot(iEnt) {
 
 	cs_set_user_bpammo(id, iItem, 10);
 	
+	return HAM_IGNORED;
+}
+
+public ham_Other_CanHolster(iEnt) {
+	if (!is_entity(iEnt))
+		return HAM_IGNORED;
+
+	new id = get_member(iEnt, m_pPlayer);
+
+	if (id < 1 || id > MaxClients || !is_user_alive(id))
+		return HAM_IGNORED;
+
+	if (kz_get_timer_state(id) == TIMER_ENABLED) {
+		SetHamReturnInteger(0);
+		return HAM_SUPERCEDE;
+	}
+
 	return HAM_IGNORED;
 }
 
