@@ -64,6 +64,7 @@ SETTINGSMENU_OPT_GOTO = Allow teleport to you
 SETTINGSMENU_OPT_RADIO = Radio commands
 SETTINGSMENU_OPT_MKEY_OPEN_MENU = M key behavior: \ropen menu
 SETTINGSMENU_OPT_MKEY_SPEC_CT = M key behavior: \ygo to spec/ct
+SETTINGSMENU_OPT_BLOCKCHANGE = Block weapon change during run
 SETTINGSMENU_ENABLE = enabled
 SETTINGSMENU_DISABLE = disabled
 
@@ -140,6 +141,7 @@ SETTINGSMENU_OPT_GOTO = Разрешить телепорты к Вам
 SETTINGSMENU_OPT_RADIO = Радио команды
 SETTINGSMENU_OPT_MKEY_OPEN_MENU = Кнопка М: \rоткрыть главное меню
 SETTINGSMENU_OPT_MKEY_SPEC_CT = Кнопка М: \yперейти в наблюдение
+SETTINGSMENU_OPT_BLOCKCHANGE = Блокировать смену оружия
 SETTINGSMENU_ENABLE = вкл
 SETTINGSMENU_DISABLE = выкл
 
@@ -216,6 +218,7 @@ SETTINGSMENU_OPT_GOTO = 允许他人传送到你
 SETTINGSMENU_OPT_RADIO = 无线电命令
 SETTINGSMENU_OPT_MKEY_OPEN_MENU = M 键操作: \r开启菜单
 SETTINGSMENU_OPT_MKEY_SPEC_CT = M 键操作: \y spec/ct
+SETTINGSMENU_OPT_BLOCKCHANGE = 防止武器切換
 SETTINGSMENU_ENABLE = 启用
 SETTINGSMENU_DISABLE = 禁用
 
