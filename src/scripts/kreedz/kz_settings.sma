@@ -27,6 +27,7 @@ enum OptionsEnum {
     optIntMkeyBehavior,
     optIntJumpStats,
     optBoolSpecList,
+    optBoolBlockWeaponChange,
     optBoolHideWeapon,
 };
 
@@ -46,6 +47,7 @@ enum UserDataStruct {
     bool:ud_showMenu,
     bool:ud_allowGoto,
     bool:ud_specList,
+    bool:ud_blockWeaponChange,
     bool:ud_hideWeapon,
 
     ud_mkeyBehavior,
@@ -151,6 +153,11 @@ public plugin_precache() {
     // default: true
     g_Options[optBoolSpecList] = register_players_option_cell("spec_list", FIELD_TYPE_BOOL, true);
 
+    // Block weapon change when timer is enabled:
+    // 
+    // default: false
+    g_Options[optBoolBlockWeaponChange] = register_players_option_cell("block_weapon_change", FIELD_TYPE_BOOL, false);
+    
     // hide weapon model:
     //
     // default: false
@@ -170,6 +177,7 @@ public client_putinserver(id) {
     g_UserData[id][ud_showMenu] = false;
     g_UserData[id][ud_allowGoto] = true;
     g_UserData[id][ud_specList] = true;
+    g_UserData[id][ud_blockWeaponChange] = false;
     g_UserData[id][ud_hideWeapon] = false;
 
     g_UserData[id][ud_mkeyBehavior] = 0;
@@ -230,6 +238,9 @@ public OnCellValueChanged(id, optionId, newValue) {
     else if (optionId == g_Options[optBoolSpecList]) {
         g_UserData[id][ud_specList] = !!newValue;
     }
+    else if (optionId == g_Options[optBoolBlockWeaponChange]) {
+        g_UserData[id][ud_blockWeaponChange] = !!newValue;
+    }
     else if (optionId == g_Options[optBoolHideWeapon]) {
        g_UserData[id][ud_hideWeapon] = !!newValue;
        if (newValue) {
@@ -286,7 +297,6 @@ stock settingsMenu(id, page = 0) {
     addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_FOG", g_UserData[id][ud_fog]);
     addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_GOTO", g_UserData[id][ud_allowGoto]);
     addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_RADIO", !g_UserData[id][ud_blockRadio]);
-    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_HIDEWEAPON", g_UserData[id][ud_hideWeapon]);
 
     switch (g_UserData[id][ud_mkeyBehavior]) {
         case 0: formatex(szMsg, charsmax(szMsg), "%L", id, "SETTINGSMENU_OPT_MKEY_OPEN_MENU");
@@ -294,6 +304,9 @@ stock settingsMenu(id, page = 0) {
     }
     
     menu_additem(iMenu, szMsg);
+
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_HIDEWEAPON", g_UserData[id][ud_hideWeapon]);
+    addBoolOption(id, iMenu, szMsg, charsmax(szMsg), "SETTINGSMENU_OPT_BLOCKCHANGE", g_UserData[id][ud_blockWeaponChange]);
 
     formatex(szMsg, charsmax(szMsg), "%L", id, "BACK");
     menu_setprop(iMenu, MPROP_BACKNAME, szMsg);
@@ -360,12 +373,16 @@ stock settingsMenu(id, page = 0) {
             set_option_cell(id, g_Options[optBoolBlockRadio], g_UserData[id][ud_blockRadio]);
         }
         case 10: {
+            g_UserData[id][ud_mkeyBehavior] = (g_UserData[id][ud_mkeyBehavior] + 1) % 2;
+            set_option_cell(id, g_Options[optIntMkeyBehavior], g_UserData[id][ud_mkeyBehavior]);
+        }
+        case 11: {
             g_UserData[id][ud_hideWeapon] = !g_UserData[id][ud_hideWeapon];
             set_option_cell(id, g_Options[optBoolHideWeapon], g_UserData[id][ud_hideWeapon]);
         }
-        case 11: {
-            g_UserData[id][ud_mkeyBehavior] = (g_UserData[id][ud_mkeyBehavior] + 1) % 2;
-            set_option_cell(id, g_Options[optIntMkeyBehavior], g_UserData[id][ud_mkeyBehavior]);
+        case 12: {
+            g_UserData[id][ud_blockWeaponChange] = !g_UserData[id][ud_blockWeaponChange];
+            set_option_cell(id, g_Options[optBoolBlockWeaponChange], g_UserData[id][ud_blockWeaponChange]);
         }
     }
 
