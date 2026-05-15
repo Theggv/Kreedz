@@ -25,10 +25,6 @@
         "url": "https://github.com/s1lentq/reapi/releases/download/5.21.0.252/reapi-bin-5.21.0.252.zip"
       },
       {
-        "name": "curl",
-        "url": "https://github.com/Next21Team/AmxxCurl/releases/download/1.1.1/amx_includes.zip"
-      },
-      {
         "name": "ezhttp",
         "url": "https://github.com/Next21Team/AmxxEasyHttp/releases/download/1.1.0/amxx.zip"
       }
@@ -37,7 +33,6 @@
   "include": [
     "./.compiler/include",
     "./.thirdparty/reapi/addons/amxmodx/scripting/include",
-    "./.thirdparty/curl/amx_includes",
     "./.thirdparty/ezhttp/amxx/scripting/include"
   ],
   "rules": {
