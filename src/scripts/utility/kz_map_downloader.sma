@@ -1,5 +1,5 @@
 #include <amxmodx>
-#include <curl>
+#include <easy_http>
 #include <amxxarch>
 
 #define PLUGIN 		"[KZ] Map downloader"
@@ -25,7 +25,6 @@ new g_szPrefix[64];
 new g_szDlMap[64];
 
 new g_szDlFile[128];
-new g_hDlFile;
 
 new archive_dir[] 	= "addons/amxmodx/data/kz_downloader/archives";
 new temp_dir[] 		= "addons/amxmodx/data/kz_downloader/temp";
@@ -51,7 +50,6 @@ enum _:SourceStruct {
 	CheckPath[256],			// Path to check map existence
 	DownloadPath[256],		// Path to download map
 	FileExtension[16],		// File extension
-	bool:IsRequireSSL,		// Is ssl required
 };
 
 new Array:g_Sources;
@@ -119,10 +117,9 @@ public InitKZRush() {
 	new data[SourceStruct];
 
 	data[ServiceName] = 		"KZ Rush";
-	data[CheckPath] = 			"https://kz-rush.ru/download/map/cs16/";
+	data[CheckPath] = 			"https://kz-rush.ru/maps/cs16/";
 	data[DownloadPath] = 		"https://kz-rush.ru/download/map/cs16/";
 	data[FileExtension] = 		"";
-	data[IsRequireSSL] = 			true;
 
 	return data;
 }
@@ -285,47 +282,36 @@ stock Start_Find(id, isFirst = false) {
 	formatex(szPath, charsmax(szPath), "%s%s%s", serviceData[CheckPath], g_szDlMap, 
 		serviceData[FileExtension]);
 
-	new CURL:hCurl;
+	new szData[1];
+	szData[0] = id;
 
-	if ((hCurl = curl_easy_init())) {
-		curl_easy_setopt(hCurl, CURLOPT_URL, szPath);
-		curl_easy_setopt(hCurl, CURLOPT_NOBODY, 1);
-		curl_easy_setopt(hCurl, CURLOPT_TIMEOUT, 3);
+	new EzHttpOptions:options = ezhttp_create_options();
+	ezhttp_option_set_connect_timeout(options, 3000);
+	ezhttp_option_set_user_data(options, szData, sizeof(szData));
 
-		if (serviceData[IsRequireSSL]) {
-			curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
-			curl_easy_setopt(hCurl, CURLOPT_CAINFO, "cstrike/addons/amxmodx/data/cert/cacert.pem");
-		}
+	#if defined _DEBUG
+	server_print("Finding in %s", szPath);
+	#endif
 
-		new szData[1];
-		szData[0] = id;
-
-		#if defined _DEBUG
-		server_print("Finding in %s", szPath);
-		#endif
-
-		curl_easy_setopt(hCurl, CURLOPT_WRITEFUNCTION, "@Find_Write_Callback");
-
-		curl_easy_perform(hCurl, "@Find_Callback", szData, sizeof(szData));
-	}
+	ezhttp_get(szPath, "@Find_Callback", options);
 }
 
-@Find_Callback(const CURL:hCurl, const CURLcode:iCode, const data[]) {
-	new iResponceCode;
-	curl_easy_getinfo(hCurl, CURLINFO_RESPONSE_CODE, iResponceCode);
+@Find_Callback(EzHttpRequest:request_id) {
+	new iResponceCode = ezhttp_get_http_code(request_id);
 
-	new id = data[0];
+	new szData[1];
+	ezhttp_get_user_data(request_id, szData);
+
+	new id = szData[0];
 
 	#if defined _DEBUG
 	server_print("Responce code: %d", iResponceCode);
 	#endif
 
-	curl_easy_cleanup(hCurl);
-
 	if (g_State == State_NoTask)
 		return;
 
-	if (iCode != CURLE_OK || iResponceCode >= 400)
+	if (ezhttp_get_error_code(request_id) != EZH_OK || iResponceCode >= 400)
 		Start_Find(id);
 	else
 	{
@@ -339,10 +325,6 @@ stock Start_Find(id, isFirst = false) {
 	}
 }
 
-@Find_Write_Callback(const data[], const size, const nmemb) {
-	return size * nmemb;
-}
-
 public Start_Download(id) {
 	new serviceData[SourceStruct];
 	ArrayGetArray(g_Sources, g_CurSourceIndex, serviceData);
@@ -352,77 +334,43 @@ public Start_Download(id) {
 	formatex(szPath, charsmax(szPath), "%s%s%s", serviceData[DownloadPath], g_szDlMap, 
 		serviceData[FileExtension]);
 
-	new CURL:hCurl;
+	new szData[1];
+	szData[0] = id;
 
-	if ((hCurl = curl_easy_init())) {
-		// setup file
-		formatex(g_szDlFile, charsmax(g_szDlFile), "%s/%s.txt", archive_dir, g_szDlMap);
+	new EzHttpOptions:options = ezhttp_create_options();
+	ezhttp_option_set_user_data(options, szData, sizeof(szData));
 
-		delete_file(g_szDlFile);
-		g_hDlFile = fopen(g_szDlFile, "wb");
-
-		// setup curl
-
-		curl_easy_setopt(hCurl, CURLOPT_BUFFERSIZE, 512);
-		curl_easy_setopt(hCurl, CURLOPT_URL, szPath);
-		curl_easy_setopt(hCurl, CURLOPT_FAILONERROR, 1);
-
-		if (serviceData[IsRequireSSL]) {
-			curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
-			curl_easy_setopt(hCurl, CURLOPT_CAINFO, "cstrike/addons/amxmodx/data/cert/cacert.pem");
-		}
-
-		new szData[1];
-		szData[0] = id;
-
-		curl_easy_setopt(hCurl, CURLOPT_WRITEFUNCTION, "@Download_Write_Callback");
-
-		curl_easy_perform(hCurl, "@Download_Complete_Callback", szData, sizeof(szData));
-	}
+	ezhttp_get(szPath, "@Download_Complete_Callback", options);
 }
 
-@Download_Write_Callback(const data[], const size, const nmemb) {
-	new real_size = size * nmemb;
+@Download_Complete_Callback(EzHttpRequest:request_id, const szData[]) {
+	new iResponceCode = ezhttp_get_http_code(request_id);
 
-	fwrite_blocks(g_hDlFile, data, real_size, BLOCK_CHAR);
+	new szData[1];
+	ezhttp_get_user_data(request_id, szData);
 
-	return real_size;
-}
-
-@Download_Complete_Callback(const CURL:hCurl, const CURLcode:iCode, const szData[]) {
 	new id = szData[0];
-
-	// redirect check
-	new iResponceCode;
-	curl_easy_getinfo(hCurl, CURLINFO_RESPONSE_CODE, iResponceCode);
-
-	if (iResponceCode >= 300 && iResponceCode <= 302)
-	{
-		new szRedirect[256];
-		curl_easy_getinfo(hCurl, CURLINFO_REDIRECT_URL, szRedirect, charsmax(szRedirect));
-
-		#if defined _DEBUG
-		server_print("redirect: %s", szRedirect);
-		#endif
-
-		curl_easy_setopt(hCurl, CURLOPT_URL, szRedirect);
-		curl_easy_perform(hCurl, "@Download_Complete_Callback", szData, 1);
-
-		return;
-	}
-
-	curl_easy_cleanup(hCurl);
-	fclose(g_hDlFile);
 
 	if (g_State == State_NoTask)
 		return;
 
-	if (iCode != CURLE_OK) {
+	if (ezhttp_get_error_code(request_id) != EZH_OK) {
+		#if defined _DEBUG
+		new error[64];
+		ezhttp_get_error_message(request_id, error, charsmax(error));
+		server_print("[Error] response error: %s", error);
+		#endif
+	}
+	else if (iResponceCode != 200) {
 		#if defined _DEBUG
 		server_print("[Error] http code: %d", iResponceCode);
 		#endif
 	}
 	else {
+		formatex(g_szDlFile, charsmax(g_szDlFile), "%s/%s.txt", archive_dir, g_szDlMap);
+
+		ezhttp_save_data_to_file(request_id, g_szDlFile);
+
 		OnArchiveComplete(id);
 	}
 }

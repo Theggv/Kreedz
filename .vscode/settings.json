@@ -5,7 +5,6 @@
 		"${workspaceRoot}/.compiler/include",
 		"${workspaceRoot}/src/include",
 		"${workspaceRoot}/.thirdparty/reapi/addons/amxmodx/scripting/include",
-		"${workspaceRoot}/.thirdparty/curl/amx_includes",
 		"${workspaceRoot}/.thirdparty/ezhttp/amxx/scripting/include",
 	]
 }
